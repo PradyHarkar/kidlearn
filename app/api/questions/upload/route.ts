@@ -37,9 +37,12 @@ const questionSchema = z.object({
   difficulty: z.number().min(1).max(10),
   topics: z.array(z.string()),
   explanation: z.string(),
-  subject: z.enum(["maths", "english"]),
+  subject: z.enum(["maths", "english", "science"]),
   yearLevel: z.enum(["prep", "year3"]),
   hint: z.string().optional(),
+  ttsText: z.string().optional(),
+  interactionType: z.string().optional(),
+  interactionData: z.record(z.string(), z.unknown()).optional(),
 });
 
 const uploadSchema = z.object({

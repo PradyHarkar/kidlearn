@@ -1,5 +1,5 @@
 export type YearLevel = "prep" | "year3";
-export type Subject = "maths" | "english";
+export type Subject = "maths" | "english" | "science";
 export type DifficultyLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
 export interface User {
@@ -18,6 +18,7 @@ export interface Child {
   avatar: string;
   currentDifficultyMaths: number;
   currentDifficultyEnglish: number;
+  currentDifficultyScience: number;
   streakDays: number;
   lastActiveDate: string;
   totalCoins: number;
@@ -27,6 +28,7 @@ export interface Child {
     totalCorrect: number;
     mathsAccuracy: number;
     englishAccuracy: number;
+    scienceAccuracy: number;
     favoriteTopics: string[];
   };
 }
@@ -51,6 +53,9 @@ export interface Question {
   subject: Subject;
   yearLevel: YearLevel;
   hint?: string;
+  ttsText?: string;
+  interactionType?: string;
+  interactionData?: Record<string, unknown>;
   cached?: boolean;
   createdAt: string;
 }
@@ -75,7 +80,7 @@ export interface Achievement {
   badgeIcon: string;
   description: string;
   unlockedDate: string;
-  category: "maths" | "english" | "streak" | "milestone";
+  category: "maths" | "english" | "science" | "streak" | "milestone";
 }
 
 export interface SessionResult {

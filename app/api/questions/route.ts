@@ -36,6 +36,8 @@ export async function GET(req: NextRequest) {
     // Check if difficulty should reset due to inactivity
     let currentDifficulty = subject === "maths"
       ? child.currentDifficultyMaths
+      : subject === "science"
+      ? (child.currentDifficultyScience || 1)
       : child.currentDifficultyEnglish;
 
     if (child.lastActiveDate && shouldResetDifficulty(child.lastActiveDate)) {
@@ -56,18 +58,28 @@ export async function GET(req: NextRequest) {
       200
     );
 
-    const filtered = (allQuestions as Question[]).filter(
+    let filtered = (allQuestions as Question[]).filter(
       (q) => Math.abs(q.difficulty - currentDifficulty) <= 1
     );
+
+    // Fallback: widen to ±2, then use all questions — so we never return empty
+    if (filtered.length < 5) {
+      filtered = (allQuestions as Question[]).filter(
+        (q) => Math.abs(q.difficulty - currentDifficulty) <= 3
+      );
+    }
+    if (filtered.length === 0) {
+      filtered = allQuestions as Question[];
+    }
 
     // Shuffle and pick 10
     const shuffled = filtered.sort(() => Math.random() - 0.5).slice(0, 10);
 
-    // If not enough questions, return what we have (frontend should handle gracefully)
     return NextResponse.json({
       questions: shuffled,
       difficulty: currentDifficulty,
       yearLevel,
+      totalAvailable: allQuestions.length,
     });
   } catch (error) {
     console.error("Get questions error:", error);

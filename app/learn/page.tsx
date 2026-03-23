@@ -45,6 +45,15 @@ function LearnContent() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const questionStartTime = useRef(Date.now());
 
+  // Resolve media pointer to renderable content
+  const resolveMedia = (imageUrl: string | undefined, emoji: string | undefined): string | null => {
+    if (imageUrl) {
+      if (imageUrl.startsWith("emoji:")) return imageUrl.slice(6);
+      if (imageUrl.startsWith("svg:")) return null; // SVG assets not yet resolved — fall back to text
+    }
+    return emoji || null;
+  };
+
   const speak = useCallback((text: string) => {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
@@ -211,8 +220,13 @@ function LearnContent() {
   };
 
   if (status === "loading" || loading) {
+    const loadingGradient = subject === "maths"
+      ? "bg-gradient-to-br from-pink-500 to-rose-600"
+      : subject === "science"
+      ? "bg-gradient-to-br from-emerald-500 to-teal-600"
+      : "bg-gradient-to-br from-blue-500 to-cyan-600";
     return (
-      <div className={`min-h-screen flex items-center justify-center ${subject === "maths" ? "bg-gradient-to-br from-pink-500 to-rose-600" : "bg-gradient-to-br from-blue-500 to-cyan-600"}`}>
+      <div className={`min-h-screen flex items-center justify-center ${loadingGradient}`}>
         <div className="text-center">
           <Mascot mood="thinking" size="md" className="mb-4" />
           <div className="text-white font-black text-2xl animate-pulse">Loading questions... ✨</div>
@@ -221,7 +235,24 @@ function LearnContent() {
     );
   }
 
-  if (!questions.length) return null;
+  if (!questions.length) {
+    const emptyGrad = subject === "maths" ? "from-pink-500 to-rose-600" : subject === "science" ? "from-emerald-500 to-teal-600" : "from-blue-500 to-cyan-600";
+    return (
+      <div className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${emptyGrad}`}>
+        <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-kid mx-4">
+          <div className="text-6xl mb-4">📚</div>
+          <h2 className="text-2xl font-black text-gray-800 mb-2">No questions yet!</h2>
+          <p className="text-gray-500 font-semibold mb-6">Questions for this subject are being added soon. Try Maths or English!</p>
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="btn-primary w-full"
+          >
+            🏠 Back to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const q = questions[currentIndex];
   const correct = results.filter(r => r.correct).length;
@@ -229,6 +260,8 @@ function LearnContent() {
 
   const bgGradient = subject === "maths"
     ? "from-pink-500 via-rose-500 to-orange-400"
+    : subject === "science"
+    ? "from-emerald-500 via-teal-500 to-cyan-400"
     : "from-blue-600 via-cyan-500 to-teal-400";
 
   const difficultyStars = Array.from({ length: 10 }, (_, i) => i < currentDifficulty ? "⭐" : "☆");
@@ -251,7 +284,7 @@ function LearnContent() {
 
             <div className="flex items-center gap-2">
               <span className="text-white font-black text-lg drop-shadow">
-                {subject === "maths" ? "🔢 Maths" : "📖 English"}
+                {subject === "maths" ? "🔢 Maths" : subject === "science" ? "🔬 Science" : "📖 English"}
               </span>
             </div>
 
@@ -326,7 +359,7 @@ function LearnContent() {
                 <div className="flex items-start gap-3">
                   <p className="question-text flex-1">{q.questionText}</p>
                   <motion.button
-                    onClick={() => speak(q.questionText)}
+                    onClick={() => speak(q.ttsText || q.questionText)}
                     whileHover={{ scale: 1.1, rotate: 5 }}
                     whileTap={{ scale: 0.9 }}
                     className="flex-shrink-0 w-12 h-12 bg-blue-100 hover:bg-blue-200 rounded-2xl flex items-center justify-center text-2xl transition-colors shadow-sm"
@@ -395,9 +428,11 @@ function LearnContent() {
                           {optionLetters[idx]}
                         </div>
 
-                        {/* Emoji */}
-                        {option.emoji && (
-                          <span className="text-3xl flex-shrink-0 leading-none">{option.emoji}</span>
+                        {/* Emoji / media */}
+                        {resolveMedia(option.imageUrl, option.emoji) && (
+                          <span className="text-3xl flex-shrink-0 leading-none">
+                            {resolveMedia(option.imageUrl, option.emoji)}
+                          </span>
                         )}
 
                         {/* Text */}

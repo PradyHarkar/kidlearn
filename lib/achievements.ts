@@ -7,7 +7,7 @@ interface AchievementRule {
   name: string;
   icon: string;
   description: string;
-  category: "maths" | "english" | "streak" | "milestone";
+  category: "maths" | "english" | "science" | "streak" | "milestone";
   check: (child: Child, stats: AchievementStats) => boolean;
 }
 
@@ -17,6 +17,7 @@ interface AchievementStats {
   currentStreak: number;
   mathsAccuracy: number;
   englishAccuracy: number;
+  scienceAccuracy: number;
   perfectSessions: number;
 }
 
@@ -84,6 +85,14 @@ const ACHIEVEMENT_RULES: AchievementRule[] = [
     description: "Answer 50 questions correctly",
     category: "milestone",
     check: (_, stats) => stats.totalCorrect >= 50,
+  },
+  {
+    id: "science_genius",
+    name: "Science Genius",
+    icon: "🔬",
+    description: "Get 90%+ accuracy in Science",
+    category: "science",
+    check: (_, stats) => stats.scienceAccuracy >= 90,
   },
 ];
 

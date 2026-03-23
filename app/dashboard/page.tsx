@@ -226,6 +226,16 @@ export default function DashboardPage() {
                       style={{ width: `${((child.currentDifficultyEnglish || 1) / 10) * 100}%` }}
                     />
                   </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-bold text-emerald-600">🔬 Science Level</span>
+                    <span className="font-black text-emerald-700">{child.currentDifficultyScience || 1}/10</span>
+                  </div>
+                  <div className="bg-gray-100 rounded-full h-2">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500"
+                      style={{ width: `${((child.currentDifficultyScience || 1) / 10) * 100}%` }}
+                    />
+                  </div>
                 </div>
 
                 {/* Start learning button */}
@@ -286,7 +296,7 @@ export default function DashboardPage() {
                 </h2>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -294,12 +304,12 @@ export default function DashboardPage() {
                     setShowSubjectSelect(false);
                     router.push(`/learn?child=${selectedChild.childId}&subject=maths`);
                   }}
-                  className="maths-gradient rounded-3xl p-6 text-white text-center shadow-kid"
+                  className="maths-gradient rounded-3xl p-5 text-white text-center shadow-kid"
                 >
-                  <div className="text-5xl mb-2">🔢</div>
-                  <p className="font-black text-xl">Maths</p>
-                  <p className="text-white/80 text-sm font-semibold mt-1">
-                    Level {selectedChild.currentDifficultyMaths || 1}
+                  <div className="text-4xl mb-2">🔢</div>
+                  <p className="font-black text-lg">Maths</p>
+                  <p className="text-white/80 text-xs font-semibold mt-1">
+                    Lv {selectedChild.currentDifficultyMaths || 1}
                   </p>
                 </motion.button>
 
@@ -310,12 +320,28 @@ export default function DashboardPage() {
                     setShowSubjectSelect(false);
                     router.push(`/learn?child=${selectedChild.childId}&subject=english`);
                   }}
-                  className="english-gradient rounded-3xl p-6 text-white text-center shadow-kid"
+                  className="english-gradient rounded-3xl p-5 text-white text-center shadow-kid"
                 >
-                  <div className="text-5xl mb-2">📖</div>
-                  <p className="font-black text-xl">English</p>
-                  <p className="text-white/80 text-sm font-semibold mt-1">
-                    Level {selectedChild.currentDifficultyEnglish || 1}
+                  <div className="text-4xl mb-2">📖</div>
+                  <p className="font-black text-lg">English</p>
+                  <p className="text-white/80 text-xs font-semibold mt-1">
+                    Lv {selectedChild.currentDifficultyEnglish || 1}
+                  </p>
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    setShowSubjectSelect(false);
+                    router.push(`/learn?child=${selectedChild.childId}&subject=science`);
+                  }}
+                  className="science-gradient rounded-3xl p-5 text-white text-center shadow-kid"
+                >
+                  <div className="text-4xl mb-2">🔬</div>
+                  <p className="font-black text-lg">Science</p>
+                  <p className="text-white/80 text-xs font-semibold mt-1">
+                    Lv {selectedChild.currentDifficultyScience || 1}
                   </p>
                 </motion.button>
               </div>

@@ -104,7 +104,11 @@ export async function updateChildDifficulty(
   newDifficulty: number,
   newYearLevel?: YearLevel
 ) {
-  const field = subject === "maths" ? "currentDifficultyMaths" : "currentDifficultyEnglish";
+  const field = subject === "maths"
+    ? "currentDifficultyMaths"
+    : subject === "science"
+    ? "currentDifficultyScience"
+    : "currentDifficultyEnglish";
   const updateExpr = newYearLevel
     ? `SET ${field} = :difficulty, yearLevel = :yearLevel, lastActiveDate = :date`
     : `SET ${field} = :difficulty, lastActiveDate = :date`;

@@ -100,7 +100,7 @@ function ResultsContent() {
           <div className="text-6xl mb-2">{perf.emoji}</div>
           <h1 className="text-3xl font-black text-white drop-shadow">{perf.msg}</h1>
           <p className="text-white/80 font-semibold mt-1">
-            {result.subject === "maths" ? "🔢 Maths" : "📖 English"} •{" "}
+            {result.subject === "maths" ? "🔢 Maths" : result.subject === "science" ? "🔬 Science" : "📖 English"} •{" "}
             {result.yearLevel === "prep" ? "Prep" : "Year 3"}
           </p>
           {/* Decorative bg emojis */}

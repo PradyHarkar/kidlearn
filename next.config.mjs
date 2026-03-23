@@ -9,7 +9,12 @@ const nextConfig = {
     ],
   },
   experimental: {
-    serverComponentsExternalPackages: ['@aws-sdk/client-dynamodb', '@aws-sdk/lib-dynamodb'],
+    serverComponentsExternalPackages: [
+      '@aws-sdk/client-dynamodb',
+      '@aws-sdk/lib-dynamodb',
+      '@aws-sdk/client-secrets-manager',
+    ],
+    instrumentationHook: true,
   },
 };
 

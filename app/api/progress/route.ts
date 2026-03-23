@@ -16,7 +16,7 @@ import { Subject, YearLevel } from "@/types";
 
 const sessionResultSchema = z.object({
   childId: z.string(),
-  subject: z.enum(["maths", "english"]),
+  subject: z.enum(["maths", "english", "science"]),
   questions: z.array(
     z.object({
       questionId: z.string(),
@@ -93,6 +93,8 @@ export async function POST(req: NextRequest) {
 
     const currentDifficulty = subject === "maths"
       ? child.currentDifficultyMaths
+      : subject === "science"
+      ? (child.currentDifficultyScience || 1)
       : child.currentDifficultyEnglish;
 
     const newDifficulty = calculateDifficultyAdjustment(
@@ -136,6 +138,7 @@ export async function POST(req: NextRequest) {
           totalCorrect: totalCorrectAll,
           mathsAccuracy: subject === "maths" ? accuracy : (child.stats?.mathsAccuracy || 0),
           englishAccuracy: subject === "english" ? accuracy : (child.stats?.englishAccuracy || 0),
+          scienceAccuracy: subject === "science" ? accuracy : (child.stats?.scienceAccuracy || 0),
           favoriteTopics: child.stats?.favoriteTopics || [],
         },
       }
@@ -149,6 +152,7 @@ export async function POST(req: NextRequest) {
       currentStreak: newStreak,
       mathsAccuracy: subject === "maths" ? accuracy : (child.stats?.mathsAccuracy || 0),
       englishAccuracy: subject === "english" ? accuracy : (child.stats?.englishAccuracy || 0),
+      scienceAccuracy: subject === "science" ? accuracy : (child.stats?.scienceAccuracy || 0),
       perfectSessions: accuracy === 100 ? 1 : 0,
     });
 

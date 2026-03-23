@@ -5,10 +5,13 @@ import { putItem, queryItems, TABLES } from "./dynamodb";
 
 const bedrockClient = new BedrockRuntimeClient({
   region: process.env.BEDROCK_REGION || "us-east-1",
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
+  // Use explicit credentials locally; rely on IAM role in production (Amplify)
+  ...(process.env.AWS_ACCESS_KEY_ID && {
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+    },
+  }),
 });
 
 const MODEL_ID = process.env.BEDROCK_MODEL_ID || "anthropic.claude-3-5-sonnet-20241022-v2:0";

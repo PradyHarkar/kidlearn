@@ -6,21 +6,37 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "setup:db": "npx tsx scripts/setup-dynamodb.ts",
+    "seed": "curl -s http://localhost:3000/api/seed"
   },
   "dependencies": {
+    "@auth/dynamodb-adapter": "^2.11.1",
+    "@aws-sdk/client-bedrock-runtime": "^3.1014.0",
+    "@aws-sdk/client-dynamodb": "^3.1014.0",
+    "@aws-sdk/client-s3": "^3.1014.0",
+    "@aws-sdk/lib-dynamodb": "^3.1014.0",
+    "bcryptjs": "^3.0.3",
+    "canvas-confetti": "^1.9.4",
+    "framer-motion": "^12.38.0",
+    "next": "14.2.35",
+    "next-auth": "^4.24.13",
     "react": "^18",
     "react-dom": "^18",
-    "next": "14.2.35"
+    "react-hot-toast": "^2.6.0",
+    "uuid": "^13.0.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/uuid": "^10.0.0",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.35",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
-    "eslint": "^8",
-    "eslint-config-next": "14.2.35"
+    "typescript": "^5"
   }
 }

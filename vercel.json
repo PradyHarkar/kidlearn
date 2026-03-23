@@ -1,0 +1,21 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "regions": ["syd1"],
+  "env": {
+    "NEXTAUTH_URL": "@nextauth_url",
+    "NEXTAUTH_SECRET": "@nextauth_secret",
+    "AWS_REGION": "@aws_region",
+    "AWS_ACCESS_KEY_ID": "@aws_access_key_id",
+    "AWS_SECRET_ACCESS_KEY": "@aws_secret_access_key",
+    "BEDROCK_REGION": "@bedrock_region",
+    "BEDROCK_MODEL_ID": "@bedrock_model_id",
+    "DYNAMODB_USERS_TABLE": "@dynamodb_users_table",
+    "DYNAMODB_CHILDREN_TABLE": "@dynamodb_children_table",
+    "DYNAMODB_QUESTIONS_TABLE": "@dynamodb_questions_table",
+    "DYNAMODB_PROGRESS_TABLE": "@dynamodb_progress_table",
+    "DYNAMODB_ACHIEVEMENTS_TABLE": "@dynamodb_achievements_table"
+  }
+}

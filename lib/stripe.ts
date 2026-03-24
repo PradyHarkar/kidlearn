@@ -2,9 +2,23 @@ import Stripe from "stripe";
 import type { Country, SubscriptionPlan } from "@/types";
 import { COUNTRY_CONFIGS } from "./curriculum";
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2026-02-25.clover",
-  typescript: true,
+// Lazy singleton — avoids "no apiKey" crash during `next build` when env not set
+let _stripe: Stripe | null = null;
+function getStripeInstance(): Stripe {
+  if (!_stripe) {
+    if (!process.env.STRIPE_SECRET_KEY) throw new Error("STRIPE_SECRET_KEY is not set");
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: "2026-02-25.clover",
+      typescript: true,
+    });
+  }
+  return _stripe;
+}
+// Proxy so all existing `stripe.xyz` call sites work unchanged
+export const stripe = new Proxy({} as Stripe, {
+  get(_t, prop) {
+    return (getStripeInstance() as unknown as Record<string, unknown>)[prop as string];
+  },
 });
 
 /** Returns the Stripe price ID for a given country + plan.

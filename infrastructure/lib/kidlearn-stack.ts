@@ -164,7 +164,7 @@ export class KidLearnStack extends cdk.Stack {
     const amplifyBranch = new amplify.CfnBranch(this, "AmplifyMasterBranch", {
       appId: amplifyApp.attrAppId,
       branchName: githubBranch,
-      enableAutoBuild: true,
+      enableAutoBuild: false,  // GitHub Actions controls builds (ensures env vars are set first)
       stage: "PRODUCTION",
       framework: "Next.js - SSR",
     });

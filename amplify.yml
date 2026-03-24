@@ -6,6 +6,9 @@ frontend:
         - nvm use 20 || true
         - node --version
         - npm ci
+        - echo "=== Verifying source files ==="
+        - ls lib/curriculum.ts components/mascot/Mascot.tsx || echo "MISSING FILES"
+        - echo "=== Done ==="
     build:
       commands:
         - npm run build

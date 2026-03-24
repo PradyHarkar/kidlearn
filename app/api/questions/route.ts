@@ -2,18 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { getItem, queryItems, TABLES } from "@/lib/dynamodb";
-import { Subject, YearLevel, Question } from "@/types";
+import { Subject, AgeGroup, Question } from "@/types";
 import { shouldResetDifficulty } from "@/lib/adaptive";
-
-const MATHS_TOPICS = {
-  prep: ["counting", "addition", "subtraction", "shapes", "patterns"],
-  year3: ["addition", "subtraction", "multiplication", "shapes", "time", "measurement", "patterns"],
-};
-
-const ENGLISH_TOPICS = {
-  prep: ["phonics", "sight-words", "letter-recognition", "simple-words"],
-  year3: ["spelling", "grammar", "reading-comprehension", "sentence-building", "vocabulary"],
-};
+import { getGradeConfig, getTopicsForGrade } from "@/lib/curriculum";
+import type { Country } from "@/types";
 
 export async function GET(req: NextRequest) {
   try {
@@ -23,13 +15,12 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const subject = searchParams.get("subject") as Subject;
     const childId = searchParams.get("childId");
-    const userId = (session.user as { id: string }).id;
+    const userId = session.user.id;
 
     if (!subject || !childId) {
       return NextResponse.json({ error: "subject and childId required" }, { status: 400 });
     }
 
-    // Get child to determine difficulty and year level
     const child = await getItem(TABLES.CHILDREN, { userId, childId });
     if (!child) return NextResponse.json({ error: "Child not found" }, { status: 404 });
 
@@ -44,8 +35,9 @@ export async function GET(req: NextRequest) {
       currentDifficulty = 1;
     }
 
-    const yearLevel: YearLevel = child.yearLevel;
-    const pk = `${subject}#${yearLevel}`;
+    // Use ageGroup (new) with fallback to yearLevel (legacy)
+    const ageGroup: AgeGroup = (child.ageGroup as AgeGroup) || (child.yearLevel as AgeGroup) || "year3";
+    const pk = `${subject}#${ageGroup}`;
 
     // Get questions from DynamoDB filtered by difficulty
     const allQuestions = await queryItems(
@@ -62,7 +54,7 @@ export async function GET(req: NextRequest) {
       (q) => Math.abs(q.difficulty - currentDifficulty) <= 1
     );
 
-    // Fallback: widen to ±2, then use all questions — so we never return empty
+    // Fallback: widen to ±3, then all
     if (filtered.length < 5) {
       filtered = (allQuestions as Question[]).filter(
         (q) => Math.abs(q.difficulty - currentDifficulty) <= 3
@@ -72,14 +64,26 @@ export async function GET(req: NextRequest) {
       filtered = allQuestions as Question[];
     }
 
-    // Shuffle and pick 10
     const shuffled = filtered.sort(() => Math.random() - 0.5).slice(0, 10);
+
+    // Return curriculum context for the client (used by learn page to show topics)
+    const country = (child.country as Country) ?? "AU";
+    const gradeConfig = child.grade ? getGradeConfig(country, child.grade as string) : null;
 
     return NextResponse.json({
       questions: shuffled,
       difficulty: currentDifficulty,
-      yearLevel,
+      yearLevel: ageGroup,
       totalAvailable: allQuestions.length,
+      curriculumContext: gradeConfig
+        ? {
+            country,
+            curriculumName: gradeConfig.curriculumName,
+            gradeDisplayName: gradeConfig.displayName,
+            ageGroup,
+            suggestedTopics: getTopicsForGrade(ageGroup, subject, country),
+          }
+        : null,
     });
   } catch (error) {
     console.error("Get questions error:", error);

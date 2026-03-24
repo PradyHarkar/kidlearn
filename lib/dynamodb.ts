@@ -1,5 +1,6 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import type { Subscription, SubscriptionStatus } from "@/types";
 
 const client = new DynamoDBClient({
   region: process.env.AWS_REGION || "ap-southeast-2",
@@ -23,6 +24,7 @@ export const TABLES = {
   PROGRESS: process.env.DYNAMODB_PROGRESS_TABLE || "kidlearn-progress",
   ACHIEVEMENTS: process.env.DYNAMODB_ACHIEVEMENTS_TABLE || "kidlearn-achievements",
   SESSIONS: process.env.DYNAMODB_SESSIONS_TABLE || "kidlearn-sessions",
+  SUBSCRIPTIONS: process.env.DYNAMODB_SUBSCRIPTIONS_TABLE || "kidlearn-subscriptions",
 };
 
 export async function putItem(table: string, item: Record<string, unknown> | object) {
@@ -80,13 +82,80 @@ export async function deleteItem(table: string, key: Record<string, unknown>) {
   return ddb.send(new DeleteCommand({ TableName: table, Key: key }));
 }
 
-export async function scanItems(table: string, filterExpression?: string, expressionValues?: Record<string, unknown>) {
+export async function scanItems(table: string, filterExpression?: string, expressionValues?: Record<string, unknown>, expressionNames?: Record<string, string>) {
   const result = await ddb.send(
     new ScanCommand({
       TableName: table,
       FilterExpression: filterExpression,
       ExpressionAttributeValues: expressionValues,
+      ExpressionAttributeNames: expressionNames,
     })
   );
   return result.Items || [];
+}
+
+// ---------------------------------------------------------------------------
+// Subscription helpers
+// ---------------------------------------------------------------------------
+
+export async function putSubscription(sub: Subscription): Promise<void> {
+  await putItem(TABLES.SUBSCRIPTIONS, sub);
+}
+
+export async function getActiveSubscription(userId: string): Promise<Subscription | null> {
+  const items = await queryItems(
+    TABLES.SUBSCRIPTIONS,
+    "userId = :uid",
+    { ":uid": userId, ":active": "active", ":trial": "trial" },
+    { "#s": "status" },
+    undefined,
+    "#s IN (:active, :trial)"
+  );
+  if (!items.length) return null;
+  // Return the most recently created one
+  return items.sort((a, b) =>
+    new Date(b.createdAt as string).getTime() - new Date(a.createdAt as string).getTime()
+  )[0] as Subscription;
+}
+
+export async function getSubscriptionByStripeId(stripeSubscriptionId: string): Promise<Subscription | null> {
+  const items = await queryItems(
+    TABLES.SUBSCRIPTIONS,
+    "stripeSubscriptionId = :sid",
+    { ":sid": stripeSubscriptionId },
+    undefined,
+    "stripeSubscriptionId-index"
+  );
+  return (items[0] as Subscription) ?? null;
+}
+
+export async function updateSubscriptionStatus(
+  userId: string,
+  subscriptionId: string,
+  status: SubscriptionStatus,
+  extra?: Partial<Subscription>
+): Promise<void> {
+  const sets = ["#s = :status", "updatedAt = :ts"];
+  const values: Record<string, unknown> = {
+    ":status": status,
+    ":ts": new Date().toISOString(),
+  };
+  const names: Record<string, string> = { "#s": "status" };
+
+  if (extra?.currentPeriodEnd) {
+    sets.push("currentPeriodEnd = :cpe");
+    values[":cpe"] = extra.currentPeriodEnd;
+  }
+  if (extra?.cancelAtPeriodEnd !== undefined) {
+    sets.push("cancelAtPeriodEnd = :cape");
+    values[":cape"] = extra.cancelAtPeriodEnd;
+  }
+
+  await updateItem(
+    TABLES.SUBSCRIPTIONS,
+    { userId, subscriptionId },
+    `SET ${sets.join(", ")}`,
+    values,
+    names
+  );
 }

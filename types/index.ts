@@ -1,4 +1,23 @@
-export type YearLevel = "prep" | "year3";
+export type Country = "AU" | "US" | "IN" | "UK";
+export type Currency = "AUD" | "USD" | "INR" | "GBP";
+export type SubscriptionStatus = "trial" | "active" | "cancelled" | "expired" | "past_due";
+export type SubscriptionPlan = "weekly" | "annual";
+
+// Internal age group used as the canonical key for question partitions
+export type AgeGroup =
+  | "foundation" // 5-6 years (Prep/Foundation/Kindergarten/Reception)
+  | "year1"      // 6-7
+  | "year2"      // 7-8
+  | "year3"      // 8-9
+  | "year4"      // 9-10
+  | "year5"      // 10-11
+  | "year6"      // 11-12
+  | "year7"      // 12-13
+  | "year8";     // 13-14
+
+// YearLevel keeps "prep" as legacy alias for "foundation" (existing question PKs)
+export type YearLevel = AgeGroup | "prep";
+
 export type Subject = "maths" | "english" | "science";
 export type DifficultyLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
@@ -8,13 +27,21 @@ export interface User {
   passwordHash: string;
   parentName: string;
   createdAt: string;
+  // Country & subscription fields (added in v2)
+  country?: Country;
+  subscriptionStatus?: SubscriptionStatus;
+  trialEndsAt?: string;
+  stripeCustomerId?: string;
 }
 
 export interface Child {
   userId: string;
   childId: string;
   childName: string;
-  yearLevel: YearLevel;
+  yearLevel: YearLevel;   // legacy field — mirrors ageGroup
+  ageGroup?: AgeGroup;    // canonical internal key for question PK
+  grade?: string;         // country-specific grade label (e.g. "year3", "grade3", "class3")
+  country?: Country;      // denormalised from parent for report queries
   avatar: string;
   currentDifficultyMaths: number;
   currentDifficultyEnglish: number;
@@ -31,6 +58,22 @@ export interface Child {
     scienceAccuracy: number;
     favoriteTopics: string[];
   };
+  createdAt?: string;
+}
+
+export interface Subscription {
+  userId: string;
+  subscriptionId: string;
+  plan: SubscriptionPlan;
+  status: SubscriptionStatus;
+  currency: Currency;
+  amount: number;               // in minor units (cents/paise/pence)
+  stripeSubscriptionId?: string;
+  stripeCustomerId: string;
+  currentPeriodEnd: string;     // ISO timestamp
+  cancelAtPeriodEnd?: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AnswerOption {
@@ -43,7 +86,7 @@ export interface AnswerOption {
 }
 
 export interface Question {
-  pk: string;       // subject#yearLevel
+  pk: string;       // subject#ageGroup (e.g. "maths#year3")
   questionId: string;
   questionText: string;
   answerOptions: AnswerOption[];
@@ -62,7 +105,7 @@ export interface Question {
 
 export interface ProgressRecord {
   childId: string;
-  sessionKey: string;   // sessionDate#timestamp
+  sessionKey: string;   // YYYY-MM-DD#timestamp#questionId
   sessionId: string;
   questionId: string;
   subject: Subject;

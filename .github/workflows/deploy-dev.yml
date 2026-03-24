@@ -1,27 +1,148 @@
-name: Deploy — Dev
+name: Deploy
 
 on:
   push:
     branches: [master]
 
+permissions:
+  id-token: write   # Required for GitHub OIDC → AWS STS
+  contents: read
+
 jobs:
-  deploy:
-    name: Trigger Amplify Dev Deploy
+  # -------------------------------------------------------------------------
+  # 1. Deploy infrastructure via CDK (idempotent — safe to run every push)
+  # -------------------------------------------------------------------------
+  infra:
+    name: CDK Deploy Infrastructure
     runs-on: ubuntu-latest
-    needs: []
 
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION || 'ap-southeast-2' }}
+
+      - name: CDK Bootstrap (idempotent — skips if already done)
+        run: npx cdk bootstrap --require-approval never
+        env:
+          GITHUB_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPO: ${{ github.event.repository.name }}
+          AMPLIFY_GITHUB_TOKEN: ${{ secrets.AMPLIFY_GITHUB_TOKEN }}
+
+      - name: CDK Deploy
+        run: npx cdk deploy --require-approval never --outputs-file cdk-outputs.json
+        env:
+          GITHUB_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPO: ${{ github.event.repository.name }}
+          AMPLIFY_GITHUB_TOKEN: ${{ secrets.AMPLIFY_GITHUB_TOKEN }}
+
+      - name: Print stack outputs
+        run: |
+          echo "=== Stack Outputs ==="
+          cat cdk-outputs.json
+          APP_URL=$(cat cdk-outputs.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(list(d.values())[0].get('AppUrl','N/A'))")
+          echo "App URL: $APP_URL"
+          echo "APP_URL=$APP_URL" >> $GITHUB_ENV
+
+  # -------------------------------------------------------------------------
+  # 2. Set Amplify environment variables (secrets from GitHub → Amplify)
+  #    Runs after infra so Amplify app exists
+  # -------------------------------------------------------------------------
+  set-amplify-env:
+    name: Sync Secrets to Amplify
+    runs-on: ubuntu-latest
+    needs: [infra]
+
+    steps:
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION || 'ap-southeast-2' }}
+
+      - name: Push secrets to Amplify environment variables
+        run: |
+          aws amplify update-app \
+            --app-id ${{ secrets.AMPLIFY_APP_ID }} \
+            --environment-variables \
+              NEXTAUTH_SECRET="${{ secrets.NEXTAUTH_SECRET }}" \
+              NEXTAUTH_URL="${{ secrets.NEXTAUTH_URL }}" \
+              STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}" \
+              STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET }}" \
+              STRIPE_PRICE_AU_WEEKLY="${{ secrets.STRIPE_PRICE_AU_WEEKLY }}" \
+              STRIPE_PRICE_AU_ANNUAL="${{ secrets.STRIPE_PRICE_AU_ANNUAL }}" \
+              STRIPE_PRICE_US_WEEKLY="${{ secrets.STRIPE_PRICE_US_WEEKLY }}" \
+              STRIPE_PRICE_US_ANNUAL="${{ secrets.STRIPE_PRICE_US_ANNUAL }}" \
+              STRIPE_PRICE_IN_WEEKLY="${{ secrets.STRIPE_PRICE_IN_WEEKLY }}" \
+              STRIPE_PRICE_IN_ANNUAL="${{ secrets.STRIPE_PRICE_IN_ANNUAL }}" \
+              STRIPE_PRICE_UK_WEEKLY="${{ secrets.STRIPE_PRICE_UK_WEEKLY }}" \
+              STRIPE_PRICE_UK_ANNUAL="${{ secrets.STRIPE_PRICE_UK_ANNUAL }}" \
+              SES_FROM_EMAIL="${{ secrets.SES_FROM_EMAIL }}" \
+              CRON_SECRET="${{ secrets.CRON_SECRET }}"
+          echo "Amplify environment variables updated."
+
+  # -------------------------------------------------------------------------
+  # 3. Trigger Amplify build (deploys the Next.js app)
+  # -------------------------------------------------------------------------
+  deploy-app:
+    name: Deploy App via Amplify
+    runs-on: ubuntu-latest
+    needs: [infra, set-amplify-env]
+
+    steps:
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION || 'ap-southeast-2' }}
+
       - name: Trigger Amplify build
         run: |
-          aws amplify start-job \
-            --region ap-southeast-2 \
+          JOB_ID=$(aws amplify start-job \
             --app-id ${{ secrets.AMPLIFY_APP_ID }} \
             --branch-name master \
-            --job-type RELEASE
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ap-southeast-2
+            --job-type RELEASE \
+            --query "jobSummary.jobId" \
+            --output text)
+          echo "Amplify build triggered: Job ID $JOB_ID"
+          echo "Build URL: https://console.aws.amazon.com/amplify/home#/${{ secrets.AMPLIFY_APP_ID }}/master/$JOB_ID"
 
-      - name: Print dev URL
-        run: echo "Dev URL → https://master.${{ secrets.AMPLIFY_APP_ID }}.amplifyapp.com"
+      - name: Print app URL
+        run: echo "App URL → https://master.${{ secrets.AMPLIFY_APP_ID }}.amplifyapp.com"
+
+  # -------------------------------------------------------------------------
+  # 4. Setup Stripe prices (idempotent — skips if prices already exist)
+  # -------------------------------------------------------------------------
+  setup-stripe:
+    name: Sync Stripe Prices
+    runs-on: ubuntu-latest
+    needs: [infra]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create Stripe products & prices (idempotent)
+        run: npx tsx scripts/setup-stripe.ts
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}

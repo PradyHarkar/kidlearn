@@ -37,3 +37,16 @@ jobs:
           DYNAMODB_PROGRESS_TABLE: kidlearn-progress
           DYNAMODB_ACHIEVEMENTS_TABLE: kidlearn-achievements
           DYNAMODB_SESSIONS_TABLE: kidlearn-sessions
+          DYNAMODB_SUBSCRIPTIONS_TABLE: kidlearn-subscriptions
+          STRIPE_SECRET_KEY: sk_test_placeholder_for_ci_build_only
+          STRIPE_WEBHOOK_SECRET: whsec_placeholder_for_ci_build_only
+          STRIPE_PRICE_AU_WEEKLY: price_placeholder
+          STRIPE_PRICE_AU_ANNUAL: price_placeholder
+          STRIPE_PRICE_US_WEEKLY: price_placeholder
+          STRIPE_PRICE_US_ANNUAL: price_placeholder
+          STRIPE_PRICE_IN_WEEKLY: price_placeholder
+          STRIPE_PRICE_IN_ANNUAL: price_placeholder
+          STRIPE_PRICE_UK_WEEKLY: price_placeholder
+          STRIPE_PRICE_UK_ANNUAL: price_placeholder
+          SES_FROM_EMAIL: noreply@example.com
+          CRON_SECRET: ci-cron-secret-placeholder

@@ -36,6 +36,9 @@ export const authOptions: AuthOptions = {
             id: user.userId,
             email: user.email,
             name: user.parentName,
+            country: user.country,
+            subscriptionStatus: user.subscriptionStatus,
+            trialEndsAt: user.trialEndsAt,
           };
         } catch (error) {
           console.error("Auth error:", error);
@@ -52,12 +55,18 @@ export const authOptions: AuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.userId = user.id;
+        token.country = user.country;
+        token.subscriptionStatus = user.subscriptionStatus;
+        token.trialEndsAt = user.trialEndsAt;
       }
       return token;
     },
     async session({ session, token }) {
       if (token && session.user) {
-        (session.user as { id: string } & typeof session.user).id = token.userId as string;
+        session.user.id = token.userId as string;
+        session.user.country = token.country;
+        session.user.subscriptionStatus = token.subscriptionStatus;
+        session.user.trialEndsAt = token.trialEndsAt;
       }
       return session;
     },

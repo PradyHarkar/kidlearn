@@ -9,12 +9,13 @@ const registerSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   parentName: z.string().min(2, "Name must be at least 2 characters"),
+  country: z.enum(["AU", "US", "IN", "UK"]),
 });
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email, password, parentName } = registerSchema.parse(body);
+    const { email, password, parentName, country } = registerSchema.parse(body);
 
     // Check if email already exists
     const existing = await ddb.send(
@@ -36,16 +37,20 @@ export async function POST(req: NextRequest) {
 
     const passwordHash = await bcrypt.hash(password, 12);
     const userId = uuidv4();
+    const trialEndsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
     await putItem(TABLES.USERS, {
       userId,
       email: email.toLowerCase(),
       passwordHash,
       parentName,
+      country,
+      subscriptionStatus: "trial",
+      trialEndsAt,
       createdAt: new Date().toISOString(),
     });
 
-    return NextResponse.json({ success: true, userId }, { status: 201 });
+    return NextResponse.json({ success: true, userId, trialEndsAt }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.message }, { status: 400 });

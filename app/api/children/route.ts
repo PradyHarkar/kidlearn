@@ -4,10 +4,12 @@ import { authOptions } from "@/lib/auth-options";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import { queryItems, putItem, TABLES } from "@/lib/dynamodb";
+import { gradeToAgeGroup } from "@/lib/curriculum";
+import type { Country } from "@/types";
 
 const childSchema = z.object({
   childName: z.string().min(1).max(50),
-  yearLevel: z.enum(["prep", "year3"]),
+  grade: z.string().min(1),   // e.g. "year3", "grade3", "class3", "foundation"
   avatar: z.string(),
 });
 
@@ -16,7 +18,7 @@ export async function GET() {
     const session = await getServerSession(authOptions);
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const userId = (session.user as { id: string }).id;
+    const userId = session.user.id;
     const children = await queryItems(
       TABLES.CHILDREN,
       "userId = :userId",
@@ -35,7 +37,7 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const userId = (session.user as { id: string }).id;
+    const userId = session.user.id;
 
     // Check child limit (max 3)
     const existing = await queryItems(TABLES.CHILDREN, "userId = :userId", { ":userId": userId });
@@ -44,14 +46,21 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { childName, yearLevel, avatar } = childSchema.parse(body);
+    const { childName, grade, avatar } = childSchema.parse(body);
+
+    // Resolve country from session (set during registration)
+    const country: Country = (session.user.country as Country) ?? "AU";
+    const ageGroup = gradeToAgeGroup(country, grade);
 
     const childId = uuidv4();
     const child = {
       userId,
       childId,
       childName,
-      yearLevel,
+      grade,
+      country,
+      ageGroup,
+      yearLevel: ageGroup,  // kept for backwards compat
       avatar,
       currentDifficultyMaths: 1,
       currentDifficultyEnglish: 1,

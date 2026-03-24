@@ -1,37 +1,75 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSession, signOut } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mascot } from "@/components/mascot/Mascot";
-import { Child } from "@/types";
+import { Child, Subscription, SubscriptionStatus } from "@/types";
+import { COUNTRY_CONFIGS } from "@/lib/curriculum";
 import toast from "react-hot-toast";
+import Link from "next/link";
+import type { Country } from "@/types";
 
 const AVATARS = ["🐼", "🦁", "🐸", "🦊", "🐧", "🦄", "🐻", "🐯"];
-const YEAR_LEVELS = [
-  { value: "prep", label: "Prep (Age 5-6)", emoji: "🌱" },
-  { value: "year3", label: "Year 3 (Age 8-9)", emoji: "🎓" },
-];
 
 export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-400 to-purple-500">
+        <div className="text-white font-bold text-xl">Loading... ✨</div>
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
+function DashboardContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [children, setChildren] = useState<Child[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddChild, setShowAddChild] = useState(false);
-  const [form, setForm] = useState({ childName: "", yearLevel: "prep", avatar: "🐼" });
+  const [form, setForm] = useState({ childName: "", grade: "", avatar: "🐼" });
   const [adding, setAdding] = useState(false);
   const [selectedChild, setSelectedChild] = useState<Child | null>(null);
   const [showSubjectSelect, setShowSubjectSelect] = useState(false);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | undefined>();
+  const [trialDaysRemaining, setTrialDaysRemaining] = useState(0);
+  const [managingSubscription, setManagingSubscription] = useState(false);
+
+  // Determine the country-based grades for the child form
+  const country = (session?.user?.country as Country) ?? "AU";
+  const grades = COUNTRY_CONFIGS[country]?.grades ?? COUNTRY_CONFIGS.AU.grades;
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
   }, [status, router]);
 
   useEffect(() => {
-    if (status === "authenticated") fetchChildren();
+    if (status === "authenticated") {
+      fetchChildren();
+      fetchSubscription();
+    }
   }, [status]);
+
+  useEffect(() => {
+    // Set default grade when grades list is available and form grade is empty
+    if (grades.length && !form.grade) {
+      setForm((f) => ({ ...f, grade: grades[0].gradeId }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [grades]);
+
+  useEffect(() => {
+    if (searchParams.get("checkout") === "success") {
+      toast.success("Subscription activated! Welcome to KidLearn! 🎉");
+      fetchSubscription();
+    }
+  }, [searchParams]);
 
   const fetchChildren = async () => {
     try {
@@ -42,6 +80,18 @@ export default function DashboardPage() {
       toast.error("Failed to load profiles");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSubscription = async () => {
+    try {
+      const res = await fetch("/api/subscription/status");
+      const data = await res.json();
+      setSubscription(data.subscription ?? null);
+      setSubscriptionStatus(data.subscriptionStatus);
+      setTrialDaysRemaining(data.trialDaysRemaining ?? 0);
+    } catch {
+      // Non-critical
     }
   };
 
@@ -61,7 +111,7 @@ export default function DashboardPage() {
       }
       setChildren([...children, data.child]);
       setShowAddChild(false);
-      setForm({ childName: "", yearLevel: "prep", avatar: "🐼" });
+      setForm({ childName: "", grade: grades[0]?.gradeId ?? "", avatar: "🐼" });
       toast.success(`${data.child.childName}'s profile created! 🎉`);
     } catch {
       toast.error("Failed to add child");
@@ -81,6 +131,29 @@ export default function DashboardPage() {
     }
   };
 
+  const handleManageSubscription = async () => {
+    setManagingSubscription(true);
+    try {
+      const res = await fetch("/api/subscription/portal", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      window.location.href = data.url;
+    } catch {
+      toast.error("Failed to open billing portal");
+      setManagingSubscription(false);
+    }
+  };
+
+  const gradeLabel = (child: Child) => {
+    if (child.grade && child.country) {
+      const cfg = COUNTRY_CONFIGS[child.country as Country];
+      const gradeConfig = cfg?.grades.find((g) => g.gradeId === child.grade);
+      if (gradeConfig) return `${gradeConfig.displayName}`;
+    }
+    if (child.yearLevel === "prep") return "🌱 Prep";
+    return `🎓 ${child.yearLevel?.replace("year", "Year ")}`;
+  };
+
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-400 to-purple-500">
@@ -91,6 +164,106 @@ export default function DashboardPage() {
       </div>
     );
   }
+
+  // Subscription banner
+  const renderSubscriptionBanner = () => {
+    if (subscriptionStatus === "active") {
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 bg-green-50 border-2 border-green-200 rounded-2xl px-5 py-3 flex items-center justify-between"
+        >
+          <p className="text-green-800 font-semibold text-sm">
+            ✅ Active subscription
+            {subscription?.currentPeriodEnd && (
+              <span className="text-green-600 ml-2">
+                · Renews {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+              </span>
+            )}
+          </p>
+          <button
+            onClick={handleManageSubscription}
+            disabled={managingSubscription}
+            className="text-green-700 font-bold text-sm underline hover:text-green-900 disabled:opacity-50"
+          >
+            {managingSubscription ? "Loading..." : "Manage"}
+          </button>
+        </motion.div>
+      );
+    }
+
+    if (subscriptionStatus === "trial") {
+      if (trialDaysRemaining > 0) {
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 bg-blue-50 border-2 border-blue-200 rounded-2xl px-5 py-3 flex items-center justify-between"
+          >
+            <p className="text-blue-800 font-semibold text-sm">
+              🎁 Free trial · <strong>{trialDaysRemaining} day{trialDaysRemaining !== 1 ? "s" : ""}</strong> remaining
+            </p>
+            <Link href="/pricing" className="text-blue-700 font-black text-sm underline hover:text-blue-900">
+              Subscribe Now
+            </Link>
+          </motion.div>
+        );
+      }
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 bg-amber-50 border-2 border-amber-300 rounded-2xl px-5 py-3 flex items-center justify-between"
+        >
+          <p className="text-amber-800 font-semibold text-sm">
+            ⚠️ Your free trial has ended. Subscribe to continue learning.
+          </p>
+          <Link href="/pricing" className="text-amber-800 font-black text-sm underline hover:text-amber-900">
+            Subscribe →
+          </Link>
+        </motion.div>
+      );
+    }
+
+    if (subscriptionStatus === "cancelled") {
+      return (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mb-6 bg-gray-50 border-2 border-gray-200 rounded-2xl px-5 py-3 flex items-center justify-between"
+        >
+          <p className="text-gray-700 font-semibold text-sm">
+            Subscription cancelled
+            {subscription?.currentPeriodEnd && ` · Access until ${new Date(subscription.currentPeriodEnd).toLocaleDateString()}`}
+          </p>
+          <Link href="/pricing" className="text-purple-600 font-black text-sm underline">
+            Resubscribe
+          </Link>
+        </motion.div>
+      );
+    }
+
+    if (subscriptionStatus === "past_due") {
+      return (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mb-6 bg-red-50 border-2 border-red-300 rounded-2xl px-5 py-3 flex items-center justify-between"
+        >
+          <p className="text-red-700 font-semibold text-sm">⚠️ Payment failed. Please update your payment method.</p>
+          <button
+            onClick={handleManageSubscription}
+            className="text-red-700 font-black text-sm underline hover:text-red-900"
+          >
+            Update Payment
+          </button>
+        </motion.div>
+      );
+    }
+
+    return null;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
@@ -119,7 +292,7 @@ export default function DashboardPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl p-6 text-white mb-8 flex items-center justify-between"
+          className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl p-6 text-white mb-6 flex items-center justify-between"
         >
           <div>
             <h1 className="text-2xl sm:text-3xl font-black">Welcome back, {session?.user?.name}! 🎉</h1>
@@ -131,6 +304,9 @@ export default function DashboardPage() {
             <Mascot mood="happy" size="sm" />
           </div>
         </motion.div>
+
+        {/* Subscription Banner */}
+        {renderSubscriptionBanner()}
 
         {/* Child Profiles */}
         <div className="mb-8">
@@ -145,10 +321,7 @@ export default function DashboardPage() {
               <div className="text-6xl mb-4">👨‍👩‍👧</div>
               <h3 className="text-xl font-black text-gray-700 mb-2">No children yet!</h3>
               <p className="text-gray-500 mb-6 font-semibold">Add your first child profile to get started.</p>
-              <button
-                onClick={() => setShowAddChild(true)}
-                className="btn-primary"
-              >
+              <button onClick={() => setShowAddChild(true)} className="btn-primary">
                 + Add Child Profile
               </button>
             </motion.div>
@@ -163,7 +336,6 @@ export default function DashboardPage() {
                 transition={{ delay: i * 0.1 }}
                 className="bg-white rounded-3xl p-6 shadow-card hover:shadow-kid transition-all cursor-pointer group"
               >
-                {/* Avatar and name */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center text-4xl">
@@ -171,9 +343,7 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <h3 className="font-black text-gray-800 text-lg">{child.childName}</h3>
-                      <p className="text-gray-500 text-sm font-semibold">
-                        {child.yearLevel === "prep" ? "🌱 Prep" : "🎓 Year 3"}
-                      </p>
+                      <p className="text-gray-500 text-sm font-semibold">{gradeLabel(child)}</p>
                     </div>
                   </div>
                   <button
@@ -188,7 +358,6 @@ export default function DashboardPage() {
                   </button>
                 </div>
 
-                {/* Stats */}
                 <div className="grid grid-cols-3 gap-2 mb-4">
                   <div className="bg-yellow-50 rounded-xl p-2 text-center">
                     <p className="text-xl font-black text-yellow-600">🔥 {child.streakDays || 0}</p>
@@ -204,46 +373,28 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* Difficulty levels */}
                 <div className="space-y-2 mb-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-bold text-pink-600">🔢 Maths Level</span>
-                    <span className="font-black text-pink-700">{child.currentDifficultyMaths || 1}/10</span>
-                  </div>
-                  <div className="bg-gray-100 rounded-full h-2">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-pink-400 to-rose-500"
-                      style={{ width: `${((child.currentDifficultyMaths || 1) / 10) * 100}%` }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-bold text-cyan-600">📖 English Level</span>
-                    <span className="font-black text-cyan-700">{child.currentDifficultyEnglish || 1}/10</span>
-                  </div>
-                  <div className="bg-gray-100 rounded-full h-2">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-blue-500"
-                      style={{ width: `${((child.currentDifficultyEnglish || 1) / 10) * 100}%` }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-bold text-emerald-600">🔬 Science Level</span>
-                    <span className="font-black text-emerald-700">{child.currentDifficultyScience || 1}/10</span>
-                  </div>
-                  <div className="bg-gray-100 rounded-full h-2">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500"
-                      style={{ width: `${((child.currentDifficultyScience || 1) / 10) * 100}%` }}
-                    />
-                  </div>
+                  {["maths", "english", "science"].map((subj) => {
+                    const diffKey = `currentDifficulty${subj.charAt(0).toUpperCase() + subj.slice(1)}` as keyof Child;
+                    const val = (child[diffKey] as number) || 1;
+                    const colors: Record<string, string> = { maths: "from-pink-400 to-rose-500", english: "from-cyan-400 to-blue-500", science: "from-emerald-400 to-teal-500" };
+                    const icons: Record<string, string> = { maths: "🔢", english: "📖", science: "🔬" };
+                    return (
+                      <div key={subj}>
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className="font-bold text-gray-600 capitalize">{icons[subj]} {subj.charAt(0).toUpperCase() + subj.slice(1)}</span>
+                          <span className="font-black text-gray-700">{val}/10</span>
+                        </div>
+                        <div className="bg-gray-100 rounded-full h-2">
+                          <div className={`h-full rounded-full bg-gradient-to-r ${colors[subj]}`} style={{ width: `${(val / 10) * 100}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
 
-                {/* Start learning button */}
                 <motion.button
-                  onClick={() => {
-                    setSelectedChild(child);
-                    setShowSubjectSelect(true);
-                  }}
+                  onClick={() => { setSelectedChild(child); setShowSubjectSelect(true); }}
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   className="w-full btn-primary text-center py-3"
@@ -253,7 +404,6 @@ export default function DashboardPage() {
               </motion.div>
             ))}
 
-            {/* Add child button */}
             {children.length < 3 && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -297,53 +447,28 @@ export default function DashboardPage() {
               </div>
 
               <div className="grid grid-cols-3 gap-3">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    setShowSubjectSelect(false);
-                    router.push(`/learn?child=${selectedChild.childId}&subject=maths`);
-                  }}
-                  className="maths-gradient rounded-3xl p-5 text-white text-center shadow-kid"
-                >
-                  <div className="text-4xl mb-2">🔢</div>
-                  <p className="font-black text-lg">Maths</p>
-                  <p className="text-white/80 text-xs font-semibold mt-1">
-                    Lv {selectedChild.currentDifficultyMaths || 1}
-                  </p>
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    setShowSubjectSelect(false);
-                    router.push(`/learn?child=${selectedChild.childId}&subject=english`);
-                  }}
-                  className="english-gradient rounded-3xl p-5 text-white text-center shadow-kid"
-                >
-                  <div className="text-4xl mb-2">📖</div>
-                  <p className="font-black text-lg">English</p>
-                  <p className="text-white/80 text-xs font-semibold mt-1">
-                    Lv {selectedChild.currentDifficultyEnglish || 1}
-                  </p>
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    setShowSubjectSelect(false);
-                    router.push(`/learn?child=${selectedChild.childId}&subject=science`);
-                  }}
-                  className="science-gradient rounded-3xl p-5 text-white text-center shadow-kid"
-                >
-                  <div className="text-4xl mb-2">🔬</div>
-                  <p className="font-black text-lg">Science</p>
-                  <p className="text-white/80 text-xs font-semibold mt-1">
-                    Lv {selectedChild.currentDifficultyScience || 1}
-                  </p>
-                </motion.button>
+                {[
+                  { subject: "maths", icon: "🔢", label: "Maths", diffKey: "currentDifficultyMaths", className: "maths-gradient" },
+                  { subject: "english", icon: "📖", label: "English", diffKey: "currentDifficultyEnglish", className: "english-gradient" },
+                  { subject: "science", icon: "🔬", label: "Science", diffKey: "currentDifficultyScience", className: "science-gradient" },
+                ].map(({ subject, icon, label, diffKey, className }) => (
+                  <motion.button
+                    key={subject}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      setShowSubjectSelect(false);
+                      router.push(`/learn?child=${selectedChild.childId}&subject=${subject}`);
+                    }}
+                    className={`${className} rounded-3xl p-5 text-white text-center shadow-kid`}
+                  >
+                    <div className="text-4xl mb-2">{icon}</div>
+                    <p className="font-black text-lg">{label}</p>
+                    <p className="text-white/80 text-xs font-semibold mt-1">
+                      Lv {(selectedChild[diffKey as keyof Child] as number) || 1}
+                    </p>
+                  </motion.button>
+                ))}
               </div>
 
               <button
@@ -379,7 +504,6 @@ export default function DashboardPage() {
               </h2>
 
               <form onSubmit={addChild} className="space-y-5">
-                {/* Name */}
                 <div>
                   <label className="block text-sm font-bold text-gray-600 mb-1 ml-1">Child's Name</label>
                   <input
@@ -393,24 +517,30 @@ export default function DashboardPage() {
                   />
                 </div>
 
-                {/* Year Level */}
+                {/* Grade selector — country-specific */}
                 <div>
-                  <label className="block text-sm font-bold text-gray-600 mb-2 ml-1">Year Level</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {YEAR_LEVELS.map((level) => (
+                  <label className="block text-sm font-bold text-gray-600 mb-2 ml-1">
+                    Grade / Year Level
+                    <span className="ml-2 text-xs font-normal text-gray-400">
+                      ({COUNTRY_CONFIGS[country]?.name ?? "Australia"})
+                    </span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                    {grades.map((grade) => (
                       <motion.button
-                        key={level.value}
+                        key={grade.gradeId}
                         type="button"
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.97 }}
-                        onClick={() => setForm({ ...form, yearLevel: level.value })}
-                        className={`p-3 rounded-2xl border-2 font-bold text-sm transition-all ${
-                          form.yearLevel === level.value
+                        onClick={() => setForm({ ...form, grade: grade.gradeId })}
+                        className={`p-3 rounded-2xl border-2 font-bold text-sm transition-all text-left ${
+                          form.grade === grade.gradeId
                             ? "border-purple-500 bg-purple-50 text-purple-700"
                             : "border-gray-200 text-gray-600 hover:border-purple-300"
                         }`}
                       >
-                        {level.emoji} {level.label}
+                        <div>{grade.displayName}</div>
+                        <div className="text-xs font-normal text-gray-400">{grade.curriculumName}</div>
                       </motion.button>
                     ))}
                   </div>
@@ -449,10 +579,10 @@ export default function DashboardPage() {
                   </button>
                   <motion.button
                     type="submit"
-                    disabled={adding || !form.childName}
+                    disabled={adding || !form.childName || !form.grade}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="flex-1 btn-primary flex items-center justify-center gap-2"
+                    className="flex-1 btn-primary flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     {adding ? (
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -469,3 +599,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

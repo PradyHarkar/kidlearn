@@ -8,7 +8,14 @@
     "start": "next start",
     "lint": "next lint",
     "setup:db": "npx tsx scripts/setup-dynamodb.ts",
-    "seed": "curl -s http://localhost:3000/api/seed"
+    "setup:stripe": "npx tsx scripts/setup-stripe.ts",
+    "seed": "curl -s http://localhost:3000/api/seed",
+    "seed:questions": "npx tsx scripts/seed-questions.ts",
+    "seed:questions:dry": "DRY_RUN=true npx tsx scripts/seed-questions.ts",
+    "infra:synth": "cdk synth",
+    "infra:diff": "cdk diff",
+    "infra:deploy": "cdk deploy --require-approval never",
+    "infra:bootstrap": "cdk bootstrap"
   },
   "dependencies": {
     "@auth/dynamodb-adapter": "^2.11.1",
@@ -16,6 +23,7 @@
     "@aws-sdk/client-dynamodb": "^3.1014.0",
     "@aws-sdk/client-s3": "^3.1014.0",
     "@aws-sdk/client-secrets-manager": "^3.1014.0",
+    "@aws-sdk/client-ses": "^3.1015.0",
     "@aws-sdk/lib-dynamodb": "^3.1014.0",
     "bcryptjs": "^3.0.3",
     "canvas-confetti": "^1.9.4",
@@ -25,6 +33,7 @@
     "react": "^18",
     "react-dom": "^18",
     "react-hot-toast": "^2.6.0",
+    "stripe": "^20.4.1",
     "uuid": "^13.0.0",
     "zod": "^4.3.6"
   },
@@ -33,11 +42,17 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/source-map-support": "^0.5.10",
     "@types/uuid": "^10.0.0",
+    "aws-cdk": "^2.1113.0",
+    "aws-cdk-lib": "^2.244.0",
+    "constructs": "^10.6.0",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
     "postcss": "^8",
+    "source-map-support": "^0.5.21",
     "tailwindcss": "^3.4.1",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }

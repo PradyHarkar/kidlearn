@@ -1,0 +1,40 @@
+name: Weekly Progress Reports
+
+on:
+  schedule:
+    # Every Sunday at 6am UTC (4pm AEST, 8am IST, 6am GMT, 1am ET)
+    - cron: "0 6 * * 0"
+  workflow_dispatch:
+    # Allow manual trigger for testing
+    inputs:
+      dry_run:
+        description: 'Dry run (just check endpoint health)'
+        required: false
+        default: 'false'
+
+jobs:
+  send-reports:
+    name: Send Weekly Email Reports
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send weekly progress reports
+        run: |
+          echo "Triggering weekly report generation..."
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            "${{ secrets.APP_URL }}/api/reports/weekly" \
+            --max-time 300)
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+
+          echo "HTTP Status: $HTTP_CODE"
+          echo "Response: $BODY"
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::Weekly report job failed with status $HTTP_CODE"
+            exit 1
+          fi
+
+          echo "Weekly reports sent successfully!"

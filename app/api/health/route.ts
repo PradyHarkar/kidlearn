@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { DynamoDBClient, ListTablesCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
 
 export async function GET() {
   const env = {
@@ -22,8 +23,15 @@ export async function GET() {
       ...(accessKeyId && { credentials: { accessKeyId, secretAccessKey: secretAccessKey! } }),
     });
 
-    const result = await client.send(new ListTablesCommand({ Limit: 3 }));
-    dynamodbStatus = `OK: ${result.TableNames?.join(", ")}`;
+    const docClient = DynamoDBDocumentClient.from(client, { marshallOptions: { removeUndefinedValues: true } });
+    const result = await docClient.send(new QueryCommand({
+      TableName: process.env.DYNAMODB_USERS_TABLE || "kidlearn-users",
+      IndexName: "email-index",
+      KeyConditionExpression: "email = :e",
+      ExpressionAttributeValues: { ":e": "healthcheck@example.com" },
+      Limit: 1,
+    }));
+    dynamodbStatus = `OK: query returned ${result.Count} items`;
   } catch (e: unknown) {
     dynamodbStatus = "FAILED";
     dynamodbError = e instanceof Error ? e.message : String(e);

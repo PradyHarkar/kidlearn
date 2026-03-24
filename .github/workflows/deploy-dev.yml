@@ -73,38 +73,61 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION || 'ap-southeast-2' }}
 
       - name: Push secrets to Amplify environment variables
+        env:
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          STRIPE_PRICE_AU_WEEKLY: ${{ secrets.STRIPE_PRICE_AU_WEEKLY }}
+          STRIPE_PRICE_AU_ANNUAL: ${{ secrets.STRIPE_PRICE_AU_ANNUAL }}
+          STRIPE_PRICE_US_WEEKLY: ${{ secrets.STRIPE_PRICE_US_WEEKLY }}
+          STRIPE_PRICE_US_ANNUAL: ${{ secrets.STRIPE_PRICE_US_ANNUAL }}
+          STRIPE_PRICE_IN_WEEKLY: ${{ secrets.STRIPE_PRICE_IN_WEEKLY }}
+          STRIPE_PRICE_IN_ANNUAL: ${{ secrets.STRIPE_PRICE_IN_ANNUAL }}
+          STRIPE_PRICE_UK_WEEKLY: ${{ secrets.STRIPE_PRICE_UK_WEEKLY }}
+          STRIPE_PRICE_UK_ANNUAL: ${{ secrets.STRIPE_PRICE_UK_ANNUAL }}
+          SES_FROM_EMAIL: ${{ secrets.SES_FROM_EMAIL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_AWS_ACCESS_KEY_ID: ${{ secrets.APP_AWS_ACCESS_KEY_ID }}
+          APP_AWS_SECRET_ACCESS_KEY: ${{ secrets.APP_AWS_SECRET_ACCESS_KEY }}
+          APP_AWS_REGION: ${{ secrets.APP_AWS_REGION }}
+          AMPLIFY_APP_ID: ${{ secrets.AMPLIFY_APP_ID }}
         run: |
-          aws amplify update-app \
-            --app-id ${{ secrets.AMPLIFY_APP_ID }} \
-            --environment-variables \
-              NEXTAUTH_SECRET="${{ secrets.NEXTAUTH_SECRET }}" \
-              NEXTAUTH_URL="${{ secrets.NEXTAUTH_URL }}" \
-              STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}" \
-              STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET }}" \
-              STRIPE_PRICE_AU_WEEKLY="${{ secrets.STRIPE_PRICE_AU_WEEKLY }}" \
-              STRIPE_PRICE_AU_ANNUAL="${{ secrets.STRIPE_PRICE_AU_ANNUAL }}" \
-              STRIPE_PRICE_US_WEEKLY="${{ secrets.STRIPE_PRICE_US_WEEKLY }}" \
-              STRIPE_PRICE_US_ANNUAL="${{ secrets.STRIPE_PRICE_US_ANNUAL }}" \
-              STRIPE_PRICE_IN_WEEKLY="${{ secrets.STRIPE_PRICE_IN_WEEKLY }}" \
-              STRIPE_PRICE_IN_ANNUAL="${{ secrets.STRIPE_PRICE_IN_ANNUAL }}" \
-              STRIPE_PRICE_UK_WEEKLY="${{ secrets.STRIPE_PRICE_UK_WEEKLY }}" \
-              STRIPE_PRICE_UK_ANNUAL="${{ secrets.STRIPE_PRICE_UK_ANNUAL }}" \
-              SES_FROM_EMAIL="${{ secrets.SES_FROM_EMAIL }}" \
-              CRON_SECRET="${{ secrets.CRON_SECRET }}" \
-              APP_AWS_ACCESS_KEY_ID="${{ secrets.APP_AWS_ACCESS_KEY_ID }}" \
-              APP_AWS_SECRET_ACCESS_KEY="${{ secrets.APP_AWS_SECRET_ACCESS_KEY }}" \
-              APP_AWS_REGION="${{ secrets.APP_AWS_REGION }}" \
-              BEDROCK_MODEL_ID="anthropic.claude-3-5-sonnet-20241022-v2:0" \
-              BEDROCK_REGION="us-east-1" \
-              DYNAMODB_USERS_TABLE="kidlearn-users" \
-              DYNAMODB_CHILDREN_TABLE="kidlearn-children" \
-              DYNAMODB_QUESTIONS_TABLE="kidlearn-questions" \
-              DYNAMODB_PROGRESS_TABLE="kidlearn-progress" \
-              DYNAMODB_ACHIEVEMENTS_TABLE="kidlearn-achievements" \
-              DYNAMODB_SESSIONS_TABLE="kidlearn-sessions" \
-              DYNAMODB_SUBSCRIPTIONS_TABLE="kidlearn-subscriptions" \
-              NODE_ENV="production"
-          echo "Amplify environment variables updated."
+          python3 - <<'PYEOF'
+          import boto3, json, os
+          client = boto3.client("amplify", region_name=os.environ.get("APP_AWS_REGION", "ap-southeast-2"))
+          env_vars = {
+            "NEXTAUTH_SECRET": os.environ["NEXTAUTH_SECRET"],
+            "NEXTAUTH_URL": os.environ["NEXTAUTH_URL"],
+            "STRIPE_SECRET_KEY": os.environ["STRIPE_SECRET_KEY"],
+            "STRIPE_WEBHOOK_SECRET": os.environ["STRIPE_WEBHOOK_SECRET"],
+            "STRIPE_PRICE_AU_WEEKLY": os.environ["STRIPE_PRICE_AU_WEEKLY"],
+            "STRIPE_PRICE_AU_ANNUAL": os.environ["STRIPE_PRICE_AU_ANNUAL"],
+            "STRIPE_PRICE_US_WEEKLY": os.environ["STRIPE_PRICE_US_WEEKLY"],
+            "STRIPE_PRICE_US_ANNUAL": os.environ["STRIPE_PRICE_US_ANNUAL"],
+            "STRIPE_PRICE_IN_WEEKLY": os.environ["STRIPE_PRICE_IN_WEEKLY"],
+            "STRIPE_PRICE_IN_ANNUAL": os.environ["STRIPE_PRICE_IN_ANNUAL"],
+            "STRIPE_PRICE_UK_WEEKLY": os.environ["STRIPE_PRICE_UK_WEEKLY"],
+            "STRIPE_PRICE_UK_ANNUAL": os.environ["STRIPE_PRICE_UK_ANNUAL"],
+            "SES_FROM_EMAIL": os.environ["SES_FROM_EMAIL"],
+            "CRON_SECRET": os.environ["CRON_SECRET"],
+            "APP_AWS_ACCESS_KEY_ID": os.environ["APP_AWS_ACCESS_KEY_ID"],
+            "APP_AWS_SECRET_ACCESS_KEY": os.environ["APP_AWS_SECRET_ACCESS_KEY"],
+            "APP_AWS_REGION": os.environ["APP_AWS_REGION"],
+            "BEDROCK_MODEL_ID": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+            "BEDROCK_REGION": "us-east-1",
+            "DYNAMODB_USERS_TABLE": "kidlearn-users",
+            "DYNAMODB_CHILDREN_TABLE": "kidlearn-children",
+            "DYNAMODB_QUESTIONS_TABLE": "kidlearn-questions",
+            "DYNAMODB_PROGRESS_TABLE": "kidlearn-progress",
+            "DYNAMODB_ACHIEVEMENTS_TABLE": "kidlearn-achievements",
+            "DYNAMODB_SESSIONS_TABLE": "kidlearn-sessions",
+            "DYNAMODB_SUBSCRIPTIONS_TABLE": "kidlearn-subscriptions",
+            "NODE_ENV": "production",
+          }
+          client.update_app(appId=os.environ["AMPLIFY_APP_ID"], environmentVariables=env_vars)
+          print(f"Updated {len(env_vars)} Amplify environment variables.")
+          PYEOF
 
   # -------------------------------------------------------------------------
   # 3. Trigger Amplify build (deploys the Next.js app)

@@ -2,13 +2,17 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
 import type { Subscription, SubscriptionStatus } from "@/types";
 
+// APP_AWS_* credentials override Lambda execution role credentials (which lack DynamoDB access)
+const accessKeyId = process.env.APP_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID;
+const secretAccessKey = process.env.APP_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY;
+const region = process.env.APP_AWS_REGION || process.env.AWS_REGION || "ap-southeast-2";
+
 const client = new DynamoDBClient({
-  region: process.env.AWS_REGION || "ap-southeast-2",
-  // Use explicit credentials locally; rely on IAM role in production (Amplify)
-  ...(process.env.AWS_ACCESS_KEY_ID && {
+  region,
+  ...(accessKeyId && {
     credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+      accessKeyId,
+      secretAccessKey: secretAccessKey!,
     },
   }),
 });

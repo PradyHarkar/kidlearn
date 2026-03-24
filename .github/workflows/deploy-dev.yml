@@ -90,7 +90,20 @@ jobs:
               STRIPE_PRICE_UK_WEEKLY="${{ secrets.STRIPE_PRICE_UK_WEEKLY }}" \
               STRIPE_PRICE_UK_ANNUAL="${{ secrets.STRIPE_PRICE_UK_ANNUAL }}" \
               SES_FROM_EMAIL="${{ secrets.SES_FROM_EMAIL }}" \
-              CRON_SECRET="${{ secrets.CRON_SECRET }}"
+              CRON_SECRET="${{ secrets.CRON_SECRET }}" \
+              APP_AWS_ACCESS_KEY_ID="${{ secrets.APP_AWS_ACCESS_KEY_ID }}" \
+              APP_AWS_SECRET_ACCESS_KEY="${{ secrets.APP_AWS_SECRET_ACCESS_KEY }}" \
+              APP_AWS_REGION="${{ secrets.APP_AWS_REGION }}" \
+              BEDROCK_MODEL_ID="anthropic.claude-3-5-sonnet-20241022-v2:0" \
+              BEDROCK_REGION="us-east-1" \
+              DYNAMODB_USERS_TABLE="kidlearn-users" \
+              DYNAMODB_CHILDREN_TABLE="kidlearn-children" \
+              DYNAMODB_QUESTIONS_TABLE="kidlearn-questions" \
+              DYNAMODB_PROGRESS_TABLE="kidlearn-progress" \
+              DYNAMODB_ACHIEVEMENTS_TABLE="kidlearn-achievements" \
+              DYNAMODB_SESSIONS_TABLE="kidlearn-sessions" \
+              DYNAMODB_SUBSCRIPTIONS_TABLE="kidlearn-subscriptions" \
+              NODE_ENV="production"
           echo "Amplify environment variables updated."
 
   # -------------------------------------------------------------------------

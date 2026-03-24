@@ -2,23 +2,32 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
 import type { Subscription, SubscriptionStatus } from "@/types";
 
-// APP_AWS_* credentials override Lambda execution role credentials (which lack DynamoDB access)
-const accessKeyId = process.env.APP_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID;
-const secretAccessKey = process.env.APP_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY;
-const region = process.env.APP_AWS_REGION || process.env.AWS_REGION || "ap-southeast-2";
+// Lazy singleton — env vars may not be set during Lambda init phase in Amplify WEB_COMPUTE.
+// Creating the client on first request (same pattern as lib/stripe.ts) ensures env vars are ready.
+let _ddb: DynamoDBDocumentClient | null = null;
 
-const client = new DynamoDBClient({
-  region,
-  ...(accessKeyId && {
-    credentials: {
-      accessKeyId,
-      secretAccessKey: secretAccessKey!,
-    },
-  }),
-});
+function getDdbClient(): DynamoDBDocumentClient {
+  if (!_ddb) {
+    // APP_AWS_* override Lambda execution role credentials (which lack DynamoDB access)
+    const accessKeyId = process.env.APP_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID;
+    const secretAccessKey = process.env.APP_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY;
+    const region = process.env.APP_AWS_REGION || process.env.AWS_REGION || "ap-southeast-2";
 
-export const ddb = DynamoDBDocumentClient.from(client, {
-  marshallOptions: { removeUndefinedValues: true },
+    const client = new DynamoDBClient({
+      region,
+      ...(accessKeyId && {
+        credentials: { accessKeyId, secretAccessKey: secretAccessKey! },
+      }),
+    });
+    _ddb = DynamoDBDocumentClient.from(client, { marshallOptions: { removeUndefinedValues: true } });
+  }
+  return _ddb;
+}
+
+export const ddb = new Proxy({} as DynamoDBDocumentClient, {
+  get(_t, prop) {
+    return (getDdbClient() as unknown as Record<string, unknown>)[prop as string];
+  },
 });
 
 export const TABLES = {

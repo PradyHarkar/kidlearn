@@ -55,7 +55,8 @@ export async function POST(req: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
-    console.error("Register error:", error);
-    return NextResponse.json({ error: "Failed to create account" }, { status: 500 });
+    const msg = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+    console.error("Register error:", msg);
+    return NextResponse.json({ error: "Failed to create account", debug: msg }, { status: 500 });
   }
 }

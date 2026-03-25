@@ -3,20 +3,13 @@ import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCom
 import type { Subscription, SubscriptionStatus } from "@/types";
 
 // Create a fresh DynamoDB client on every call.
-// Amplify WEB_COMPUTE injects APP_AWS_* env vars at request time, not Lambda init time.
-// A module-level singleton (or Proxy thereof) reads env vars too early and gets no credentials.
-// The health endpoint proved that fresh-client-per-request works; this mirrors that pattern.
+// Amplify WEB_COMPUTE: env vars set in Amplify Console are NOT available at Lambda runtime
+// (only during the build phase). The Lambda execution role IS available via the default
+// credential chain (provided by AWS_AMPLIFY_CREDENTIAL_LISTENER_* at runtime).
+// Use the default credential chain — no explicit key injection needed.
 export function createDdb(): DynamoDBDocumentClient {
-  const accessKeyId = process.env.APP_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.APP_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY;
-  const region = process.env.APP_AWS_REGION || process.env.AWS_REGION || "ap-southeast-2";
-
-  const client = new DynamoDBClient({
-    region,
-    ...(accessKeyId && {
-      credentials: { accessKeyId, secretAccessKey: secretAccessKey! },
-    }),
-  });
+  const region = "ap-southeast-2";
+  const client = new DynamoDBClient({ region });
   return DynamoDBDocumentClient.from(client, { marshallOptions: { removeUndefinedValues: true } });
 }
 

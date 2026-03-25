@@ -65,17 +65,6 @@ export async function POST(req: NextRequest) {
     const correct = questions.filter((q) => q.correct).length;
     const accuracy = (correct / questions.length) * 100;
 
-    // Get recent history for adaptive calculation
-    const recentProgress = await queryItems(
-      TABLES.PROGRESS,
-      "childId = :childId",
-      { ":childId": childId },
-      undefined,
-      undefined,
-      `#subject = :subject`,
-      20
-    );
-
     // Calculate consecutive streaks
     let consecutiveCorrect = 0;
     let consecutiveWrong = 0;

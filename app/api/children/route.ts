@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import { queryItems, putItem, TABLES } from "@/lib/dynamodb";
 import { gradeToAgeGroup } from "@/lib/curriculum";
+import { toLegacyYearLevel } from "@/lib/learner";
 import type { Country } from "@/types";
 
 const childSchema = z.object({
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
       grade,
       country,
       ageGroup,
-      yearLevel: ageGroup,  // kept for backwards compat
+      yearLevel: toLegacyYearLevel(ageGroup),  // kept for backwards compat
       avatar,
       currentDifficultyMaths: 1,
       currentDifficultyEnglish: 1,

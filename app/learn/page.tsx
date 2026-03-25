@@ -18,13 +18,12 @@ interface QuestionResult {
 }
 
 function LearnContent() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
   const childId = searchParams.get("child");
   const subject = searchParams.get("subject") as Subject;
 
-  const [child, setChild] = useState<Record<string, unknown> | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -91,14 +90,9 @@ function LearnContent() {
 
   const loadData = async () => {
     try {
-      const [childRes, questionsRes] = await Promise.all([
-        fetch(`/api/children/${childId}`),
-        fetch(`/api/questions?subject=${subject}&childId=${childId}`),
-      ]);
-      const childData = await childRes.json();
+      const questionsRes = await fetch(`/api/questions?subject=${subject}&childId=${childId}`);
       const questionsData = await questionsRes.json();
 
-      setChild(childData.child);
       setCurrentDifficulty(questionsData.difficulty || 1);
       setQuestions(questionsData.questions || []);
     } catch {

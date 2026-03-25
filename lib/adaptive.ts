@@ -41,10 +41,6 @@ export async function getAdaptiveDifficulty(
     return { difficulty: 1, yearLevel: "prep" };
   }
 
-  const recent = records.slice(0, 10);
-  const correctCount = recent.filter((r) => r.correct).length;
-  const recentAccuracy = (correctCount / recent.length) * 100;
-
   // Count consecutive correct/wrong
   let consecutiveCorrect = 0;
   let consecutiveWrong = 0;

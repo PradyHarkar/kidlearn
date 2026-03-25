@@ -5,6 +5,7 @@ import { getItem, queryItems, TABLES } from "@/lib/dynamodb";
 import { Subject, AgeGroup, Question } from "@/types";
 import { shouldResetDifficulty } from "@/lib/adaptive";
 import { getGradeConfig, getTopicsForGrade } from "@/lib/curriculum";
+import { resolveChildAgeGroup, toLegacyYearLevel } from "@/lib/learner";
 import type { Country } from "@/types";
 
 export async function GET(req: NextRequest) {
@@ -36,7 +37,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Use ageGroup (new) with fallback to yearLevel (legacy)
-    const ageGroup: AgeGroup = (child.ageGroup as AgeGroup) || (child.yearLevel as AgeGroup) || "year3";
+    const ageGroup: AgeGroup = resolveChildAgeGroup(child as { ageGroup?: AgeGroup; yearLevel: AgeGroup | "prep" });
     const pk = `${subject}#${ageGroup}`;
 
     // Get questions from DynamoDB filtered by difficulty
@@ -73,7 +74,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       questions: shuffled,
       difficulty: currentDifficulty,
-      yearLevel: ageGroup,
+      yearLevel: toLegacyYearLevel(ageGroup),
       totalAvailable: allQuestions.length,
       curriculumContext: gradeConfig
         ? {

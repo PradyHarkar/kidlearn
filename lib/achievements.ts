@@ -1,5 +1,4 @@
 import { Achievement, Child } from "@/types";
-import { v4 as uuidv4 } from "uuid";
 import { putItem, queryItems, TABLES } from "./dynamodb";
 
 interface AchievementRule {
@@ -8,7 +7,7 @@ interface AchievementRule {
   icon: string;
   description: string;
   category: "maths" | "english" | "science" | "streak" | "milestone";
-  check: (child: Child, stats: AchievementStats) => boolean;
+  check: (_child: Child, _stats: AchievementStats) => boolean;
 }
 
 interface AchievementStats {

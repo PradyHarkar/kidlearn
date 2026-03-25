@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Mascot } from "@/components/mascot/Mascot";
 import { Child, Subscription, SubscriptionStatus } from "@/types";
 import { COUNTRY_CONFIGS } from "@/lib/curriculum";
+import { getLearnerDisplayLabel } from "@/lib/learner";
 import toast from "react-hot-toast";
 import Link from "next/link";
 import type { Country } from "@/types";
@@ -145,13 +146,7 @@ function DashboardContent() {
   };
 
   const gradeLabel = (child: Child) => {
-    if (child.grade && child.country) {
-      const cfg = COUNTRY_CONFIGS[child.country as Country];
-      const gradeConfig = cfg?.grades.find((g) => g.gradeId === child.grade);
-      if (gradeConfig) return `${gradeConfig.displayName}`;
-    }
-    if (child.yearLevel === "prep") return "🌱 Prep";
-    return `🎓 ${child.yearLevel?.replace("year", "Year ")}`;
+    return `🎓 ${getLearnerDisplayLabel(child)}`;
   };
 
   if (status === "loading" || loading) {

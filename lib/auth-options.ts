@@ -4,76 +4,118 @@ import bcrypt from "bcryptjs";
 import { ddb, TABLES } from "@/lib/dynamodb";
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 
-export const authOptions: AuthOptions = {
-  providers: [
-    CredentialsProvider({
-      name: "credentials",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+// Cache the secret so we don't hit Secrets Manager on every request
+let cachedSecret: string | undefined;
 
-        try {
-          const result = await ddb.send(
-            new QueryCommand({
-              TableName: TABLES.USERS,
-              IndexName: "email-index",
-              KeyConditionExpression: "email = :email",
-              ExpressionAttributeValues: { ":email": credentials.email.toLowerCase() },
-              Limit: 1,
-            })
-          );
+async function getNextAuthSecret(): Promise<string> {
+  if (cachedSecret) return cachedSecret;
 
-          const user = result.Items?.[0];
-          if (!user) return null;
+  // Works locally / if explicitly set
+  if (process.env.NEXTAUTH_SECRET) {
+    cachedSecret = process.env.NEXTAUTH_SECRET;
+    return cachedSecret;
+  }
 
-          const valid = await bcrypt.compare(credentials.password, user.passwordHash);
-          if (!valid) return null;
+  // Runtime fetch from Secrets Manager (Amplify Lambda execution role has access)
+  const { SecretsManagerClient, GetSecretValueCommand } = await import(
+    "@aws-sdk/client-secrets-manager"
+  );
+  const client = new SecretsManagerClient({ region: "ap-southeast-2" });
+  const response = await client.send(
+    new GetSecretValueCommand({ SecretId: "kidlearn/nextauth-secret" })
+  );
+  cachedSecret = response.SecretString!;
+  return cachedSecret;
+}
 
-          return {
-            id: user.userId,
-            email: user.email,
-            name: user.parentName,
-            country: user.country,
-            subscriptionStatus: user.subscriptionStatus,
-            trialEndsAt: user.trialEndsAt,
-          };
-        } catch (error) {
-          console.error("Auth error:", error);
-          return null;
+function buildAuthOptions(secret: string): AuthOptions {
+  return {
+    providers: [
+      CredentialsProvider({
+        name: "credentials",
+        credentials: {
+          email: { label: "Email", type: "email" },
+          password: { label: "Password", type: "password" },
+        },
+        async authorize(credentials) {
+          if (!credentials?.email || !credentials?.password) return null;
+
+          try {
+            const result = await ddb.send(
+              new QueryCommand({
+                TableName: TABLES.USERS,
+                IndexName: "email-index",
+                KeyConditionExpression: "email = :email",
+                ExpressionAttributeValues: {
+                  ":email": credentials.email.toLowerCase(),
+                },
+                Limit: 1,
+              })
+            );
+
+            const user = result.Items?.[0];
+            if (!user) return null;
+
+            const valid = await bcrypt.compare(
+              credentials.password,
+              user.passwordHash
+            );
+            if (!valid) return null;
+
+            return {
+              id: user.userId,
+              email: user.email,
+              name: user.parentName,
+              country: user.country,
+              subscriptionStatus: user.subscriptionStatus,
+              trialEndsAt: user.trialEndsAt,
+            };
+          } catch (error) {
+            console.error("Auth error:", error);
+            return null;
+          }
+        },
+      }),
+    ],
+    session: {
+      strategy: "jwt",
+      maxAge: 30 * 24 * 60 * 60,
+    },
+    callbacks: {
+      async jwt({ token, user }) {
+        if (user) {
+          token.userId = user.id;
+          token.country = user.country;
+          token.subscriptionStatus = user.subscriptionStatus;
+          token.trialEndsAt = user.trialEndsAt;
         }
+        return token;
       },
-    }),
-  ],
-  session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60,
-  },
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.userId = user.id;
-        token.country = user.country;
-        token.subscriptionStatus = user.subscriptionStatus;
-        token.trialEndsAt = user.trialEndsAt;
-      }
-      return token;
+      async session({ session, token }) {
+        if (token && session.user) {
+          session.user.id = token.userId as string;
+          session.user.country = token.country;
+          session.user.subscriptionStatus = token.subscriptionStatus;
+          session.user.trialEndsAt = token.trialEndsAt;
+        }
+        return session;
+      },
     },
-    async session({ session, token }) {
-      if (token && session.user) {
-        session.user.id = token.userId as string;
-        session.user.country = token.country;
-        session.user.subscriptionStatus = token.subscriptionStatus;
-        session.user.trialEndsAt = token.trialEndsAt;
-      }
-      return session;
+    pages: {
+      signIn: "/login",
+      error: "/login",
     },
-  },
-  pages: {
-    signIn: "/login",
-    error: "/login",
-  },
-  secret: process.env.NEXTAUTH_SECRET,
-};
+    secret,
+  };
+}
+
+// Async getter — used by the NextAuth route handler
+export async function getAuthOptions(): Promise<AuthOptions> {
+  const secret = await getNextAuthSecret();
+  return buildAuthOptions(secret);
+}
+
+// Static export for middleware (uses NEXTAUTH_SECRET env var; falls back to empty string)
+export const authOptions: AuthOptions = buildAuthOptions(
+  process.env.NEXTAUTH_SECRET ?? ""
+);

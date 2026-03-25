@@ -8,6 +8,35 @@ export interface PerformanceWindow {
   recentAccuracy: number;
 }
 
+export function calculatePerformanceWindow(
+  answers: Array<{ correct: boolean }>
+): PerformanceWindow {
+  const recent = answers.slice(0, 10);
+  const correctCount = recent.filter((answer) => answer.correct).length;
+  const recentAccuracy = recent.length ? (correctCount / recent.length) * 100 : 0;
+
+  let consecutiveCorrect = 0;
+  let consecutiveWrong = 0;
+
+  for (const answer of answers) {
+    if (answer.correct) {
+      consecutiveCorrect++;
+      consecutiveWrong = 0;
+      if (consecutiveCorrect >= 3) break;
+    } else {
+      consecutiveWrong++;
+      consecutiveCorrect = 0;
+      if (consecutiveWrong >= 2) break;
+    }
+  }
+
+  return {
+    consecutiveCorrect,
+    consecutiveWrong,
+    recentAccuracy,
+  };
+}
+
 /**
  * Adaptive difficulty algorithm:
  * - 3 consecutive correct → difficulty +1 (max 10)
@@ -41,27 +70,17 @@ export async function getAdaptiveDifficulty(
     return { difficulty: 1, yearLevel: "prep" };
   }
 
-  const recent = records.slice(0, 10);
-  const correctCount = recent.filter((r) => r.correct).length;
-  const recentAccuracy = (correctCount / recent.length) * 100;
+  const performance = calculatePerformanceWindow(
+    records.map((record) => ({ correct: !!record.correct }))
+  );
 
-  // Count consecutive correct/wrong
-  let consecutiveCorrect = 0;
-  let consecutiveWrong = 0;
+  const adjustedDifficulty = calculateDifficultyAdjustment(
+    records[0].difficultyAttempted || 1,
+    performance.consecutiveCorrect,
+    performance.consecutiveWrong
+  );
 
-  for (const record of records) {
-    if (record.correct) {
-      consecutiveCorrect++;
-      consecutiveWrong = 0;
-      if (consecutiveCorrect >= 3) break;
-    } else {
-      consecutiveWrong++;
-      consecutiveCorrect = 0;
-      if (consecutiveWrong >= 2) break;
-    }
-  }
-
-  return { difficulty: records[0].difficultyAttempted || 1, yearLevel: records[0].yearLevel || "prep" };
+  return { difficulty: adjustedDifficulty, yearLevel: records[0].yearLevel || "prep" };
 }
 
 export function calculateDifficultyAdjustment(

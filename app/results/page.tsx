@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mascot } from "@/components/mascot/Mascot";
 import { SessionResult, Achievement } from "@/types";
+import { toAgeGroup } from "@/lib/learner";
 import confetti from "canvas-confetti";
 
 function ResultsContent() {
@@ -101,7 +102,9 @@ function ResultsContent() {
           <h1 className="text-3xl font-black text-white drop-shadow">{perf.msg}</h1>
           <p className="text-white/80 font-semibold mt-1">
             {result.subject === "maths" ? "🔢 Maths" : result.subject === "science" ? "🔬 Science" : "📖 English"} •{" "}
-            {result.yearLevel === "prep" ? "Prep" : "Year 3"}
+            {toAgeGroup(result.yearLevel) === "foundation"
+              ? "Foundation"
+              : toAgeGroup(result.yearLevel).replace("year", "Year ")}
           </p>
           {/* Decorative bg emojis */}
           <div className="absolute -top-2 -right-2 text-6xl opacity-10 rotate-12">⭐</div>

@@ -15,7 +15,7 @@ export type AgeGroup =
   | "year7"      // 12-13
   | "year8";     // 13-14
 
-// YearLevel keeps "prep" as legacy alias for "foundation" (existing question PKs)
+// `YearLevel` is legacy compatibility only. New code should prefer `AgeGroup`.
 export type YearLevel = AgeGroup | "prep";
 
 export type Subject = "maths" | "english" | "science";
@@ -38,8 +38,8 @@ export interface Child {
   userId: string;
   childId: string;
   childName: string;
-  yearLevel: YearLevel;   // legacy field — mirrors ageGroup
-  ageGroup?: AgeGroup;    // canonical internal key for question PK
+  yearLevel: YearLevel;   // legacy compatibility field
+  ageGroup?: AgeGroup;    // canonical internal key for curriculum/question selection
   grade?: string;         // country-specific grade label (e.g. "year3", "grade3", "class3")
   country?: Country;      // denormalised from parent for report queries
   avatar: string;
@@ -94,7 +94,7 @@ export interface Question {
   topics: string[];
   explanation: string;
   subject: Subject;
-  yearLevel: YearLevel;
+  yearLevel: YearLevel;   // legacy compatibility field stored with questions
   hint?: string;
   ttsText?: string;
   interactionType?: string;

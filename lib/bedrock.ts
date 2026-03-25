@@ -2,6 +2,7 @@ import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedroc
 import { Subject, YearLevel, AgeGroup, Question, AnswerOption, Country } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 import { putItem, queryItems, TABLES } from "./dynamodb";
+import { toAgeGroup, toLegacyYearLevel } from "@/lib/learner";
 
 const bedrockClient = new BedrockRuntimeClient({
   region: process.env.BEDROCK_REGION || "us-east-1",
@@ -53,8 +54,7 @@ export async function generateQuestionsWithBedrock(
   count: number = 5,
   curriculum?: CurriculumContext
 ): Promise<Question[]> {
-  // Normalise legacy "prep" alias to "foundation"
-  const ageGroup: AgeGroup = ageGroupOrYearLevel === "prep" ? "foundation" : ageGroupOrYearLevel as AgeGroup;
+  const ageGroup: AgeGroup = toAgeGroup(ageGroupOrYearLevel);
 
   const { ageRange, yearDesc } = ageGroupToDescription(ageGroup);
   const gradeDisplay = curriculum?.gradeDisplayName ?? yearDesc;
@@ -129,7 +129,7 @@ Return ONLY valid JSON in this exact format:
       topics: [topic],
       explanation: gq.explanation,
       subject,
-      yearLevel: ageGroup,
+      yearLevel: toLegacyYearLevel(ageGroup),
       hint: gq.hint,
       cached: false,
       createdAt: new Date().toISOString(),
@@ -167,7 +167,7 @@ export async function getCachedOrGenerateQuestions(
   count: number = 10,
   curriculum?: CurriculumContext
 ): Promise<Question[]> {
-  const ageGroup: AgeGroup = ageGroupOrYearLevel === "prep" ? "foundation" : ageGroupOrYearLevel as AgeGroup;
+  const ageGroup: AgeGroup = toAgeGroup(ageGroupOrYearLevel);
 
   try {
     // Try to get cached questions first

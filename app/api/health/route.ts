@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
-import { ddb, TABLES } from "@/lib/dynamodb";
 
 export async function GET() {
   const env = {

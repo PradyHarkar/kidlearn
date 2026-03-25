@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
-import { getItem, updateItem, deleteItem, TABLES } from "@/lib/dynamodb";
+import { getItem, deleteItem, TABLES } from "@/lib/dynamodb";
 
 export async function GET(_req: NextRequest, { params }: { params: { childId: string } }) {
   try {

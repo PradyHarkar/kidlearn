@@ -2,7 +2,6 @@
  * Seed the 44 curriculum-aligned questions from the ChatGPT PDF
  * GET /api/seed-pdf?secret=<NEXTAUTH_SECRET>
  */
-import { NextRequest, NextResponse } from "next/server";
 import { putItem, TABLES } from "@/lib/dynamodb";
 import { v4 as uuidv4 } from "uuid";
 

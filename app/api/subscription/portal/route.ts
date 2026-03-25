@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-options";
 import { getItem, TABLES } from "@/lib/dynamodb";
 import { createBillingPortalSession } from "@/lib/stripe";
+import { getSession } from "@/lib/auth";
 
 export async function POST() {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getSession();
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const userId = session.user.id;

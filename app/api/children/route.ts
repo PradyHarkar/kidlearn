@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-options";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import { queryItems, putItem, TABLES } from "@/lib/dynamodb";
+import { getSession } from "@/lib/auth";
 import { gradeToAgeGroup } from "@/lib/curriculum";
 import { toLegacyYearLevel } from "@/lib/learner";
 import type { Country } from "@/types";
@@ -16,7 +15,7 @@ const childSchema = z.object({
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getSession();
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const userId = session.user.id;
@@ -35,7 +34,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getSession();
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const userId = session.user.id;

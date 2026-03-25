@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { z } from "zod";
-import { authOptions } from "@/lib/auth-options";
 import { getItem, updateItem, TABLES } from "@/lib/dynamodb";
 import { createCheckoutSession } from "@/lib/stripe";
+import { getSession } from "@/lib/auth";
 import type { Country, SubscriptionPlan } from "@/types";
 
 const checkoutSchema = z.object({
@@ -12,7 +11,7 @@ const checkoutSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getSession();
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const userId = session.user.id;

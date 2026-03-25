@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-options";
 import { getItem, deleteItem, TABLES } from "@/lib/dynamodb";
+import { getSession } from "@/lib/auth";
 
 export async function GET(_req: NextRequest, { params }: { params: { childId: string } }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getSession();
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const userId = (session.user as { id: string }).id;
@@ -21,7 +20,7 @@ export async function GET(_req: NextRequest, { params }: { params: { childId: st
 
 export async function DELETE(_req: NextRequest, { params }: { params: { childId: string } }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getSession();
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const userId = (session.user as { id: string }).id;

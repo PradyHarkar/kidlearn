@@ -2,33 +2,28 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
 import type { Subscription, SubscriptionStatus } from "@/types";
 
-// Lazy singleton — env vars may not be set during Lambda init phase in Amplify WEB_COMPUTE.
-// Creating the client on first request (same pattern as lib/stripe.ts) ensures env vars are ready.
-let _ddb: DynamoDBDocumentClient | null = null;
+// Create a fresh DynamoDB client on every call.
+// Amplify WEB_COMPUTE injects APP_AWS_* env vars at request time, not Lambda init time.
+// A module-level singleton (or Proxy thereof) reads env vars too early and gets no credentials.
+// The health endpoint proved that fresh-client-per-request works; this mirrors that pattern.
+export function createDdb(): DynamoDBDocumentClient {
+  const accessKeyId = process.env.APP_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.APP_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY;
+  const region = process.env.APP_AWS_REGION || process.env.AWS_REGION || "ap-southeast-2";
 
-function getDdbClient(): DynamoDBDocumentClient {
-  if (!_ddb) {
-    // APP_AWS_* override Lambda execution role credentials (which lack DynamoDB access)
-    const accessKeyId = process.env.APP_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID;
-    const secretAccessKey = process.env.APP_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY;
-    const region = process.env.APP_AWS_REGION || process.env.AWS_REGION || "ap-southeast-2";
-
-    const client = new DynamoDBClient({
-      region,
-      ...(accessKeyId && {
-        credentials: { accessKeyId, secretAccessKey: secretAccessKey! },
-      }),
-    });
-    _ddb = DynamoDBDocumentClient.from(client, { marshallOptions: { removeUndefinedValues: true } });
-  }
-  return _ddb;
+  const client = new DynamoDBClient({
+    region,
+    ...(accessKeyId && {
+      credentials: { accessKeyId, secretAccessKey: secretAccessKey! },
+    }),
+  });
+  return DynamoDBDocumentClient.from(client, { marshallOptions: { removeUndefinedValues: true } });
 }
 
-export const ddb = new Proxy({} as DynamoDBDocumentClient, {
-  get(_t, prop) {
-    return (getDdbClient() as unknown as Record<string, unknown>)[prop as string];
-  },
-});
+// Keep `ddb` as a backward-compatible alias (used in many routes via ddb.send).
+// Each call creates a fresh client so there is no stale credential problem.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const ddb = { send: (command: any): any => createDdb().send(command) };
 
 export const TABLES = {
   USERS: process.env.DYNAMODB_USERS_TABLE || "kidlearn-users",
@@ -41,11 +36,11 @@ export const TABLES = {
 };
 
 export async function putItem(table: string, item: Record<string, unknown> | object) {
-  return ddb.send(new PutCommand({ TableName: table, Item: item }));
+  return createDdb().send(new PutCommand({ TableName: table, Item: item }));
 }
 
 export async function getItem(table: string, key: Record<string, unknown>) {
-  const result = await ddb.send(new GetCommand({ TableName: table, Key: key }));
+  const result = await createDdb().send(new GetCommand({ TableName: table, Key: key }));
   return result.Item;
 }
 
@@ -58,7 +53,7 @@ export async function queryItems(
   filterExpression?: string,
   limit?: number
 ) {
-  const result = await ddb.send(
+  const result = await createDdb().send(
     new QueryCommand({
       TableName: table,
       IndexName: indexName,
@@ -79,7 +74,7 @@ export async function updateItem(
   expressionValues: Record<string, unknown>,
   expressionNames?: Record<string, string>
 ) {
-  return ddb.send(
+  return createDdb().send(
     new UpdateCommand({
       TableName: table,
       Key: key,
@@ -92,11 +87,11 @@ export async function updateItem(
 }
 
 export async function deleteItem(table: string, key: Record<string, unknown>) {
-  return ddb.send(new DeleteCommand({ TableName: table, Key: key }));
+  return createDdb().send(new DeleteCommand({ TableName: table, Key: key }));
 }
 
 export async function scanItems(table: string, filterExpression?: string, expressionValues?: Record<string, unknown>, expressionNames?: Record<string, string>) {
-  const result = await ddb.send(
+  const result = await createDdb().send(
     new ScanCommand({
       TableName: table,
       FilterExpression: filterExpression,

@@ -5,6 +5,15 @@ import { z } from "zod";
 import { ddb, TABLES, putItem } from "@/lib/dynamodb";
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 
+// Diagnostic GET — compare env vars from same file as POST to isolate GET vs POST difference
+export async function GET() {
+  return NextResponse.json({
+    appKey: process.env.APP_AWS_ACCESS_KEY_ID?.slice(0, 8) || "MISSING",
+    appRegion: process.env.APP_AWS_REGION || "MISSING",
+    awsKey: process.env.AWS_ACCESS_KEY_ID?.slice(0, 8) || "MISSING",
+  });
+}
+
 const registerSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),

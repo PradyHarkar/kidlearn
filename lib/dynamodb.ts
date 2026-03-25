@@ -22,8 +22,11 @@ export function createDdb(): DynamoDBDocumentClient {
 
 // Keep `ddb` as a backward-compatible alias (used in many routes via ddb.send).
 // Each call creates a fresh client so there is no stale credential problem.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const ddb = { send: (command: any): any => createDdb().send(command) };
+// Cast as DynamoDBDocumentClient["send"] to preserve all generic overloads at call sites.
+export const ddb = {
+  send: ((command: Parameters<DynamoDBDocumentClient["send"]>[0]) =>
+    createDdb().send(command)) as DynamoDBDocumentClient["send"],
+};
 
 export const TABLES = {
   USERS: process.env.DYNAMODB_USERS_TABLE || "kidlearn-users",

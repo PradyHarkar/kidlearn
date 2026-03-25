@@ -2,8 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
-import { ddb, TABLES, putItem } from "@/lib/dynamodb";
-import { QueryCommand } from "@aws-sdk/lib-dynamodb";
+import { TABLES } from "@/lib/dynamodb";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, QueryCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
+
+function makeDb() {
+  const accessKeyId = process.env.APP_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.APP_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY;
+  const region = process.env.APP_AWS_REGION || process.env.AWS_REGION || "ap-southeast-2";
+  return DynamoDBDocumentClient.from(
+    new DynamoDBClient({ region, ...(accessKeyId && { credentials: { accessKeyId, secretAccessKey: secretAccessKey! } }) }),
+    { marshallOptions: { removeUndefinedValues: true } }
+  );
+}
 
 const registerSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -17,8 +28,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { email, password, parentName, country } = registerSchema.parse(body);
 
-    // Check if email already exists
-    const existing = await ddb.send(
+    // Check if email already exists (inline client — same pattern as /api/health which works)
+    const db = makeDb();
+    const existing = await db.send(
       new QueryCommand({
         TableName: TABLES.USERS,
         IndexName: "email-index",
@@ -39,7 +51,7 @@ export async function POST(req: NextRequest) {
     const userId = uuidv4();
     const trialEndsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    await putItem(TABLES.USERS, {
+    await db.send(new PutCommand({ TableName: TABLES.USERS, Item: {
       userId,
       email: email.toLowerCase(),
       passwordHash,
@@ -48,7 +60,7 @@ export async function POST(req: NextRequest) {
       subscriptionStatus: "trial",
       trialEndsAt,
       createdAt: new Date().toISOString(),
-    });
+    } }));
 
     return NextResponse.json({ success: true, userId, trialEndsAt }, { status: 201 });
   } catch (error) {

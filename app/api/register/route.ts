@@ -5,12 +5,18 @@ import { z } from "zod";
 import { ddb, TABLES, putItem } from "@/lib/dynamodb";
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 
-// Diagnostic GET — compare env vars from same file as POST to isolate GET vs POST difference
+// Diagnostic GET — scan ALL env vars to see what the Lambda receives at runtime
 export async function GET() {
   return NextResponse.json({
     appKey: process.env.APP_AWS_ACCESS_KEY_ID?.slice(0, 8) || "MISSING",
     appRegion: process.env.APP_AWS_REGION || "MISSING",
     awsKey: process.env.AWS_ACCESS_KEY_ID?.slice(0, 8) || "MISSING",
+    nextAuthSecret: process.env.NEXTAUTH_SECRET?.slice(0, 8) || "MISSING",
+    nodeEnv: process.env.NODE_ENV || "MISSING",
+    dynamoUsersTable: process.env.DYNAMODB_USERS_TABLE || "MISSING",
+    awsRegion: process.env.AWS_REGION || "MISSING",
+    allKeysCount: Object.keys(process.env).length,
+    sampleKeys: Object.keys(process.env).slice(0, 20),
   });
 }
 

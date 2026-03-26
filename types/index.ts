@@ -48,6 +48,7 @@ export interface Child {
   grade?: string;         // country-specific grade label (e.g. "year3", "grade3", "class3")
   country?: Country;      // denormalised from parent for report queries
   avatar: string;
+  diagnosticComplete?: boolean;
   currentDifficultyMaths: number;
   currentDifficultyEnglish: number;
   currentDifficultyScience: number;
@@ -141,6 +142,27 @@ export interface ProgressRecord {
   difficultyAttempted: number;
   topic: string;
   createdAt: string;
+}
+
+export interface DiagnosticQuestion {
+  questionId: string;
+  questionText: string;
+  answerOptions: AnswerOption[];
+  difficulty: number;
+  topics: string[];
+  hint?: string;
+}
+
+export interface DiagnosticResult {
+  childId: string;
+  subject: "maths";
+  totalQuestions: number;
+  correctAnswers: number;
+  baselineDifficulty: number;
+  calibratedDifficulty: number;
+  difficultyDelta: number;
+  diagnosticComplete: boolean;
+  nextUrl: string;
 }
 
 export interface RewardCatalogItem {

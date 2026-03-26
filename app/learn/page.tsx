@@ -48,6 +48,7 @@ function LearnContent() {
   const [consecutiveCorrect, setConsecutiveCorrect] = useState(0);
   const [consecutiveWrong, setConsecutiveWrong] = useState(0);
   const [currentDifficulty, setCurrentDifficulty] = useState(1);
+  const [ageGroup, setAgeGroup] = useState<string | undefined>();
   const [timer, setTimer] = useState(0);
   const [coins, setCoins] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -58,6 +59,10 @@ function LearnContent() {
   const [reportReason, setReportReason] = useState("");
   const [reportDetails, setReportDetails] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
+
+  // AI Tutor explanation
+  const [tutorExplanation, setTutorExplanation] = useState<string | null>(null);
+  const [tutorLoading, setTutorLoading] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const questionStartTime = useRef(Date.now());
@@ -115,6 +120,7 @@ function LearnContent() {
       const questionsData = await questionsRes.json();
 
       setCurrentDifficulty(questionsData.difficulty || 1);
+      setAgeGroup(questionsData.ageGroup);
       // Cap to SESSION_SIZE questions per session
       setQuestions((questionsData.questions || []).slice(0, SESSION_SIZE));
     } catch {
@@ -199,6 +205,8 @@ function LearnContent() {
     setShowExplanation(false);
     setMascotMood("happy");
     setMascotMessage(undefined);
+    setTutorExplanation(null);
+    setTutorLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, questions.length]);
 
@@ -253,6 +261,37 @@ function LearnContent() {
 
   const closeReport = () => {
     setReportingQuestion(null);
+  };
+
+  const askTutor = async (question: Question, chosenAnswerId: string) => {
+    const correctOption = question.answerOptions.find(o => o.isCorrect);
+    const chosenOption  = question.answerOptions.find(o => o.id === chosenAnswerId);
+    if (!correctOption || !chosenOption) return;
+
+    setTutorLoading(true);
+    setTutorExplanation(null);
+    try {
+      const res = await fetch("/api/tutor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          questionText:  question.questionText,
+          correctAnswer: correctOption.text,
+          chosenAnswer:  chosenOption.text,
+          subject,
+          topics:   question.topics,
+          childId:  childId ?? undefined,
+          ageGroup,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) setTutorExplanation(data.explanation);
+      else setTutorExplanation("I couldn't explain that one right now. Try the next question!");
+    } catch {
+      setTutorExplanation("I couldn't explain that one right now. Try the next question!");
+    } finally {
+      setTutorLoading(false);
+    }
   };
 
   const submitReport = async () => {
@@ -553,7 +592,7 @@ function LearnContent() {
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="px-4 pb-4"
+                    className="px-4 pb-2"
                   >
                     <div className={`rounded-2xl p-3 border-l-4 ${isAnswered && results[results.length - 1]?.correct
                       ? "bg-green-50 border-green-400"
@@ -563,6 +602,46 @@ function LearnContent() {
                         💡 {q.explanation}
                       </p>
                     </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* AI Tutor — "Why?" button (wrong answer only) */}
+              <AnimatePresence>
+                {isAnswered && !results[results.length - 1]?.correct && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="px-4 pb-4"
+                  >
+                    {!tutorExplanation && (
+                      <motion.button
+                        onClick={() => askTutor(q, selectedAnswer || "")}
+                        disabled={tutorLoading || !selectedAnswer}
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 border-2 border-indigo-200 text-indigo-700 font-black text-sm transition-all disabled:opacity-50"
+                      >
+                        {tutorLoading ? (
+                          <><div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" /> Thinking...</>
+                        ) : (
+                          <>💬 Why is that the answer?</>
+                        )}
+                      </motion.button>
+                    )}
+
+                    {tutorExplanation && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.97 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-3"
+                      >
+                        <div className="flex items-start gap-2">
+                          <span className="text-2xl flex-shrink-0">🤖</span>
+                          <p className="text-indigo-800 font-semibold text-sm leading-relaxed">{tutorExplanation}</p>
+                        </div>
+                      </motion.div>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>

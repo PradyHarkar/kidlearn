@@ -39,6 +39,7 @@ import { runTutorSuite }             from "./suites/09-tutor";
 import { runDiagnosticSuite }        from "./suites/10-diagnostic";
 import { runKidFlowSuite }           from "./suites/11-kid-flow";
 import { runAgentsCoordinationSuite } from "./suites/12-agents-coordination";
+import { runDashboardTabsSuite }      from "./suites/13-dashboard-tabs";
 
 // ── Parse CLI args ────────────────────────────────────────────────────────────
 
@@ -110,6 +111,7 @@ async function main() {
     "diagnostic":     runDiagnosticSuite,
     "kid-flow":       runKidFlowSuite,
     "agents":         runAgentsCoordinationSuite,
+    "dashboard-tabs": runDashboardTabsSuite,
   };
 
   const toRun = opts.suite

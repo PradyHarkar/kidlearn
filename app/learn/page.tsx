@@ -207,7 +207,17 @@ function LearnContent() {
     if (timerRef.current) clearInterval(timerRef.current);
     const timeSpent = Math.floor((Date.now() - questionStartTime.current) / 1000);
     const q = questions[currentIndex];
+    if (!q) return;
     setResults(prev => [...prev, { questionId: q.questionId, correct: false, timeSpent, difficulty: currentDifficulty, topic: q.topics?.[0] || "general" }]);
+
+    if (currentIndex >= questions.length - 1) {
+      // Last question skipped — show "See My Results!" button rather than going past the array end
+      setIsAnswered(true);
+      setShowHint(false);
+      setShowExplanation(false);
+      return;
+    }
+
     setCurrentIndex(prev => prev + 1);
     setSelectedAnswer(null);
     setIsAnswered(false);
@@ -307,13 +317,12 @@ function LearnContent() {
 
   const q = questions[currentIndex];
 
-  // Guard: malformed question (missing required fields) — auto-advance
+  // Guard: missing or malformed question — auto-advance past it
   if (!q || !q.questionText || !q.answerOptions?.length) {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(prev => prev + 1);
-    } else {
-      router.push("/dashboard");
     }
+    // If last question is bad, just show nothing — handleNext/handleSkip will submit
     return null;
   }
 

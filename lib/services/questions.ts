@@ -1,8 +1,9 @@
-import { shouldResetDifficulty } from "@/lib/adaptive";
+import { getInitialDifficultyForAgeGroup, shouldResetDifficulty } from "@/lib/adaptive";
 import { getGradeConfig, getTopicsForGrade } from "@/lib/curriculum";
-import { getItem, queryItems, TABLES } from "@/lib/dynamodb";
+import { createDdb, getItem, TABLES } from "@/lib/dynamodb";
 import { resolveChildAgeGroup, toLegacyYearLevel } from "@/lib/learner";
 import type { AgeGroup, Child, Country, Question, Subject, YearLevel } from "@/types";
+import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 
 interface CurriculumContext {
   country: Country;
@@ -22,6 +23,8 @@ export interface QuestionsForChildResult {
 }
 
 function getCurrentDifficulty(child: Child, subject: Subject): number {
+  const ageGroup = resolveChildAgeGroup(child);
+  const baselineDifficulty = getInitialDifficultyForAgeGroup(ageGroup);
   const baseDifficulty = subject === "maths"
     ? child.currentDifficultyMaths
     : subject === "science"
@@ -29,7 +32,11 @@ function getCurrentDifficulty(child: Child, subject: Subject): number {
     : child.currentDifficultyEnglish;
 
   if (child.lastActiveDate && shouldResetDifficulty(child.lastActiveDate)) {
-    return 1;
+    return baselineDifficulty;
+  }
+
+  if ((child.stats?.totalQuestionsAttempted || 0) === 0) {
+    return baselineDifficulty;
   }
 
   return baseDifficulty;
@@ -47,6 +54,50 @@ function selectQuestionsByDifficulty(questions: Question[], targetDifficulty: nu
   }
 
   return filtered.sort(() => Math.random() - 0.5).slice(0, 10);
+}
+
+async function loadQuestionsForPartition(pk: string): Promise<Question[]> {
+  const ddb = createDdb();
+  const questions: Question[] = [];
+  let lastEvaluatedKey: Record<string, unknown> | undefined;
+
+  do {
+    const result = await ddb.send(new QueryCommand({
+      TableName: TABLES.QUESTIONS,
+      KeyConditionExpression: "pk = :pk",
+      ExpressionAttributeValues: { ":pk": pk },
+      ExclusiveStartKey: lastEvaluatedKey,
+      Limit: 250,
+    }));
+
+    questions.push(...(result.Items as Question[] | undefined ?? []));
+    lastEvaluatedKey = result.LastEvaluatedKey;
+
+    // We do not need to pull the entire partition to serve a 10-question session.
+    if (questions.length >= 1500) {
+      break;
+    }
+  } while (lastEvaluatedKey);
+
+  return questions;
+}
+
+function mergeQuestionSets(...questionSets: Question[][]): Question[] {
+  const seen = new Set<string>();
+  const merged: Question[] = [];
+
+  for (const set of questionSets) {
+    for (const question of set) {
+      const key = question.questionId || `${question.pk}:${question.questionText}`;
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      merged.push(question);
+    }
+  }
+
+  return merged;
 }
 
 function buildCurriculumContext(child: Child, ageGroup: AgeGroup, subject: Subject): CurriculumContext | null {
@@ -75,17 +126,12 @@ export async function getQuestionsForChild(userId: string, childId: string, subj
   const typedChild = child as Child;
   const currentDifficulty = getCurrentDifficulty(typedChild, subject);
   const ageGroup = resolveChildAgeGroup(typedChild);
-  const allQuestions = await queryItems(
-    TABLES.QUESTIONS,
-    "pk = :pk",
-    { ":pk": `${subject}#${ageGroup}` },
-    undefined,
-    undefined,
-    undefined,
-    200
-  );
-
-  const typedQuestions = allQuestions as Question[];
+  const childCountry = (typedChild.country as Country | undefined) ?? "AU";
+  const countrySpecificQuestions = await loadQuestionsForPartition(`${subject}#${ageGroup}#${childCountry}`);
+  const genericQuestions = await loadQuestionsForPartition(`${subject}#${ageGroup}`);
+  const typedQuestions = countrySpecificQuestions.length > 0
+    ? countrySpecificQuestions
+    : mergeQuestionSets(genericQuestions);
 
   return {
     questions: selectQuestionsByDifficulty(typedQuestions, currentDifficulty),

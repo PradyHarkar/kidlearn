@@ -4,6 +4,7 @@ import {
   calculateDifficultyAdjustment,
   calculatePerformanceWindow,
   calculateStarsEarned,
+  nextYearLevel,
   shouldAdvanceYearLevel,
   updateChildDifficulty,
 } from "@/lib/adaptive";
@@ -107,7 +108,7 @@ export async function submitProgressForChild(
 
   let newYearLevel: YearLevel | undefined;
   if (shouldAdvanceYearLevel(accuracy, newDifficulty, child.yearLevel as YearLevel)) {
-    newYearLevel = "year3";
+    newYearLevel = nextYearLevel(child.yearLevel as YearLevel);
   }
 
   await updateChildDifficulty(userId, childId, subject, newDifficulty, newYearLevel);

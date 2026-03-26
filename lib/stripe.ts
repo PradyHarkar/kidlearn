@@ -66,13 +66,11 @@ export async function createCheckoutSession(params: {
   );
 
   const priceId = getStripePriceId(country, plan);
-  const currency = COUNTRY_CONFIGS[country].currency.toLowerCase();
 
   return stripe.checkout.sessions.create({
     customer: customerId,
     mode: "subscription",
     line_items: [{ price: priceId, quantity: 1 }],
-    currency,
     success_url: successUrl,
     cancel_url: cancelUrl,
     metadata: { userId, country, plan },

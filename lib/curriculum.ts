@@ -36,6 +36,8 @@ export const COUNTRY_CONFIGS: Record<Country, CountryConfig> = {
       { gradeId: "year4",      displayName: "Year 4",     ageGroup: "year4",      curriculumName: "ACARA" },
       { gradeId: "year5",      displayName: "Year 5",     ageGroup: "year5",      curriculumName: "ACARA" },
       { gradeId: "year6",      displayName: "Year 6",     ageGroup: "year6",      curriculumName: "ACARA" },
+      { gradeId: "year7",      displayName: "Year 7",     ageGroup: "year7",      curriculumName: "ACARA" },
+      { gradeId: "year8",      displayName: "Year 8",     ageGroup: "year8",      curriculumName: "ACARA" },
     ],
   },
   US: {
@@ -52,6 +54,8 @@ export const COUNTRY_CONFIGS: Record<Country, CountryConfig> = {
       { gradeId: "grade4",       displayName: "Grade 4",      ageGroup: "year4",      curriculumName: "Common Core" },
       { gradeId: "grade5",       displayName: "Grade 5",      ageGroup: "year5",      curriculumName: "Common Core" },
       { gradeId: "grade6",       displayName: "Grade 6",      ageGroup: "year6",      curriculumName: "Common Core" },
+      { gradeId: "grade7",       displayName: "Grade 7",      ageGroup: "year7",      curriculumName: "Common Core" },
+      { gradeId: "grade8",       displayName: "Grade 8",      ageGroup: "year8",      curriculumName: "Common Core" },
     ],
   },
   IN: {
@@ -85,6 +89,8 @@ export const COUNTRY_CONFIGS: Record<Country, CountryConfig> = {
       { gradeId: "year4",     displayName: "Year 4",    ageGroup: "year4",      curriculumName: "UK National Curriculum", keystage: "KS2" },
       { gradeId: "year5",     displayName: "Year 5",    ageGroup: "year5",      curriculumName: "UK National Curriculum", keystage: "KS2" },
       { gradeId: "year6",     displayName: "Year 6",    ageGroup: "year6",      curriculumName: "UK National Curriculum", keystage: "KS2" },
+      { gradeId: "year7",     displayName: "Year 7",    ageGroup: "year7",      curriculumName: "UK National Curriculum", keystage: "KS3" },
+      { gradeId: "year8",     displayName: "Year 8",    ageGroup: "year8",      curriculumName: "UK National Curriculum", keystage: "KS3" },
     ],
   },
 };

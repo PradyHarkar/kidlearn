@@ -82,11 +82,23 @@ export interface AnswerOption {
   emoji?: string;
   imageUrl?: string;
   visualDescription?: string;
+  imageAlt?: string;
   isCorrect: boolean;
 }
 
+export interface QuestionGenerationMetadata {
+  generator: "seed" | "bedrock" | "template" | "manual-import";
+  templateId?: string;
+  variantKey?: string;
+  visualStyle?: "playful" | "illustrated" | "standard";
+  targetAgeBand?: "early-years" | "primary" | "middle-school";
+  benchmarkFamily?: string;
+  examStyle?: string;
+  qualityVersion?: string;
+}
+
 export interface Question {
-  pk: string;       // subject#ageGroup (e.g. "maths#year3")
+  pk: string;       // subject#ageGroup or subject#ageGroup#country
   questionId: string;
   questionText: string;
   answerOptions: AnswerOption[];
@@ -95,10 +107,14 @@ export interface Question {
   explanation: string;
   subject: Subject;
   yearLevel: YearLevel;   // legacy compatibility field stored with questions
+  ageGroup?: AgeGroup;
+  country?: Country;
+  grade?: string;
   hint?: string;
   ttsText?: string;
   interactionType?: string;
   interactionData?: Record<string, unknown>;
+  generationMetadata?: QuestionGenerationMetadata;
   cached?: boolean;
   createdAt: string;
 }

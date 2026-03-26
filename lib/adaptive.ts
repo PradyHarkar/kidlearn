@@ -1,6 +1,19 @@
-import { Subject, YearLevel } from "@/types";
+import { AgeGroup, Subject, YearLevel } from "@/types";
 import { ddb, TABLES } from "./dynamodb";
 import { QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import { toAgeGroup } from "./learner";
+
+const INITIAL_DIFFICULTY_BY_AGE_GROUP: Record<AgeGroup, number> = {
+  foundation: 1,
+  year1: 2,
+  year2: 3,
+  year3: 4,
+  year4: 5,
+  year5: 6,
+  year6: 7,
+  year7: 8,
+  year8: 9,
+};
 
 export interface PerformanceWindow {
   consecutiveCorrect: number;
@@ -67,7 +80,10 @@ export async function getAdaptiveDifficulty(
   const records = result.Items || [];
 
   if (records.length === 0) {
-    return { difficulty: 1, yearLevel: "prep" };
+    return {
+      difficulty: getInitialDifficultyForAgeGroup("foundation"),
+      yearLevel: "prep",
+    };
   }
 
   const performance = calculatePerformanceWindow(
@@ -81,6 +97,10 @@ export async function getAdaptiveDifficulty(
   );
 
   return { difficulty: adjustedDifficulty, yearLevel: records[0].yearLevel || "prep" };
+}
+
+export function getInitialDifficultyForAgeGroup(ageGroup: AgeGroup | YearLevel): number {
+  return INITIAL_DIFFICULTY_BY_AGE_GROUP[toAgeGroup(ageGroup)];
 }
 
 export function calculateDifficultyAdjustment(
@@ -97,16 +117,30 @@ export function calculateDifficultyAdjustment(
   return currentDifficulty;
 }
 
+const AGE_GROUP_ORDER: AgeGroup[] = [
+  "foundation", "year1", "year2", "year3", "year4", "year5", "year6", "year7", "year8",
+];
+
 export function shouldAdvanceYearLevel(
   accuracy: number,
   currentDifficulty: number,
   currentYearLevel: YearLevel
 ): boolean {
+  const ageGroup = toAgeGroup(currentYearLevel);
+  // Can only advance if not already at the top level
+  const currentIndex = AGE_GROUP_ORDER.indexOf(ageGroup);
   return (
     accuracy >= 90 &&
     currentDifficulty >= 8 &&
-    currentYearLevel === "prep"
+    currentIndex >= 0 &&
+    currentIndex < AGE_GROUP_ORDER.length - 1
   );
+}
+
+export function nextYearLevel(currentYearLevel: YearLevel): AgeGroup {
+  const ageGroup = toAgeGroup(currentYearLevel);
+  const currentIndex = AGE_GROUP_ORDER.indexOf(ageGroup);
+  return AGE_GROUP_ORDER[Math.min(currentIndex + 1, AGE_GROUP_ORDER.length - 1)];
 }
 
 export function shouldResetDifficulty(lastActiveDate: string): boolean {

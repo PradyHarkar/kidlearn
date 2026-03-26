@@ -66,6 +66,18 @@ This area is the largest current source of architecture risk because it affects:
 - persistence shape
 - curriculum mapping
 
+## Question Content Pipeline
+
+The existing questions table is still the canonical store for curriculum content.
+
+Recent code now supports a larger question-bank pipeline built around:
+- canonical partition keys in the form `subject#ageGroup#country`
+- backward-compatible storage of legacy `yearLevel`
+- richer option metadata for clickable visual answers for younger learners
+- template-based bulk generation for large banks such as `10000` questions per class per subject
+
+The retrieval flow now prefers country-specific partitions and falls back to older generic partitions when needed. This means the current datastore already has a place for the planned bank expansion. The main operational concern is content generation quality and operational rollout, not the existence of a storage target.
+
 ## Data Layer
 
 DynamoDB is used for core entities such as:

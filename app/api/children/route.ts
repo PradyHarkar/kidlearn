@@ -4,6 +4,7 @@ import { z } from "zod";
 import { queryItems, putItem, TABLES } from "@/lib/dynamodb";
 import { getSession } from "@/lib/auth";
 import { gradeToAgeGroup } from "@/lib/curriculum";
+import { getInitialDifficultyForAgeGroup } from "@/lib/adaptive";
 import { toLegacyYearLevel } from "@/lib/learner";
 import type { Country } from "@/types";
 
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest) {
     // Resolve country from session (set during registration)
     const country: Country = (session.user.country as Country) ?? "AU";
     const ageGroup = gradeToAgeGroup(country, grade);
+    const initialDifficulty = getInitialDifficultyForAgeGroup(ageGroup);
 
     const childId = uuidv4();
     const child = {
@@ -62,9 +64,9 @@ export async function POST(req: NextRequest) {
       ageGroup,
       yearLevel: toLegacyYearLevel(ageGroup),  // kept for backwards compat
       avatar,
-      currentDifficultyMaths: 1,
-      currentDifficultyEnglish: 1,
-      currentDifficultyScience: 1,
+      currentDifficultyMaths: initialDifficulty,
+      currentDifficultyEnglish: initialDifficulty,
+      currentDifficultyScience: initialDifficulty,
       streakDays: 0,
       lastActiveDate: new Date().toISOString(),
       totalCoins: 0,

@@ -1,0 +1,12 @@
+{
+  "scanner": "git-history",
+  "generatedAt": "2026-03-26T08:36:34.386Z",
+  "summary": {
+    "totalFindings": 0,
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+  },
+  "findings": []
+}

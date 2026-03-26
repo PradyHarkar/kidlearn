@@ -1,0 +1,32 @@
+# Coordination Rules
+
+This file is the universal source of truth for multi-agent work in this repo.
+
+## Priority Order
+
+1. Current branch shown by `git branch --show-current`.
+2. The active plan file for the task family:
+   - `.collab/plan.json` for general product work
+   - `.secops/plan.json` for security/vulnerability work
+3. The corresponding ownership file.
+4. The active status files for the two agents.
+5. The active handoff files for the two agents.
+
+If any older note conflicts with the active plan, the active plan wins.
+
+## Stale Context
+
+- Treat older handoffs as historical once the plan changes.
+- Do not continue a previous objective just because it appears in chat history or an old handoff file.
+- Before a commit, verify the current branch again if the shared worktree may have drifted.
+
+## Agent Discipline
+
+- Poll the other agent's status file on the cadence required by the active plan.
+- Update your own status file regularly with honest ETA and blockers.
+- Keep file ownership disjoint unless the plan explicitly says otherwise.
+- Put any cross-agent disagreement into the handoff files, not into memory.
+
+## Handoff Rule
+
+When you start a new objective, write the current objective and the exact file split into the relevant plan and handoff files before doing broad edits.

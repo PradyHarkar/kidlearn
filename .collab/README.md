@@ -2,10 +2,14 @@
 
 This folder is the shared coordination layer for Codex and Claude.
 
+For global coordination rules, read [COORDINATION.md](/c:/Users/prady/projects/kidlearn/COORDINATION.md) first.
+
 ## Goal
 
 Let either agent receive a new user request and turn it into a shared plan without
 making the user repeat context in both windows.
+
+For the current task, the live source of truth is `.collab/plan.json` plus the current branch. Older handoffs are historical once the plan changes.
 
 ## Rules
 

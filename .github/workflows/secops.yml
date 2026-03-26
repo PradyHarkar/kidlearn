@@ -1,0 +1,33 @@
+name: SecOps Gate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  secops:
+    name: Security Exposure Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run secops reporting suite
+        run: npx tsx scripts/test/suites/11-secops-reporting.ts
+
+      - name: Scan repository for AWS exposure signals
+        run: node scripts/secops/scan-aws.mjs --root . --write --json
+
+      - name: Export SecOps report
+        run: node scripts/secops/export-report.mjs --fail-on-critical --output .secops/report.md

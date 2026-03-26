@@ -27,17 +27,33 @@ export class TestClient {
   }
 
   private storeCookies(headers: Headers) {
-    const raw = headers.get("set-cookie");
-    if (!raw) return;
-    // Handle multiple Set-Cookie values (may arrive as comma-separated in Node fetch)
-    const pairs = raw.split(/,(?=[^ ])/).map(s => s.split(";")[0].trim());
-    for (const pair of pairs) {
-      const eq = pair.indexOf("=");
+    // Node 18.14+ exposes getSetCookie() which returns a proper string[] —
+    // one entry per Set-Cookie header, no ambiguous comma joining.
+    // Older Node concatenates all Set-Cookie headers into one string with ", "
+    // separators, which is ambiguous when cookie values contain commas (e.g. dates).
+    const cookies: string[] = typeof (headers as unknown as { getSetCookie?: () => string[] }).getSetCookie === "function"
+      ? (headers as unknown as { getSetCookie: () => string[] }).getSetCookie()
+      : this.splitSetCookieFallback(headers.get("set-cookie") ?? "");
+
+    for (const raw of cookies) {
+      const nameVal = raw.split(";")[0].trim();
+      const eq = nameVal.indexOf("=");
       if (eq === -1) continue;
-      const name  = pair.slice(0, eq).trim();
-      const value = pair.slice(eq + 1).trim();
+      const name  = nameVal.slice(0, eq).trim();
+      const value = nameVal.slice(eq + 1).trim();
       if (name) this.cookieJar.set(name, value);
     }
+  }
+
+  /**
+   * Fallback splitter for Node versions that don't have getSetCookie().
+   * Splits on ", " only when followed by a known cookie-name pattern (word chars + =).
+   */
+  private splitSetCookieFallback(raw: string): string[] {
+    if (!raw) return [];
+    // Split on ", " followed by a token that looks like "name=" to avoid splitting
+    // on commas inside Expires dates ("Thu, 01 Jan ...").
+    return raw.split(/,\s*(?=[\w-]+=)/);
   }
 
   async get<T = unknown>(path: string, headers: Record<string, string> = {}): Promise<HttpResponse<T>> {

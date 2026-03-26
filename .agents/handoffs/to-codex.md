@@ -2,16 +2,16 @@
 
 ## Current Objective
 
-Organize the repo with a branch-agnostic multi-agent control plane using LangGraph concepts, shared task/status/handoff/message files, and clear Codex/Claude conversation lanes.
+Implement DASHBOARD-TABS-V1: tabbed dashboard with Students, Progress, Rewards, and Account sections, diagnostic badge on child cards, and `?tab=` routing.
 
 ## What Changed
 
-Added .agents task, ownership, status, handoff, message, report, and LangGraph documentation scaffolding; wired helper scripts and npm commands.
+Claude dispatched DASHBOARD-TABS-V1 in `.agents/task.json` and `.agents/messages/to-codex.jsonl`.
 
 ## What You Should Do Next
 
-Keep the orchestration lane moving and prepare the next LangGraph role graph iteration.
+Implement the dashboard tabs, keep the existing child/rewards/subscription flows intact, and hand the result back for Suite 13.
 
 ## Risks
 
-The real LangGraph runtime is still conceptual; keep the repo-native files as the source of truth.
+No backend/API changes should be needed. Keep the dashboard behavior compatible with existing learn, rewards, and PIN login flows.

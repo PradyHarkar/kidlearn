@@ -1,7 +1,7 @@
 {
   "protocolVersion": 1,
-  "updatedAt": "2026-03-26T11:17:37.912Z",
-  "currentObjective": "Organize the repo with a branch-agnostic multi-agent control plane using LangGraph concepts, shared task/status/handoff/message files, and clear Codex/Claude conversation lanes. Keep Confluence as the requirements source and never commit secrets.",
+  "updatedAt": "2026-03-26T11:50:00.000Z",
+  "currentObjective": "Implement DASHBOARD-TABS-V1: tabbed dashboard with Students, Progress, Rewards, and Account sections, diagnostic badge on child cards, and ?tab= routing.",
   "dispatchAgent": "codex",
   "cadenceSeconds": 5,
   "statusCadenceSeconds": 60,
@@ -38,14 +38,14 @@
       "owner": "codex",
       "branch": "codex/agents-foundation",
       "status": "in_progress",
-      "goal": "Scaffold the shared `.agents` contract, scripts, and docs so both agents can poll and talk through the repo.",
+      "goal": "Implement DASHBOARD-TABS-V1 with a tabbed dashboard, diagnostic badge on child cards, and query-param navigation.",
       "chunks": [
-        "Create task, ownership, status, handoff, and message templates",
-        "Add helper scripts for status, polling, and messages",
-        "Wire package scripts and README guidance",
-        "Publish the Claude prompt and branch split"
+        "Add tab routing and section state",
+        "Split dashboard into Students, Progress, Rewards, and Account sections",
+        "Add diagnostic badges and preserve existing actions",
+        "Smoke test and hand off to Claude"
       ],
-      "estimatedMinutes": 45
+      "estimatedMinutes": 35
     },
     {
       "id": "LANGGRAPH-SETUP",

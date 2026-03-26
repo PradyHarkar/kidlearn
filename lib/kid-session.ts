@@ -3,7 +3,7 @@ import { SignJWT, jwtVerify } from "jose";
 import type { JWTPayload } from "jose";
 import { NextResponse } from "next/server";
 import { getNextAuthSecret } from "@/lib/auth-options";
-import type { Child, KidLoginMethod, YearLevel } from "@/types";
+import type { Child, Subject, YearLevel } from "@/types";
 
 const KID_SESSION_COOKIE = "kidlearn_kid_session";
 const KID_SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
@@ -17,7 +17,9 @@ export interface KidSession extends JWTPayload {
   grade?: string;
   yearLevel: YearLevel;
   avatar?: string;
-  allowedKidLoginMethods: KidLoginMethod[];
+  allowedKidLoginMethods: ["pin"];
+  lastSubject?: Subject;
+  lastSessionCompletedAt?: string;
 }
 
 async function getKidSessionSecret() {
@@ -32,7 +34,9 @@ export function childToKidSession(child: Child): KidSession {
     grade: child.grade,
     yearLevel: child.yearLevel,
     avatar: child.avatar,
-    allowedKidLoginMethods: child.allowedKidLoginMethods || ["pin"],
+    allowedKidLoginMethods: ["pin"],
+    lastSubject: child.lastSubject,
+    lastSessionCompletedAt: child.lastSessionCompletedAt,
   };
 }
 

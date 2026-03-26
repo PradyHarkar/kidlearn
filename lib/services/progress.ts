@@ -130,13 +130,14 @@ export async function submitProgressForChild(
   await updateItem(
     TABLES.CHILDREN,
     { userId, childId },
-    "SET totalCoins = :coins, totalStars = :stars, rewardPoints = :rewardPoints, streakDays = :streak, lastActiveDate = :date, stats = :stats",
+    "SET totalCoins = :coins, totalStars = :stars, rewardPoints = :rewardPoints, streakDays = :streak, lastActiveDate = :date, lastSubject = :subject, lastSessionCompletedAt = :date, stats = :stats",
     {
       ":coins": totalCoins + streakCoins,
       ":stars": totalStars,
       ":rewardPoints": totalRewardPoints,
       ":streak": newStreak,
       ":date": now,
+      ":subject": subject,
       ":stats": {
         totalQuestionsAttempted: totalAttempted,
         totalCorrect: totalCorrectAll,

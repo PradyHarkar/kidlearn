@@ -58,6 +58,8 @@ export interface Child {
   childPinHash?: string;
   pinConfiguredAt?: string;
   allowedKidLoginMethods?: KidLoginMethod[];
+  lastSubject?: Subject;
+  lastSessionCompletedAt?: string;
   streakDays: number;
   lastActiveDate: string;
   totalCoins: number;

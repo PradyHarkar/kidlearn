@@ -18,6 +18,8 @@ interface KidAccessChild {
   allowedKidLoginMethods: KidLoginMethod[];
   rewardPoints?: number;
   rewardPointsRedeemed?: number;
+  lastSubject?: Subject;
+  lastSessionCompletedAt?: string;
 }
 
 interface KidSessionPayload extends KidAccessChild {
@@ -235,10 +237,22 @@ function KidsContent() {
             </div>
             <div className="max-w-xl">
               <p className="text-sm font-bold text-white/75">
-                {kidSession.allowedKidLoginMethods.includes("face") || kidSession.allowedKidLoginMethods.includes("voice")
-                  ? "Face and voice preferences are saved. PIN is the active login path until secure biometric verification is completed."
-                  : "Finish your set, win points, and stop or move to the next 20-question mission."}
+                PIN is the active login path. Finish your set, win points, and stop or move to the next 20-question mission.
               </p>
+              {kidSession.lastSubject && (
+                <div className="mt-4 bg-white/10 rounded-3xl p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-white/60">Resume learning</p>
+                  <p className="text-xl font-black mt-1">
+                    {kidSession.lastSubject === "maths" ? "Maths" : kidSession.lastSubject === "science" ? "Science" : "English"}
+                  </p>
+                  <button
+                    onClick={() => openSubject(kidSession.lastSubject as Subject)}
+                    className="mt-3 btn-primary text-sm py-2 px-4"
+                  >
+                    Continue last set
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

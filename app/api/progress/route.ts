@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { actorCanAccessChild, getActorSession } from "@/lib/actor-session";
+import { clearActiveLearningSession } from "@/lib/services/learning-session";
 import { getProgressForChild, submitProgressForChild } from "@/lib/services/progress";
 
 const sessionResultSchema = z.object({
@@ -31,6 +32,8 @@ export async function POST(req: NextRequest) {
 
     const result = await submitProgressForChild(actor.userId, childId, subject, questions);
     if (!result) return NextResponse.json({ error: "Child not found" }, { status: 404 });
+
+    await clearActiveLearningSession(actor.userId, childId, subject);
 
     return NextResponse.json(result);
   } catch (error) {

@@ -1,8 +1,8 @@
 import { getInitialDifficultyForAgeGroup, shouldResetDifficulty } from "@/lib/adaptive";
 import { getGradeConfig, getTopicsForGrade } from "@/lib/curriculum";
-import { createDdb, getItem, TABLES } from "@/lib/dynamodb";
+import { createDdb, getItem, scanItems, TABLES } from "@/lib/dynamodb";
 import { resolveChildAgeGroup, toLegacyYearLevel } from "@/lib/learner";
-import type { AgeGroup, Child, Country, Question, Subject, YearLevel } from "@/types";
+import type { AgeGroup, Child, Country, Question, QuestionIssue, Subject, YearLevel } from "@/types";
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 
 interface CurriculumContext {
@@ -44,15 +44,50 @@ function getCurrentDifficulty(child: Child, subject: Subject): number {
 
 export const DEFAULT_QUESTION_SET_SIZE = 20;
 
-function selectQuestionsByDifficulty(questions: Question[], targetDifficulty: number): Question[] {
-  let filtered = questions.filter((q) => Math.abs(q.difficulty - targetDifficulty) <= 1);
+function normalizeQuestionSignature(question: Question) {
+  const questionText = question.questionText.trim().toLowerCase().replace(/\s+/g, " ");
+  const answerText = question.answerOptions
+    .map((option) => option.text.trim().toLowerCase().replace(/\s+/g, " "))
+    .join("|");
+  return `${questionText}::${answerText}`;
+}
+
+function dedupeQuestionsByContent(questions: Question[]): Question[] {
+  const seen = new Set<string>();
+  const deduped: Question[] = [];
+
+  for (const question of questions) {
+    const signature = normalizeQuestionSignature(question);
+    if (seen.has(signature)) {
+      continue;
+    }
+    seen.add(signature);
+    deduped.push(question);
+  }
+
+  return deduped;
+}
+
+function buildAvailableQuestionPool(questions: Question[], blockedQuestionIds: Set<string>) {
+  return dedupeQuestionsByContent(
+    questions.filter((question) => !blockedQuestionIds.has(question.questionId))
+  );
+}
+
+function selectQuestionsByDifficulty(
+  questions: Question[],
+  targetDifficulty: number,
+  blockedQuestionIds: Set<string>
+): Question[] {
+  const deduped = buildAvailableQuestionPool(questions, blockedQuestionIds);
+  let filtered = deduped.filter((q) => Math.abs(q.difficulty - targetDifficulty) <= 1);
 
   if (filtered.length < 5) {
-    filtered = questions.filter((q) => Math.abs(q.difficulty - targetDifficulty) <= 3);
+    filtered = deduped.filter((q) => Math.abs(q.difficulty - targetDifficulty) <= 3);
   }
 
   if (filtered.length === 0) {
-    filtered = questions;
+    filtered = deduped;
   }
 
   return filtered.sort(() => Math.random() - 0.5).slice(0, DEFAULT_QUESTION_SET_SIZE);
@@ -82,6 +117,19 @@ async function loadQuestionsForPartition(pk: string): Promise<Question[]> {
   } while (lastEvaluatedKey);
 
   return questions;
+}
+
+async function loadReportedQuestionIds(): Promise<Set<string>> {
+  const issues = (await scanItems(TABLES.QUESTION_ISSUES)) as QuestionIssue[];
+  const blocked = new Set<string>();
+
+  for (const issue of issues) {
+    if (!issue.questionId) continue;
+    if (issue.status === "resolved" || issue.status === "dismissed") continue;
+    blocked.add(issue.questionId);
+  }
+
+  return blocked;
 }
 
 function mergeQuestionSets(...questionSets: Question[][]): Question[] {
@@ -134,13 +182,15 @@ export async function getQuestionsForChild(userId: string, childId: string, subj
   const typedQuestions = countrySpecificQuestions.length > 0
     ? countrySpecificQuestions
     : mergeQuestionSets(genericQuestions);
+  const blockedQuestionIds = await loadReportedQuestionIds();
+  const availableQuestions = buildAvailableQuestionPool(typedQuestions, blockedQuestionIds);
 
   return {
-    questions: selectQuestionsByDifficulty(typedQuestions, currentDifficulty),
+    questions: selectQuestionsByDifficulty(typedQuestions, currentDifficulty, blockedQuestionIds),
     difficulty: currentDifficulty,
     yearLevel: toLegacyYearLevel(ageGroup),
     ageGroup,
-    totalAvailable: typedQuestions.length,
+    totalAvailable: availableQuestions.length,
     curriculumContext: buildCurriculumContext(typedChild, ageGroup, subject),
   };
 }

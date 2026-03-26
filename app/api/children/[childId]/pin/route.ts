@@ -6,8 +6,6 @@ import { getItem, TABLES, updateItem } from "@/lib/dynamodb";
 
 const setPinSchema = z.object({
   pin: z.string().regex(/^\d{4,6}$/, "PIN must be 4 to 6 digits"),
-  allowFaceLogin: z.boolean().optional().default(false),
-  allowVoiceLogin: z.boolean().optional().default(false),
 });
 
 export async function POST(
@@ -21,16 +19,14 @@ export async function POST(
     }
 
     const body = await req.json();
-    const { pin, allowFaceLogin, allowVoiceLogin } = setPinSchema.parse(body);
+    const { pin } = setPinSchema.parse(body);
     const child = await getItem(TABLES.CHILDREN, { userId: session.user.id, childId: params.childId });
     if (!child) {
       return NextResponse.json({ error: "Child not found" }, { status: 404 });
     }
 
     const pinHash = await bcrypt.hash(pin, 12);
-    const methods = ["pin"];
-    if (allowFaceLogin) methods.push("face");
-    if (allowVoiceLogin) methods.push("voice");
+    const methods = ["pin"] as const;
 
     await updateItem(
       TABLES.CHILDREN,

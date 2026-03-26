@@ -28,6 +28,25 @@ interface QuestionResult {
   topic: string;
 }
 
+interface SavedLearnSessionState {
+  questions: Question[];
+  currentIndex: number;
+  selectedAnswer: string | null;
+  isAnswered: boolean;
+  results: QuestionResult[];
+  currentDifficulty: number;
+  ageGroup?: string;
+  timer: number;
+  coins: number;
+  streak: number;
+  consecutiveCorrect: number;
+  consecutiveWrong: number;
+  showHint: boolean;
+  showExplanation: boolean;
+  mascotMood: "happy" | "excited" | "thinking" | "sad" | "celebrating";
+  mascotMessage?: string;
+}
+
 function LearnContent() {
   const { status } = useSession();
   const router = useRouter();
@@ -53,6 +72,7 @@ function LearnContent() {
   const [coins, setCoins] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [streak, setStreak] = useState(0);
+  const [activeSessionId, setActiveSessionId] = useState<string | undefined>();
 
   // Report question modal
   const [reportingQuestion, setReportingQuestion] = useState<Question | null>(null);
@@ -66,6 +86,7 @@ function LearnContent() {
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const questionStartTime = useRef(Date.now());
+  const restoredTimerRef = useRef<number | null>(null);
 
   // Reward points = number of questions answered
   const pointsEarned = results.length;
@@ -103,8 +124,10 @@ function LearnContent() {
   }, [status, childId, subject]);
 
   useEffect(() => {
-    questionStartTime.current = Date.now();
-    setTimer(0);
+    const elapsed = restoredTimerRef.current ?? 0;
+    restoredTimerRef.current = null;
+    questionStartTime.current = Date.now() - (elapsed * 1000);
+    setTimer(elapsed);
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       setTimer(Math.floor((Date.now() - questionStartTime.current) / 1000));
@@ -116,13 +139,68 @@ function LearnContent() {
 
   const loadData = async () => {
     try {
+      const sessionRes = await fetch(`/api/learn/session?childId=${encodeURIComponent(childId ?? "")}&subject=${subject}`);
+      const sessionData = await sessionRes.json();
+      if (sessionRes.ok && sessionData.session?.questions?.length) {
+        const saved = sessionData.session as SavedLearnSessionState & { sessionId?: string };
+        setActiveSessionId(saved.sessionId);
+        setQuestions(saved.questions);
+        setCurrentIndex(saved.currentIndex);
+        setSelectedAnswer(saved.selectedAnswer);
+        setIsAnswered(saved.isAnswered);
+        setResults(saved.results || []);
+        setCurrentDifficulty(saved.currentDifficulty || 1);
+        setAgeGroup(saved.ageGroup);
+        setCoins(saved.coins || 0);
+        setStreak(saved.streak || 0);
+        setConsecutiveCorrect(saved.consecutiveCorrect || 0);
+        setConsecutiveWrong(saved.consecutiveWrong || 0);
+        setShowHint(saved.showHint || false);
+        setShowExplanation(saved.showExplanation || false);
+        setMascotMood(saved.mascotMood || "happy");
+        setMascotMessage(saved.mascotMessage);
+        restoredTimerRef.current = saved.timer || 0;
+        return;
+        }
+
       const questionsRes = await fetch(`/api/questions?subject=${subject}&childId=${childId}`);
       const questionsData = await questionsRes.json();
+      const fetchedQuestions = (questionsData.questions || []).slice(0, SESSION_SIZE);
 
       setCurrentDifficulty(questionsData.difficulty || 1);
       setAgeGroup(questionsData.ageGroup);
-      // Cap to SESSION_SIZE questions per session
-      setQuestions((questionsData.questions || []).slice(0, SESSION_SIZE));
+      setQuestions(fetchedQuestions);
+      restoredTimerRef.current = 0;
+
+      if (fetchedQuestions.length) {
+        const saveRes = await fetch("/api/learn/session", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            childId,
+            subject,
+            questions: fetchedQuestions,
+            currentIndex: 0,
+            selectedAnswer: null,
+            isAnswered: false,
+            results: [],
+            currentDifficulty: questionsData.difficulty || 1,
+            ageGroup: questionsData.ageGroup,
+            timer: 0,
+            coins: 0,
+            streak: 0,
+            consecutiveCorrect: 0,
+            consecutiveWrong: 0,
+            showHint: false,
+            showExplanation: false,
+            mascotMood: "happy",
+          }),
+        });
+        const saveData = await saveRes.json();
+        if (saveRes.ok && saveData.session?.sessionId) {
+          setActiveSessionId(saveData.session.sessionId);
+        }
+      }
     } catch {
       toast.error("Failed to load. Please try again!");
       router.push("/dashboard");
@@ -130,6 +208,29 @@ function LearnContent() {
       setLoading(false);
     }
   };
+
+  const persistSession = useCallback(async (snapshot: SavedLearnSessionState) => {
+    if (!childId || !subject) return;
+
+    try {
+      const res = await fetch("/api/learn/session", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...snapshot,
+          sessionId: activeSessionId,
+          childId,
+          subject,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.session?.sessionId) {
+        setActiveSessionId(data.session.sessionId);
+      }
+    } catch {
+      // Non-fatal: progress submission still persists the final state.
+    }
+  }, [activeSessionId, childId, subject]);
 
   const handleAnswerSelect = useCallback((answerId: string, isCorrect: boolean) => {
     if (isAnswered) return;
@@ -144,25 +245,29 @@ function LearnContent() {
 
     const currentQuestion = questions[currentIndex];
     if (!currentQuestion) return;
-    setResults(prev => [...prev, {
+    const nextResults = [...results, {
       questionId: currentQuestion.questionId,
       correct: isCorrect,
       timeSpent,
       difficulty: currentDifficulty,
       topic: currentQuestion.topics?.[0] || "general",
-    }]);
+    }];
+    setResults(nextResults);
 
     if (isCorrect) {
       const newConsecutive = consecutiveCorrect + 1;
-      setConsecutiveCorrect(newConsecutive);
-      setConsecutiveWrong(0);
-      setStreak(prev => prev + 1);
+      const nextStreak = streak + 1;
       const coinsGained = 10 + Math.floor(currentDifficulty * 2);
-      setCoins(prev => prev + coinsGained);
+      const nextCoins = coins + coinsGained;
+      const nextDifficulty = newConsecutive >= 3 ? Math.min(10, currentDifficulty + 1) : currentDifficulty;
+      const nextConsecutiveCorrect = newConsecutive >= 3 ? 0 : newConsecutive;
+      setConsecutiveCorrect(nextConsecutiveCorrect);
+      setConsecutiveWrong(0);
+      setStreak(nextStreak);
+      setCoins(nextCoins);
 
       if (newConsecutive >= 3) {
-        setCurrentDifficulty(prev => Math.min(10, prev + 1));
-        setConsecutiveCorrect(0);
+        setCurrentDifficulty(nextDifficulty);
       }
 
       confetti({
@@ -174,22 +279,61 @@ function LearnContent() {
       });
 
       const msgs = ["Amazing! ⭐", "Correct! 🎉", "You got it! 💪", "Brilliant! 🌟", "Awesome! 🔥", "Perfect! 🏆"];
+      const message = msgs[Math.floor(Math.random() * msgs.length)];
       setMascotMood("excited");
-      setMascotMessage(msgs[Math.floor(Math.random() * msgs.length)]);
+      setMascotMessage(message);
+      void persistSession({
+        questions,
+        currentIndex,
+        selectedAnswer: answerId,
+        isAnswered: true,
+        results: nextResults,
+        currentDifficulty: nextDifficulty,
+        ageGroup,
+        timer,
+        coins: nextCoins,
+        streak: nextStreak,
+        consecutiveCorrect: nextConsecutiveCorrect,
+        consecutiveWrong: 0,
+        showHint: false,
+        showExplanation: true,
+        mascotMood: "excited",
+        mascotMessage: message,
+      });
     } else {
       const newWrong = consecutiveWrong + 1;
-      setConsecutiveWrong(newWrong);
+      const nextDifficulty = newWrong >= 2 ? Math.max(1, currentDifficulty - 1) : currentDifficulty;
+      const nextConsecutiveWrong = newWrong >= 2 ? 0 : newWrong;
+      setConsecutiveWrong(nextConsecutiveWrong);
       setConsecutiveCorrect(0);
       setStreak(0);
 
       if (newWrong >= 2) {
-        setCurrentDifficulty(prev => Math.max(1, prev - 1));
-        setConsecutiveWrong(0);
+        setCurrentDifficulty(nextDifficulty);
       }
 
       setMascotMood("sad");
       const msgs = ["Try again next time! 💫", "Don't give up! 🌈", "Almost! Keep going! 🎯", "You'll get the next one! 💪"];
-      setMascotMessage(msgs[Math.floor(Math.random() * msgs.length)]);
+      const message = msgs[Math.floor(Math.random() * msgs.length)];
+      setMascotMessage(message);
+      void persistSession({
+        questions,
+        currentIndex,
+        selectedAnswer: answerId,
+        isAnswered: true,
+        results: nextResults,
+        currentDifficulty: nextDifficulty,
+        ageGroup,
+        timer,
+        coins,
+        streak: 0,
+        consecutiveCorrect: 0,
+        consecutiveWrong: nextConsecutiveWrong,
+        showHint: false,
+        showExplanation: true,
+        mascotMood: "sad",
+        mascotMessage: message,
+      });
     }
   }, [isAnswered, questions, currentIndex, consecutiveCorrect, consecutiveWrong, currentDifficulty]);
 
@@ -198,7 +342,8 @@ function LearnContent() {
       await submitSession();
       return;
     }
-    setCurrentIndex(prev => prev + 1);
+    const nextIndex = currentIndex + 1;
+    setCurrentIndex(nextIndex);
     setSelectedAnswer(null);
     setIsAnswered(false);
     setShowHint(false);
@@ -207,8 +352,25 @@ function LearnContent() {
     setMascotMessage(undefined);
     setTutorExplanation(null);
     setTutorLoading(false);
+    void persistSession({
+      questions,
+      currentIndex: nextIndex,
+      selectedAnswer: null,
+      isAnswered: false,
+      results,
+      currentDifficulty,
+      ageGroup,
+      timer: 0,
+      coins,
+      streak,
+      consecutiveCorrect,
+      consecutiveWrong,
+      showHint: false,
+      showExplanation: false,
+      mascotMood: "happy",
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, questions.length]);
+  }, [currentIndex, questions.length, questions, results, currentDifficulty, ageGroup, coins, streak, consecutiveCorrect, consecutiveWrong, persistSession]);
 
   const handleSkip = useCallback(() => {
     if (isAnswered) return;
@@ -216,22 +378,60 @@ function LearnContent() {
     const timeSpent = Math.floor((Date.now() - questionStartTime.current) / 1000);
     const q = questions[currentIndex];
     if (!q) return;
-    setResults(prev => [...prev, { questionId: q.questionId, correct: false, timeSpent, difficulty: currentDifficulty, topic: q.topics?.[0] || "general" }]);
+    const nextResults = [...results, { questionId: q.questionId, correct: false, timeSpent, difficulty: currentDifficulty, topic: q.topics?.[0] || "general" }];
+    setResults(nextResults);
 
     if (currentIndex >= questions.length - 1) {
       // Last question skipped — show "See My Results!" button rather than going past the array end
       setIsAnswered(true);
       setShowHint(false);
       setShowExplanation(false);
+      void persistSession({
+        questions,
+        currentIndex,
+        selectedAnswer: null,
+        isAnswered: true,
+        results: nextResults,
+        currentDifficulty,
+        ageGroup,
+        timer,
+        coins,
+        streak,
+        consecutiveCorrect,
+        consecutiveWrong,
+        showHint: false,
+        showExplanation: false,
+        mascotMood,
+        mascotMessage,
+      });
       return;
     }
 
-    setCurrentIndex(prev => prev + 1);
+    const nextIndex = currentIndex + 1;
+    setCurrentIndex(nextIndex);
     setSelectedAnswer(null);
     setIsAnswered(false);
     setShowHint(false);
     setShowExplanation(false);
-  }, [isAnswered, questions, currentIndex, currentDifficulty]);
+    void persistSession({
+      questions,
+      currentIndex: nextIndex,
+      selectedAnswer: null,
+      isAnswered: false,
+      results: nextResults,
+      currentDifficulty,
+      ageGroup,
+      timer: 0,
+      coins,
+      streak,
+      consecutiveCorrect,
+      consecutiveWrong,
+      showHint: false,
+      showExplanation: false,
+      mascotMood,
+      mascotMessage,
+    });
+  }, [isAnswered, questions, currentIndex, currentDifficulty, results, ageGroup, coins, streak, consecutiveCorrect, consecutiveWrong, mascotMood, mascotMessage, persistSession]);
 
   const submitSession = async () => {
     setSubmitting(true);

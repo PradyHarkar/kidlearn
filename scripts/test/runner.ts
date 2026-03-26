@@ -12,7 +12,7 @@
  *
  * Options:
  *   --url <url>     Base URL of the app (default: http://localhost:3000)
- *   --suite <name>  Run only one suite: auth|children|questions|progress|subscription|adaptive
+ *   --suite <name>  Run only one suite: auth|children|questions|progress|subscription|adaptive|report|session-shape|tutor|diagnostic|kid-flow
  *   --no-setup      Skip DynamoDB seed step (if already seeded)
  *   --no-teardown   Keep test data after run (for debugging)
  *   --json          Write results to test-results.json
@@ -37,6 +37,7 @@ import { runReportQuestionSuite }    from "./suites/07-report-question";
 import { runSessionShapeSuite }      from "./suites/08-session-shape";
 import { runTutorSuite }             from "./suites/09-tutor";
 import { runDiagnosticSuite }        from "./suites/10-diagnostic";
+import { runKidFlowSuite }           from "./suites/11-kid-flow";
 
 // ── Parse CLI args ────────────────────────────────────────────────────────────
 
@@ -106,6 +107,7 @@ async function main() {
     "session-shape":  runSessionShapeSuite,
     "tutor":          runTutorSuite,
     "diagnostic":     runDiagnosticSuite,
+    "kid-flow":       runKidFlowSuite,
   };
 
   const toRun = opts.suite

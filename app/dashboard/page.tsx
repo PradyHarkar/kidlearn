@@ -43,7 +43,7 @@ function DashboardContent() {
   const [managingSubscription, setManagingSubscription] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinChild, setPinChild] = useState<Child | null>(null);
-  const [pinForm, setPinForm] = useState({ pin: "", allowFaceLogin: false, allowVoiceLogin: false });
+  const [pinForm, setPinForm] = useState({ pin: "" });
   const [savingPin, setSavingPin] = useState(false);
   const [removingPin, setRemovingPin] = useState(false);
 
@@ -160,11 +160,7 @@ function DashboardContent() {
 
   const openPinModal = (child: Child) => {
     setPinChild(child);
-    setPinForm({
-      pin: "",
-      allowFaceLogin: child.allowedKidLoginMethods?.includes("face") || false,
-      allowVoiceLogin: child.allowedKidLoginMethods?.includes("voice") || false,
-    });
+    setPinForm({ pin: "" });
     setShowPinModal(true);
   };
 
@@ -189,7 +185,7 @@ function DashboardContent() {
       toast.success(`${pinChild.childName}'s PIN login is ready`);
       setShowPinModal(false);
       setPinChild(null);
-      setPinForm({ pin: "", allowFaceLogin: false, allowVoiceLogin: false });
+      setPinForm({ pin: "" });
     } catch {
       toast.error("Failed to save child PIN");
     } finally {
@@ -215,7 +211,7 @@ function DashboardContent() {
       toast.success(`${pinChild.childName}'s PIN login was removed`);
       setShowPinModal(false);
       setPinChild(null);
-      setPinForm({ pin: "", allowFaceLogin: false, allowVoiceLogin: false });
+      setPinForm({ pin: "" });
     } catch {
       toast.error("Failed to remove child PIN");
     } finally {
@@ -497,7 +493,7 @@ function DashboardContent() {
                   </div>
                   <p className="text-xs font-semibold text-gray-500">
                     {child.hasChildPin
-                      ? `PIN ready${child.allowedKidLoginMethods?.includes("face") || child.allowedKidLoginMethods?.includes("voice") ? " - biometric preferences saved for the next phase" : ""}`
+                      ? "PIN ready for kid login"
                       : "Add a PIN so this child can open their own learning screen"}
                   </p>
                 </div>
@@ -602,8 +598,7 @@ function DashboardContent() {
                 {pinChild.childName}&apos;s PIN Login
               </h2>
               <p className="text-sm font-semibold text-gray-500 text-center mb-6">
-                A 4 to 6 digit PIN lets this child enter KidLearn directly. Face and voice options are saved as
-                preferences now and can be turned on once secure biometric verification is added.
+                A 4 to 6 digit PIN lets this child enter KidLearn directly. PIN is the active kid login path.
               </p>
 
               <form onSubmit={saveChildPin} className="space-y-5">
@@ -622,32 +617,6 @@ function DashboardContent() {
                     required
                   />
                 </div>
-
-                <label className="flex items-start gap-3 rounded-2xl border-2 border-gray-200 p-4">
-                  <input
-                    type="checkbox"
-                    checked={pinForm.allowFaceLogin}
-                    onChange={(e) => setPinForm((current) => ({ ...current, allowFaceLogin: e.target.checked }))}
-                    className="mt-1 h-4 w-4 rounded border-gray-300 text-purple-600"
-                  />
-                  <div>
-                    <p className="font-bold text-gray-700">Save face-login preference</p>
-                    <p className="text-xs font-semibold text-gray-500">Stored now so secure device biometrics can be layered in next.</p>
-                  </div>
-                </label>
-
-                <label className="flex items-start gap-3 rounded-2xl border-2 border-gray-200 p-4">
-                  <input
-                    type="checkbox"
-                    checked={pinForm.allowVoiceLogin}
-                    onChange={(e) => setPinForm((current) => ({ ...current, allowVoiceLogin: e.target.checked }))}
-                    className="mt-1 h-4 w-4 rounded border-gray-300 text-purple-600"
-                  />
-                  <div>
-                    <p className="font-bold text-gray-700">Save voice-login preference</p>
-                    <p className="text-xs font-semibold text-gray-500">Stored now so voiceprint verification can be added safely later.</p>
-                  </div>
-                </label>
 
                 <div className="flex gap-3 pt-2">
                   <button

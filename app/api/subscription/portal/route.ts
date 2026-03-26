@@ -27,6 +27,7 @@ export async function POST() {
     return NextResponse.json({ url: portalSession.url });
   } catch (error) {
     console.error("Portal error:", error);
-    return NextResponse.json({ error: "Failed to open billing portal" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to open billing portal";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

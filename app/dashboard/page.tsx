@@ -181,8 +181,8 @@ function DashboardContent() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       window.location.href = data.url;
-    } catch {
-      toast.error("Failed to open billing portal");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to open billing portal");
       setManagingSubscription(false);
     }
   };
@@ -745,9 +745,11 @@ function DashboardContent() {
           <p className="text-sm text-gray-500">Manage subscription, PINs, and sign out from here.</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={handleManageSubscription} disabled={managingSubscription} className="btn-secondary">
-            {managingSubscription ? "Loading..." : "Manage Subscription"}
-          </button>
+          {(subscriptionStatus === "active" || subscriptionStatus === "past_due" || subscriptionStatus === "cancelled") && (
+            <button onClick={handleManageSubscription} disabled={managingSubscription} className="btn-secondary">
+              {managingSubscription ? "Loading..." : "Manage Subscription"}
+            </button>
+          )}
           <button onClick={() => signOut({ callbackUrl: "/" })} className="btn-danger">
             Sign Out
           </button>

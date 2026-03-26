@@ -193,7 +193,8 @@ export async function getProgressForChild(childId: string) {
     undefined,
     undefined,
     undefined,
-    100
+    100,
+    false  // newest first
   );
 }
 

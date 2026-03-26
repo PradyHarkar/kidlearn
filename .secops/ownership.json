@@ -1,7 +1,6 @@
 {
   "protocolVersion": 1,
-  "updatedAt": "2026-03-26T19:30:00+11:00",
-  "mergePolicy": "Do not merge to master without explicit user approval.",
+  "updatedAt": "2026-03-26T19:27:40+11:00",
   "agents": {
     "codex": {
       "branch": "codex/secops-core",

@@ -1,0 +1,58 @@
+{
+  "protocolVersion": 1,
+  "updatedAt": "2026-03-26T19:27:40+11:00",
+  "currentObjective": "Build a repo-native security and vulnerability agent that scans repo files, git history, config/workflows, and AWS exposure signals; coordinates between Codex and Claude; and blocks accidental public exposure.",
+  "dispatchAgent": "codex",
+  "pollEverySeconds": 5,
+  "statusCadenceSeconds": 60,
+  "mergePolicy": "No merge to master without explicit user approval.",
+  "roles": {
+    "codex": [
+      "architect",
+      "scanner-coder",
+      "remediation-coder"
+    ],
+    "claude": [
+      "aws-auditor",
+      "reporting-coder",
+      "ci-tester"
+    ]
+  },
+  "workstreams": [
+    {
+      "id": "SEC-CORE",
+      "owner": "codex",
+      "branch": "codex/secops-core",
+      "status": "in_progress",
+      "goal": "Create the `.secops` control plane, shared status polling, repo/git/config scanners, and safe remediation primitives.",
+      "chunks": [
+        "Scaffold `.secops` control files and status scripts",
+        "Implement repo, git-history, and config scanners",
+        "Implement remediation for ignore/hardening actions",
+        "Run focused verification and publish findings"
+      ],
+      "estimatedMinutes": 120
+    },
+    {
+      "id": "SEC-REPORT",
+      "owner": "claude",
+      "branch": "claude/secops-reporting",
+      "status": "in_progress",
+      "goal": "Add AWS exposure scanning, findings export, playbooks, and CI gates that fail on critical issues.",
+      "chunks": [
+        "Implement AWS signal scan",
+        "Implement report exporter",
+        "Add playbooks",
+        "Add CI workflow gate"
+      ],
+      "estimatedMinutes": 120
+    }
+  ],
+  "coordinationRules": [
+    "Read `.secops/plan.json`, `.secops/ownership.json`, and both status files before starting a new chunk.",
+    "Poll the other agent status file every 5 seconds while actively working.",
+    "Keep write scopes disjoint and update ownership before crossing boundaries.",
+    "Record blockers immediately in the status file.",
+    "Critical findings should block deployment until triaged."
+  ]
+}

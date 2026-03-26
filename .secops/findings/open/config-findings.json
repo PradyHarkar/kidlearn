@@ -1,0 +1,63 @@
+{
+  "scanner": "config",
+  "generatedAt": "2026-03-26T08:36:34.320Z",
+  "summary": {
+    "totalFindings": 5,
+    "critical": 0,
+    "high": 3,
+    "medium": 2,
+    "low": 0
+  },
+  "findings": [
+    {
+      "id": "claude-local-settings",
+      "category": "config-risk",
+      "severity": "high",
+      "title": "Local Claude settings file exists in workspace",
+      "path": ".claude/settings.local.json",
+      "filePath": ".claude/settings.local.json",
+      "evidence": "Local agent settings can contain URLs, tokens, or copied command history.",
+      "remediation": "Keep this file ignored and do not commit it."
+    },
+    {
+      "id": "claude-local-settings-signed-url",
+      "category": "config-risk",
+      "severity": "high",
+      "title": "Local Claude settings contain signed AWS URLs",
+      "path": ".claude/settings.local.json",
+      "filePath": ".claude/settings.local.json",
+      "evidence": "Signed AWS URL markers were detected.",
+      "remediation": "Remove transient URLs from local agent state and avoid copying them into tracked files."
+    },
+    {
+      "id": "vercel-raw-aws-credentials",
+      "category": "config-risk",
+      "severity": "medium",
+      "title": "Vercel configuration references raw AWS credential variables",
+      "path": "vercel.json",
+      "filePath": "vercel.json",
+      "evidence": "AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY env mappings are present.",
+      "remediation": "Prefer short-lived credentials or platform-native secret references where possible."
+    },
+    {
+      "id": "workflow-long-lived-aws-credentials",
+      "category": "config-risk",
+      "severity": "medium",
+      "title": "Deploy workflow propagates raw AWS app credentials",
+      "path": ".github/workflows/deploy-dev.yml",
+      "filePath": ".github/workflows/deploy-dev.yml",
+      "evidence": "APP_AWS_ACCESS_KEY_ID / APP_AWS_SECRET_ACCESS_KEY are synced into Amplify.",
+      "remediation": "Prefer OIDC or narrower-scoped managed credentials over long-lived keys."
+    },
+    {
+      "id": "workflow-secret-echo-risk",
+      "category": "config-risk",
+      "severity": "high",
+      "title": "Workflow appears to print or echo secrets-adjacent content",
+      "path": ".github/workflows/deploy-dev.yml",
+      "filePath": ".github/workflows/deploy-dev.yml",
+      "evidence": "A broad check found both secrets references and print-like statements.",
+      "remediation": "Review workflow logging to ensure secrets never reach logs."
+    }
+  ]
+}

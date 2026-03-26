@@ -1,0 +1,90 @@
+{
+  "scanner": "repo",
+  "generatedAt": "2026-03-26T08:36:34.305Z",
+  "summary": {
+    "totalFindings": 7,
+    "critical": 1,
+    "high": 2,
+    "medium": 4,
+    "low": 0
+  },
+  "findings": [
+    {
+      "id": "agent-local-state:.claude/",
+      "severity": "high",
+      "title": "Agent local state is present and should stay ignored",
+      "path": ".claude/",
+      "filePath": ".claude/",
+      "evidence": ".claude/settings.local.json",
+      "remediation": "Keep agent state untracked and ignored.",
+      "category": "repo-hygiene",
+      "source": "workspace"
+    },
+    {
+      "id": "aws-access-key:.claude/settings.local.json",
+      "severity": "critical",
+      "title": "AWS access key pattern present",
+      "path": ".claude/settings.local.json",
+      "filePath": ".claude/settings.local.json",
+      "evidence": "ASIA2LRH7LSZ3B2LIWQK",
+      "remediation": "Rotate the credential and move it out of tracked files.",
+      "category": "repo-exposure",
+      "source": "workspace"
+    },
+    {
+      "id": "presigned-url:.claude/settings.local.json",
+      "severity": "high",
+      "title": "Presigned or signed cloud URL present",
+      "path": ".claude/settings.local.json",
+      "filePath": ".claude/settings.local.json",
+      "evidence": "X-Amz-Security-Token=",
+      "remediation": "Remove signed URLs from local state and avoid committing transient cloud artifacts.",
+      "category": "repo-exposure",
+      "source": "workspace"
+    },
+    {
+      "id": "debug-log:.codex-dev.err.log",
+      "severity": "medium",
+      "title": "Debug/runtime log present in workspace",
+      "path": ".codex-dev.err.log",
+      "filePath": ".codex-dev.err.log",
+      "evidence": ".codex-dev.err.log",
+      "remediation": "Keep runtime logs ignored and out of commits.",
+      "category": "repo-hygiene",
+      "source": "workspace"
+    },
+    {
+      "id": "debug-log:.codex-dev.log",
+      "severity": "medium",
+      "title": "Debug/runtime log present in workspace",
+      "path": ".codex-dev.log",
+      "filePath": ".codex-dev.log",
+      "evidence": ".codex-dev.log",
+      "remediation": "Keep runtime logs ignored and out of commits.",
+      "category": "repo-hygiene",
+      "source": "workspace"
+    },
+    {
+      "id": "generated-artifact:generated/",
+      "severity": "medium",
+      "title": "Generated artifact directory present",
+      "path": "generated/",
+      "filePath": "generated/",
+      "evidence": "generated/debug-year3-maths-au.json",
+      "remediation": "Keep generated artifacts out of the repo unless explicitly versioned.",
+      "category": "repo-hygiene",
+      "source": "workspace"
+    },
+    {
+      "id": "test-report:test-results.json",
+      "severity": "medium",
+      "title": "Local test report artifact present",
+      "path": "test-results.json",
+      "filePath": "test-results.json",
+      "evidence": "test-results.json",
+      "remediation": "Avoid committing local test reports.",
+      "category": "repo-hygiene",
+      "source": "workspace"
+    }
+  ]
+}

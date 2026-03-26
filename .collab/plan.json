@@ -1,58 +1,60 @@
 {
   "protocolVersion": 1,
-  "updatedAt": "2026-03-26T09:35:00+11:00",
-  "currentObjective": "Build C1 AI Tutor Chat (Claude) and S7 Diagnostic Placement Test (Codex) — parallel feature tracks.",
-  "dispatchAgent": "claude",
+  "updatedAt": "2026-03-26T19:30:00+11:00",
+  "currentObjective": "Build the repo-native `.secops` security and vulnerability agent with shared polling, repo/git/config scanning, AWS exposure reporting, and CI gating.",
+  "dispatchAgent": "codex",
   "cadenceSeconds": 60,
   "mergePolicy": "No merge to master without explicit user approval.",
   "roles": {
     "codex": [
-      "backend-coder",
-      "integration-tester"
+      "architect",
+      "scanner-coder",
+      "remediation-coder"
     ],
     "claude": [
-      "frontend-coder",
-      "api-coder",
-      "experience-tester"
+      "aws-auditor",
+      "reporting-coder",
+      "ci-tester"
     ]
   },
   "workstreams": [
     {
-      "id": "C1",
-      "owner": "claude",
-      "branch": "claude/ai-tutor-chat",
+      "id": "SEC-CORE",
+      "owner": "codex",
+      "branch": "codex/secops-core",
       "status": "in_progress",
-      "goal": "AI Tutor Chat — after a wrong answer, kid taps 💬 Why? to get a Bedrock-generated explanation. UI in app/learn/page.tsx + new app/api/tutor/route.ts endpoint.",
+      "goal": "Create the `.secops` control plane, polling protocol, repo/git/config scanners, and safe remediation primitives.",
       "chunks": [
-        "1. app/api/tutor/route.ts — Bedrock call, auth guard, rate limit",
-        "2. app/learn/page.tsx — Why? button + chat drawer UI",
-        "3. Suite 09 test coverage",
-        "4. Merge-ready review pass"
+        "1. Scaffold `.secops` control files and status scripts",
+        "2. Implement repo, git-history, and config scanners",
+        "3. Add safe remediation for ignore/hardening actions",
+        "4. Run focused verification and publish initial findings"
       ],
-      "estimatedMinutes": 60
+      "estimatedMinutes": 120
     },
     {
-      "id": "S7",
-      "owner": "codex",
-      "branch": "codex/diagnostic-placement",
-      "status": "completed",
-      "goal": "Diagnostic Placement Test — 5-question adaptive quiz on first session to calibrate currentDifficultyMaths. New app/api/diagnostic/route.ts + DynamoDB write. Must not touch app/learn/page.tsx.",
+      "id": "SEC-REPORT",
+      "owner": "claude",
+      "branch": "claude/secops-reporting",
+      "status": "in_progress",
+      "goal": "Implement AWS signal scanning, findings export, playbooks, and CI gates that fail on critical findings.",
       "chunks": [
-        "1. app/api/diagnostic/route.ts — question selection + score → difficulty mapping",
-        "2. app/api/diagnostic/submit/route.ts — persist result to child record",
-        "3. types/index.ts — DiagnosticQuestion, DiagnosticResult types",
-        "4. Suite 10 test coverage"
+        "1. Implement AWS exposure signal scan",
+        "2. Implement secops report exporter",
+        "3. Add response playbooks",
+        "4. Add CI workflow gate"
       ],
-      "estimatedMinutes": 0
+      "estimatedMinutes": 120
     }
   ],
   "coordinationRules": [
     "Read plan, ownership, both status files, and both handoff files before starting a new task.",
     "Update status every 60 seconds while actively working.",
-    "Chunk work: ≤4 atomic commits, each tested independently before moving on.",
-    "Report etaMinutes honestly — never set to 0 until truly done.",
-    "Set blocker immediately if a test fails or a blocker is hit — do not continue around the problem.",
-    "Declare chunk scope in handoff file on task start so user has full visibility.",
+    "Poll the other agent's status file every 5 seconds while actively working on `.secops`.",
+    "Chunk work: at most 4 atomic commits, each tested independently before moving on.",
+    "Report etaMinutes honestly and never set it to 0 until truly done.",
+    "Set blocker immediately if a test fails or a blocker is hit.",
+    "Declare chunk scope in the handoff file on task start so user has full visibility.",
     "No merge to master without explicit user approval."
   ]
 }

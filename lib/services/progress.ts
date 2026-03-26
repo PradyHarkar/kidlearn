@@ -33,6 +33,7 @@ export interface ProgressSubmissionResult {
     incorrect: number;
     skipped: number;
     accuracy: number;
+    rewardPointsEarned: number;
     coinsEarned: number;
     starsEarned: number;
     newAchievements: Awaited<ReturnType<typeof checkAndGrantAchievements>>;
@@ -114,9 +115,11 @@ export async function submitProgressForChild(
   await updateChildDifficulty(userId, childId, subject, newDifficulty, newYearLevel);
 
   const coinsEarned = calculateCoinsEarned(correct, questions.length, currentDifficulty);
+  const rewardPointsEarned = questions.length;
   const starsEarned = calculateStarsEarned(accuracy);
   const totalCoins = (child.totalCoins || 0) + coinsEarned;
   const totalStars = (child.totalStars || 0) + starsEarned;
+  const totalRewardPoints = (child.rewardPoints || 0) + rewardPointsEarned;
   const totalAttempted = (child.stats?.totalQuestionsAttempted || 0) + questions.length;
   const totalCorrectAll = (child.stats?.totalCorrect || 0) + correct;
   const { newStreak, coins: streakCoins } = updateStreak({
@@ -127,10 +130,11 @@ export async function submitProgressForChild(
   await updateItem(
     TABLES.CHILDREN,
     { userId, childId },
-    "SET totalCoins = :coins, totalStars = :stars, streakDays = :streak, lastActiveDate = :date, stats = :stats",
+    "SET totalCoins = :coins, totalStars = :stars, rewardPoints = :rewardPoints, streakDays = :streak, lastActiveDate = :date, stats = :stats",
     {
       ":coins": totalCoins + streakCoins,
       ":stars": totalStars,
+      ":rewardPoints": totalRewardPoints,
       ":streak": newStreak,
       ":date": now,
       ":stats": {
@@ -167,6 +171,7 @@ export async function submitProgressForChild(
       incorrect: questions.length - correct,
       skipped: 0,
       accuracy,
+      rewardPointsEarned,
       coinsEarned: coinsEarned + streakCoins,
       starsEarned,
       newAchievements,

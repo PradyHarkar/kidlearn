@@ -50,3 +50,9 @@ test-results.json
 
 # security agent runtime artifacts
 .secops/runtime/
+
+# dev server logs
+.dev-server.log
+
+# local codegen scripts (not production code)
+scripts/generate-question-bank.ts

@@ -137,12 +137,13 @@ function LearnContent() {
     setShowExplanation(true);
 
     const currentQuestion = questions[currentIndex];
+    if (!currentQuestion) return;
     setResults(prev => [...prev, {
       questionId: currentQuestion.questionId,
       correct: isCorrect,
       timeSpent,
       difficulty: currentDifficulty,
-      topic: currentQuestion.topics[0] || "general",
+      topic: currentQuestion.topics?.[0] || "general",
     }]);
 
     if (isCorrect) {
@@ -206,7 +207,7 @@ function LearnContent() {
     if (timerRef.current) clearInterval(timerRef.current);
     const timeSpent = Math.floor((Date.now() - questionStartTime.current) / 1000);
     const q = questions[currentIndex];
-    setResults(prev => [...prev, { questionId: q.questionId, correct: false, timeSpent, difficulty: currentDifficulty, topic: q.topics[0] || "general" }]);
+    setResults(prev => [...prev, { questionId: q.questionId, correct: false, timeSpent, difficulty: currentDifficulty, topic: q.topics?.[0] || "general" }]);
     setCurrentIndex(prev => prev + 1);
     setSelectedAnswer(null);
     setIsAnswered(false);
@@ -305,6 +306,17 @@ function LearnContent() {
   }
 
   const q = questions[currentIndex];
+
+  // Guard: malformed question (missing required fields) — auto-advance
+  if (!q || !q.questionText || !q.answerOptions?.length) {
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex(prev => prev + 1);
+    } else {
+      router.push("/dashboard");
+    }
+    return null;
+  }
+
   const correct = results.filter(r => r.correct).length;
   const progressPct = ((currentIndex + (isAnswered ? 1 : 0)) / questions.length) * 100;
 
@@ -405,7 +417,7 @@ function LearnContent() {
               <div className="bg-gradient-to-r from-indigo-50 to-blue-50 px-6 pt-5 pb-3">
                 <div className="flex flex-wrap gap-1.5 mb-3 items-center justify-between">
                   <div className="flex flex-wrap gap-1.5">
-                    {q.topics.map(topic => (
+                    {(q.topics || []).map(topic => (
                       <span key={topic} className="topic-pill capitalize">{topic.replace(/-/g, " ")}</span>
                     ))}
                   </div>
@@ -456,7 +468,7 @@ function LearnContent() {
 
               {/* Answer Options */}
               <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {q.answerOptions.map((option, idx) => {
+                {(q.answerOptions || []).map((option, idx) => {
                   const isSelected = selectedAnswer === option.id;
                   let cardClass = "answer-card";
                   let bgClass = "";

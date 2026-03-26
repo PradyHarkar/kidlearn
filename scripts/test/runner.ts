@@ -38,6 +38,7 @@ import { runSessionShapeSuite }      from "./suites/08-session-shape";
 import { runTutorSuite }             from "./suites/09-tutor";
 import { runDiagnosticSuite }        from "./suites/10-diagnostic";
 import { runKidFlowSuite }           from "./suites/11-kid-flow";
+import { runAgentsCoordinationSuite } from "./suites/12-agents-coordination";
 
 // ── Parse CLI args ────────────────────────────────────────────────────────────
 
@@ -108,6 +109,7 @@ async function main() {
     "tutor":          runTutorSuite,
     "diagnostic":     runDiagnosticSuite,
     "kid-flow":       runKidFlowSuite,
+    "agents":         runAgentsCoordinationSuite,
   };
 
   const toRun = opts.suite

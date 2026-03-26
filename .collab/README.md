@@ -4,6 +4,8 @@ This folder is the shared coordination layer for Codex and Claude.
 
 For global coordination rules, read [COORDINATION.md](/c:/Users/prady/projects/kidlearn/COORDINATION.md) first.
 
+For branch-agnostic agent chat and shared task state, read [.agents/README.md](/c:/Users/prady/projects/kidlearn/.agents/README.md) first.
+
 ## Goal
 
 Let either agent receive a new user request and turn it into a shared plan without

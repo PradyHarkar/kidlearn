@@ -1,0 +1,45 @@
+name: Agents Coordination Gate
+
+on:
+  push:
+    paths:
+      - ".agents/**"
+      - "scripts/agents/**"
+      - "scripts/test/suites/12-agents-coordination.ts"
+  pull_request:
+    paths:
+      - ".agents/**"
+      - "scripts/agents/**"
+      - "scripts/test/suites/12-agents-coordination.ts"
+
+jobs:
+  agents-coordination:
+    name: Suite 12 — Agents coordination layer
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm ci
+
+      - name: Run agents coordination suite
+        run: npx tsx scripts/test/runner.ts --suite agents --no-setup --no-teardown
+
+      - name: Security — no secrets in .agents/
+        run: |
+          # Fail if any AWS access key pattern found in tracked .agents/ files
+          if git ls-files .agents/ | xargs grep -l 'AKIA[0-9A-Z]\{16\}' 2>/dev/null; then
+            echo "ERROR: AWS access key found in .agents/ tracked files"
+            exit 1
+          fi
+          # Fail if Confluence API key value (not just the var name) is committed
+          if git ls-files .agents/ | xargs grep -l 'CONFLUENCE_API_KEY\s*=\s*[A-Za-z0-9+/]\{20,\}' 2>/dev/null; then
+            echo "ERROR: Confluence API key value committed in .agents/"
+            exit 1
+          fi
+          echo "Security check passed — no secrets in .agents/"

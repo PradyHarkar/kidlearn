@@ -1,0 +1,65 @@
+{
+  "protocolVersion": 1,
+  "updatedAt": "2026-03-26T11:17:37.912Z",
+  "currentObjective": "Organize the repo with a branch-agnostic multi-agent control plane using LangGraph concepts, shared task/status/handoff/message files, and clear Codex/Claude conversation lanes. Keep Confluence as the requirements source and never commit secrets.",
+  "dispatchAgent": "codex",
+  "cadenceSeconds": 5,
+  "statusCadenceSeconds": 60,
+  "mergePolicy": "No merge without explicit user approval.",
+  "orchestration": {
+    "framework": "langgraph",
+    "sourceOfTruth": ".agents"
+  },
+  "roles": {
+    "codex": [
+      "architect",
+      "repo-organizer",
+      "coordination-coder"
+    ],
+    "claude": [
+      "tester",
+      "security-verifier",
+      "reporting-coder"
+    ],
+    "shared": [
+      "langgraph-orchestration",
+      "confluence-intake"
+    ]
+  },
+  "workstreams": [
+    {
+      "id": "AGENT-FOUNDATION",
+      "owner": "codex",
+      "branch": "codex/agents-foundation",
+      "status": "in_progress",
+      "goal": "Scaffold the shared `.agents` contract, scripts, and docs so both agents can poll and talk through the repo.",
+      "chunks": [
+        "Create task, ownership, status, handoff, and message templates",
+        "Add helper scripts for status, polling, and messages",
+        "Wire package scripts and README guidance",
+        "Publish the Claude prompt and branch split"
+      ],
+      "estimatedMinutes": 45
+    },
+    {
+      "id": "LANGGRAPH-SETUP",
+      "owner": "shared",
+      "branch": "",
+      "status": "pending",
+      "goal": "Add a LangGraph orchestration plan and map product/test/security/housekeeping roles onto the repo-native contract.",
+      "chunks": [
+        "Define role graph",
+        "Define polling cadence",
+        "Define merge gates",
+        "Document Confluence intake"
+      ],
+      "estimatedMinutes": 60
+    }
+  ],
+  "coordinationRules": [
+    "Read the shared task, ownership, status, handoff, and message files before starting new work.",
+    "Poll the other agent every 5 seconds while actively working.",
+    "Update your own status every 30-60 seconds and on every blocker change.",
+    "Keep write scopes disjoint unless the task explicitly says otherwise."
+  ]
+}

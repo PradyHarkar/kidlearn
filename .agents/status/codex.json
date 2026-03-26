@@ -1,0 +1,10 @@
+{
+  "agent": "codex",
+  "branch": "codex/agents-foundation",
+  "role": "architect",
+  "finished": "Created the shared .agents control plane, scripts, LangGraph plan, and handoff plumbing.",
+  "doingNow": "Validating the coordination layer and preparing the next LangGraph iteration.",
+  "etaMinutes": 20,
+  "blocker": "none",
+  "lastUpdated": "2026-03-26T11:18:02.577Z"
+}

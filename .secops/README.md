@@ -13,6 +13,8 @@ Keep accidental exposure out of the repo and deployment surface by coordinating:
 - remediation actions
 - reporting and CI gates
 
+For branch-agnostic agent chat and shared task state, use [.agents/README.md](/c:/Users/prady/projects/kidlearn/.agents/README.md) as the shared mailbox contract.
+
 ## Rules
 
 1. Never work on `master` directly.

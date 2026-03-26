@@ -23,6 +23,7 @@ Use this when you want one shared place for:
 4. Each agent writes messages to its own inbox/outbox files under `.agents/messages/`.
 5. Handoffs live in `.agents/handoffs/`.
 6. Use `scripts/agents/set-task.mjs` to update the task file and `scripts/agents/post-handoff.mjs` to write a human-readable handoff.
+7. Use `.agents/nodes.md` as the LangGraph node contract and `.agents/prompts/claude-product.md` when Claude should act as the product owner.
 
 ## Cadence
 
@@ -40,6 +41,7 @@ LangGraph should orchestrate the roles and transitions, but this folder stays th
 
 Recommended roles:
 
+- product
 - architect
 - coder
 - tester
@@ -49,9 +51,11 @@ Recommended roles:
 Suggested task flow:
 
 1. Confluence page becomes the input.
-2. Codex writes the shared objective into `.agents/task.json`.
-3. Claude reads the same task file and takes testing/security/reporting.
-4. The graph transitions through coder -> tester -> security -> housekeeper.
+2. Product role turns the requirement into a crisp problem statement, use cases, NFRs, and churn risks.
+3. Codex writes the shared objective into `.agents/task.json`.
+4. Claude reads the same task file and takes testing/security/reporting.
+5. The graph transitions through product -> architect -> coder -> tester -> security -> housekeeper.
+6. If the request is vague, product must run before any coding starts.
 
 ## Confluence Fit
 

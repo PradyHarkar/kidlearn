@@ -11,6 +11,12 @@
     "sourceOfTruth": ".agents"
   },
   "roles": {
+    "product": [
+      "requirements-owner",
+      "usecase-designer",
+      "nfr-checker",
+      "churn-guard"
+    ],
     "codex": [
       "architect",
       "repo-organizer",
@@ -60,6 +66,7 @@
     "Read the shared task, ownership, status, handoff, and message files before starting new work.",
     "Poll the other agent every 5 seconds while actively working.",
     "Update your own status every 30-60 seconds and on every blocker change.",
-    "Keep write scopes disjoint unless the task explicitly says otherwise."
+    "Keep write scopes disjoint unless the task explicitly says otherwise.",
+    "Product owns requirements quality, use cases, and non-functional expectations before implementation starts."
   ]
 }

@@ -4,6 +4,13 @@ This repo uses LangGraph as the conceptual orchestrator for a repo-native multi-
 
 ## Role Graph
 
+0. `product`
+   - owns requirement quality
+   - defines use cases and acceptance ideas
+   - brings industry-best and out-of-the-box features
+   - checks NFRs like speed, reliability, clarity, safety, and maintainability
+   - looks for churn reduction and user-pattern learning
+
 1. `architect`
    - defines the problem
    - splits the work into lanes
@@ -30,6 +37,7 @@ This repo uses LangGraph as the conceptual orchestrator for a repo-native multi-
 - status files are the live agent state
 - handoff files are the transition notes
 - message files are the short conversation channel
+- product should be consulted before implementation whenever the request is ambiguous or missing business detail
 
 ## Cadence
 

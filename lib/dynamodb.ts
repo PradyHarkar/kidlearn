@@ -50,7 +50,8 @@ export async function queryItems(
   expressionNames?: Record<string, string>,
   indexName?: string,
   filterExpression?: string,
-  limit?: number
+  limit?: number,
+  scanIndexForward?: boolean
 ) {
   const result = await createDdb().send(
     new QueryCommand({
@@ -61,6 +62,7 @@ export async function queryItems(
       ExpressionAttributeNames: expressionNames,
       FilterExpression: filterExpression,
       Limit: limit,
+      ScanIndexForward: scanIndexForward,
     })
   );
   return result.Items || [];

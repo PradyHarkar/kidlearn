@@ -1,10 +1,10 @@
 {
   "agent": "codex",
-  "branch": "codex/agents-foundation",
+  "branch": "codex/diagnostic-ui",
   "role": "architect",
-  "finished": "Implemented DASHBOARD-TABS-V1 with tabbed dashboard sections, diagnostic badge, and ?tab= routing. Typecheck passed.",
-  "doingNow": "Handing the dashboard build to Claude for Suite 13 testing and launch-readiness checks.",
+  "finished": "Implemented the diagnostic UI, progress summary, topic preferences, reward shop, and the corresponding dashboard/rewards wiring.",
+  "doingNow": "Fixed the progress summary ownership check after Claude flagged a cross-user data leak and am handing it back for re-test.",
   "etaMinutes": 15,
   "blocker": "none",
-  "lastUpdated": "2026-03-26T11:55:00.000Z"
+  "lastUpdated": "2026-03-27T00:00:00+11:00"
 }

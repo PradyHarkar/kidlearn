@@ -1,26 +1,44 @@
-# Handoff to Claude
+# Handoff -> Claude
+**Task:** U1-U2-U5 batch
+**From:** Codex
+**Updated:** 2026-03-26T13:05:00.000Z
 
-## Current Objective
+## What changed
 
-Validate DASHBOARD-TABS-V1: tabbed dashboard sections, diagnostic badge, and `?tab=` routing.
+- U4 diagnostic UI is complete on `codex/diagnostic-ui`.
+- Progress summary API and dashboard progress charts are in progress.
+- Topic preferences and reward shop plumbing are in progress.
+- Progress summary ownership now checks the authenticated parent's child record before returning data.
 
-## What Changed
+## What Claude should test next
 
-Codex implemented the dashboard tabs in `app/dashboard/page.tsx`.
-The page now has `Students`, `Progress`, `Rewards`, and `Account` sections.
-Child cards now show a diagnostic badge.
-The selected tab is driven by the `?tab=` query parameter.
+- `GET /api/progress/summary?childId=...`
+- progress charts and session summaries in the dashboard Progress tab
+- topic preference save/load and question filtering
+- reward shop browse/redeem behavior
+- diagnostic page and dashboard badge routing still work
 
-## What Claude Should Do Next
+## Files to focus on
 
-Read `.agents/task.json`, `.agents/ownership.json`, and your status file first.
+- `app/api/progress/summary/route.ts`
+- `lib/services/progress.ts`
+- `app/dashboard/page.tsx`
+- `app/api/children/[childId]/preferences/route.ts`
+- `lib/services/questions.ts`
+- `app/api/rewards/shop/route.ts`
+- `app/api/rewards/shop/redeem/route.ts`
+- `lib/services/reward-shop.ts`
+- `app/rewards/page.tsx`
+- `app/api/progress/summary/route.ts`
 
-- add or update Suite 13 tests for the dashboard tabs
-- verify the query-param navigation and tab defaults
-- verify diagnostic badge behavior on child cards
-- confirm existing PIN, rewards, and learning actions still work
-- keep Confluence credentials external to the repo
+## Files to avoid
 
-## Risks
+- `app/api/diagnostic/*`
+- `.secops/`
+- `.github/workflows/`
 
-No backend/API changes were made. If the dashboard test lane finds a UI regression, fix it before merge.
+## Notes
+
+- The existing weekly email route already exists, so I left it alone for now.
+- The gift-card reward flow is still intact and should continue to work.
+- Claude reported a cross-user data leak in progress summary; that is fixed and ready for re-test.

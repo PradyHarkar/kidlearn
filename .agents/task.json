@@ -1,58 +1,52 @@
 {
   "protocolVersion": 1,
-  "updatedAt": "2026-03-27T00:00:00+11:00",
-  "currentObjective": "Implement DASHBOARD-TABS-V1: tabbed dashboard with Students, Progress, Rewards, and Account sections, diagnostic badge on child cards, and ?tab= routing.",
+  "updatedAt": "2026-03-26T13:05:00.000Z",
+  "currentObjective": "Deliver the next Codex workstream batch: U1 progress charts, U2 topic preferences, and U5 reward shop. U4 diagnostic UI is complete and awaiting Claude test pass.",
   "dispatchAgent": "codex",
   "activeTask": {
-    "id": "DASHBOARD-TABS-V1",
+    "id": "U1-U2-U5-BATCH",
     "product": {
-      "problemStatement": "The parent dashboard is a single flat page. Rewards live on a dead-end /rewards URL that many parents never find. The diagnostic placement test ran but there is no visual indicator that a child still needs it. Parents have no structured navigation, so everything is buried in one scroll.",
-      "user": "Parent managing 1-3 children aged 5-14, checking learning progress, adjusting settings, or managing subscription.",
+      "problemStatement": "Parents need a dashboard that shows learning progress, lets them set topic interests, and lets kids spend points on in-app rewards. The diagnostic page already exists and the dashboard badge now links into it, but the rest of the product stack still needs the richer parent/kid flows.",
+      "user": "Parent managing multiple children, plus the child using the learning and reward flows.",
       "useCases": [
-        "Parent opens dashboard and sees four clear tabs: Students, Progress, Rewards, Account",
-        "Parent sees a Diagnostic pending badge on a child card if diagnosticComplete is false",
-        "Parent clicks Rewards tab and sees the full rewards view without navigating away",
-        "Parent clicks Account tab and sees subscription status, billing button, sign-out",
-        "Child card retains all existing stats such as streak, stars, coins, and difficulty bars"
+        "Parent opens Progress tab and sees recent accuracy by subject",
+        "Parent sets topic preferences so questions lean toward subjects the child likes",
+        "Parent or child buys avatar/theme rewards with earned points",
+        "Diagnostic badge sends the parent into the new diagnostic flow"
       ],
       "nfrs": [
-        "Tab switch must feel instant - no full page reload, client-side state only",
-        "Active tab persists in URL query param (?tab=rewards) so deep-linking works",
-        "Mobile-first - tabs must work on small screens",
-        "No new API calls needed for this chunk - all data already loaded on dashboard"
+        "Reuse the existing progress and reward data model where possible",
+        "Keep topic preference filtering safe and reversible if no matching pool exists",
+        "Do not break the current reward gift-card flow",
+        "Keep the UI compact and mobile friendly"
       ],
       "acceptanceCriteria": [
-        "Dashboard renders with 4 tabs: Students, Progress, Rewards, Account",
-        "Students tab shows existing child profile cards unchanged",
-        "Rewards tab shows the same content currently at /rewards/page.tsx inline",
-        "Account tab shows subscription banner, manage billing button, and sign out",
-        "Child card shows amber Diagnostic pending badge when child.diagnosticComplete === false",
-        "?tab= query param updates on tab change and restores active tab on reload",
-        "All existing tests still pass",
-        "Suite 13 tests cover tab navigation, diagnostic badge visibility, and rewards tab content"
+        "Progress tab shows progress summary charts / session history",
+        "Topic preferences can be saved per child and affect question selection",
+        "Reward shop route exists and items can be redeemed from the rewards page",
+        "Existing diagnostic and reward gift-card flows still work",
+        "Typecheck passes"
       ],
       "antiScope": [
-        "Do NOT build the Progress tab data yet - that needs /api/progress/topics in a future chunk",
-        "Do NOT change /rewards/page.tsx URL - it can stay and also render inline on dashboard",
-        "Do NOT add any new API endpoints in this chunk"
+        "Do NOT change the diagnostic API contract",
+        "Do NOT rewrite the weekly email flow unless needed for correctness",
+        "Do NOT remove the existing gift card reward flow"
       ]
     },
     "codexTasks": [
-      "Refactor app/dashboard/page.tsx - add tab state and tab bar component",
-      "Students tab: move existing child profile grid into Students tab content",
-      "Rewards tab: import and render rewards content inline",
-      "Account tab: move subscription banner, manage billing, and sign-out into Account tab",
-      "Progress tab: render placeholder Coming soon until the data layer exists",
-      "Child card: add amber badge Diagnostic pending when child.diagnosticComplete === false",
-      "Wire ?tab= query param to active tab state"
+      "Add GET /api/progress/summary and dashboard progress charts",
+      "Add child topic preferences API and topic-interest picker UI",
+      "Add reward shop API and wire the rewards page to it",
+      "Keep the existing diagnostic link and gift card flows intact"
     ],
     "claudeTasks": [
-      "Write Suite 13 - tab navigation tests, diagnostic badge, rewards tab, account tab content",
-      "Verify all existing tests still pass after dashboard refactor",
-      "Security check - no new data exposed in tab views that was not already accessible"
+      "Test the new progress summary and dashboard charts",
+      "Test topic preference persistence and question filtering",
+      "Test reward shop browsing and redemption",
+      "Verify the diagnostic page still passes the existing contract tests"
     ]
   },
-  "dispatchedAt": "2026-03-27T00:00:00+11:00",
+  "dispatchedAt": "2026-03-26T13:05:00.000Z",
   "cadenceSeconds": 5,
   "statusCadenceSeconds": 60,
   "mergePolicy": "No merge without explicit user approval.",
@@ -88,7 +82,7 @@
       "owner": "codex",
       "branch": "codex/agents-foundation",
       "status": "done",
-      "goal": "Implement DASHBOARD-TABS-V1 with a tabbed dashboard, diagnostic badge on child cards, and query-param navigation.",
+      "goal": "Implement the repo-native coordination layer and dashboard tabs foundation.",
       "chunks": [
         "Add tab routing and section state",
         "Split dashboard into Students, Progress, Rewards, and Account sections",
@@ -98,16 +92,70 @@
       "estimatedMinutes": 35
     },
     {
-      "id": "LANGGRAPH-SETUP",
+      "id": "U4-DIAGNOSTIC-UI",
+      "owner": "codex",
+      "branch": "codex/diagnostic-ui",
+      "status": "done",
+      "goal": "Build a dedicated diagnostic page for the existing diagnostic API and connect the dashboard badge into it.",
+      "chunks": [
+        "Create the /diagnostic page",
+        "Submit 5 answers to the existing diagnostic endpoint",
+        "Handle already-complete state",
+        "Hand off to Claude for test coverage"
+      ],
+      "estimatedMinutes": 35
+    },
+    {
+      "id": "U1-PROGRESS-CHARTS",
+      "owner": "codex",
+      "branch": "codex/u1-progress-charts",
+      "status": "in_progress",
+      "goal": "Add a progress summary API and render subject/session charts on the dashboard progress tab.",
+      "chunks": [
+        "Create progress summary API",
+        "Fetch summary data in dashboard",
+        "Render subject accuracy cards and session history"
+      ],
+      "estimatedMinutes": 40
+    },
+    {
+      "id": "U2-TOPIC-PREFERENCES",
+      "owner": "codex",
+      "branch": "codex/u2-topic-preferences",
+      "status": "in_progress",
+      "goal": "Let parents save child topic preferences and use those preferences in question selection.",
+      "chunks": [
+        "Add child preferences API",
+        "Persist topicPreferences on child records",
+        "Filter question selection by preferences when available",
+        "Expose a simple picker UI"
+      ],
+      "estimatedMinutes": 50
+    },
+    {
+      "id": "U5-REWARD-SHOP",
+      "owner": "codex",
+      "branch": "codex/u5-reward-shop",
+      "status": "in_progress",
+      "goal": "Add an avatar/theme reward shop and allow point-based redemption.",
+      "chunks": [
+        "Create reward shop catalog API",
+        "Create redeem endpoint",
+        "Render shop items in rewards page",
+        "Keep the gift card catalog working"
+      ],
+      "estimatedMinutes": 60
+    },
+    {
+      "id": "U3-WEEKLY-EMAIL",
       "owner": "shared",
       "branch": "",
       "status": "pending",
-      "goal": "Add a LangGraph orchestration plan and map product/test/security/housekeeping roles onto the repo-native contract.",
+      "goal": "Send weekly parent email summaries for active/trial subscriptions.",
       "chunks": [
-        "Define role graph",
-        "Define polling cadence",
-        "Define merge gates",
-        "Document Confluence intake"
+        "Scan children progress",
+        "Build weekly HTML email",
+        "Wire cron trigger"
       ],
       "estimatedMinutes": 60
     }

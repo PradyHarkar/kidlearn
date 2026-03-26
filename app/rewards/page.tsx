@@ -7,7 +7,7 @@ import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { Mascot } from "@/components/mascot/Mascot";
-import type { Child, Country, RewardCatalogItem } from "@/types";
+import type { Child, Country, RewardCatalogItem, RewardShopItem } from "@/types";
 
 interface RewardBalance {
   childId: string;
@@ -24,8 +24,10 @@ export default function RewardsPage() {
   const [children, setChildren] = useState<Child[]>([]);
   const [balances, setBalances] = useState<RewardBalance[]>([]);
   const [catalog, setCatalog] = useState<RewardCatalogItem[]>([]);
+  const [shopItems, setShopItems] = useState<RewardShopItem[]>([]);
   const [totalAvailable, setTotalAvailable] = useState(0);
   const [working, setWorking] = useState(false);
+  const [shopWorking, setShopWorking] = useState(false);
   const [transferForm, setTransferForm] = useState({
     sourceChildId: "",
     targetChildId: "",
@@ -53,15 +55,17 @@ export default function RewardsPage() {
     setLoading(true);
     try {
       const country = (session?.user?.country as Country) ?? "AU";
-      const [childrenRes, summaryRes, catalogRes] = await Promise.all([
+      const [childrenRes, summaryRes, catalogRes, shopRes] = await Promise.all([
         fetch("/api/children"),
         fetch("/api/rewards/summary"),
         fetch(`/api/rewards/catalog?country=${country}`),
+        fetch("/api/rewards/shop"),
       ]);
 
       const childrenData = await childrenRes.json();
       const summaryData = await summaryRes.json();
       const catalogData = await catalogRes.json();
+      const shopData = await shopRes.json();
       const nextCatalog = catalogData.catalog || catalogData.rewards || [];
 
       if (!childrenRes.ok) throw new Error(childrenData.error || "Failed to load children");
@@ -74,6 +78,7 @@ export default function RewardsPage() {
       setChildren(nextChildren);
       setBalances(nextBalances);
       setCatalog(nextCatalog);
+      setShopItems(shopData.items || []);
       setTotalAvailable(summaryData.totalAvailable || 0);
 
       setTransferForm((current) => ({
@@ -153,6 +158,27 @@ export default function RewardsPage() {
       toast.error(message);
     } finally {
       setWorking(false);
+    }
+  };
+
+  const handleShopRedeem = async (childId: string, itemId: string) => {
+    setShopWorking(true);
+    try {
+      const res = await fetch("/api/rewards/shop/redeem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ childId, itemId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to redeem shop item");
+
+      toast.success(`${data.purchase.itemTitle} unlocked`);
+      await loadData();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to redeem shop item";
+      toast.error(message);
+    } finally {
+      setShopWorking(false);
     }
   };
 
@@ -375,6 +401,39 @@ export default function RewardsPage() {
                 <p className="text-sm font-black text-cyan-600 uppercase tracking-[0.2em]">{reward.provider}</p>
                 <h3 className="text-xl font-black text-slate-800 mt-2">{reward.title}</h3>
                 <p className="text-sm font-semibold text-slate-500 mt-1">Requires {reward.pointsCost} points</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="bg-white rounded-4xl shadow-card p-6">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-2xl font-black text-gray-800">Reward shop</h2>
+              <p className="text-sm font-semibold text-gray-500">Spend points on avatars, themes, and sticker packs.</p>
+            </div>
+            <span className="text-sm font-black text-purple-700 bg-purple-50 rounded-full px-3 py-1">
+              {shopItems.length} items
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            {shopItems.map((item) => (
+              <div key={item.itemId} className="rounded-3xl border-2 border-purple-100 p-4 bg-gradient-to-br from-white to-purple-50">
+                <div className="text-4xl mb-2">{item.icon}</div>
+                <p className="text-sm font-black text-purple-600 uppercase tracking-[0.2em]">{item.category}</p>
+                <h3 className="text-xl font-black text-slate-800 mt-2">{item.title}</h3>
+                <p className="text-sm font-semibold text-slate-500 mt-1">{item.description}</p>
+                <div className="mt-4 flex items-center justify-between gap-2">
+                  <span className="text-sm font-black text-slate-700">{item.pointsCost} pts</span>
+                  <button
+                    onClick={() => handleShopRedeem(redeemForm.targetChildId || children[0]?.childId || "", item.itemId)}
+                    disabled={shopWorking || !children.length}
+                    className="btn-primary text-sm py-2 px-4 disabled:opacity-60"
+                  >
+                    {shopWorking ? "Working..." : "Buy for child"}
+                  </button>
+                </div>
               </div>
             ))}
           </div>

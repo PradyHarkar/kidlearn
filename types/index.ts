@@ -54,6 +54,7 @@ export interface Child {
   currentDifficultyScience: number;
   rewardPoints?: number;
   rewardPointsRedeemed?: number;
+  topicPreferences?: string[];
   hasChildPin?: boolean;
   childPinHash?: string;
   pinConfiguredAt?: string;
@@ -146,6 +147,26 @@ export interface ProgressRecord {
   createdAt: string;
 }
 
+export interface ProgressSessionSummary {
+  sessionId: string;
+  subject: Subject;
+  completedAt: string;
+  totalQuestions: number;
+  correct: number;
+  incorrect: number;
+  accuracy: number;
+  difficultyStart: number;
+  difficultyEnd: number;
+  topic: string;
+}
+
+export interface ProgressSummary {
+  childId: string;
+  totalSessions: number;
+  sessionsBySubject: Record<Subject, ProgressSessionSummary[]>;
+  accuracyBySubject: Record<Subject, number>;
+}
+
 export interface DiagnosticQuestion {
   questionId: string;
   questionText: string;
@@ -175,6 +196,28 @@ export interface RewardCatalogItem {
   currency: Currency;
   valueMinor: number;
   active: boolean;
+}
+
+export interface RewardShopItem {
+  itemId: string;
+  title: string;
+  description: string;
+  category: "avatar" | "theme" | "sticker";
+  icon: string;
+  pointsCost: number;
+  active: boolean;
+}
+
+export interface RewardShopPurchase {
+  childId: string;
+  purchaseId: string;
+  userId: string;
+  itemId: string;
+  itemTitle: string;
+  pointsSpent: number;
+  status: "pending" | "fulfilled";
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface RewardTransaction {

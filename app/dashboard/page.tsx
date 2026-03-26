@@ -5,12 +5,13 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mascot } from "@/components/mascot/Mascot";
-import { Child, Subscription, SubscriptionStatus } from "@/types";
+import { Child, ProgressSummary, Subscription, SubscriptionStatus } from "@/types";
 import { COUNTRY_CONFIGS } from "@/lib/curriculum";
 import { getLearnerDisplayLabel } from "@/lib/learner";
 import toast from "react-hot-toast";
 import Link from "next/link";
 import type { Country } from "@/types";
+import { getTopicsForGrade } from "@/lib/curriculum";
 
 const AVATARS = ["🐼", "🦁", "🐸", "🦊", "🐧", "🦄", "🐻", "🐯"];
 type DashboardTab = "students" | "progress" | "rewards" | "account";
@@ -54,6 +55,11 @@ function DashboardContent() {
   const [pinForm, setPinForm] = useState({ pin: "" });
   const [savingPin, setSavingPin] = useState(false);
   const [removingPin, setRemovingPin] = useState(false);
+  const [showTopicsModal, setShowTopicsModal] = useState(false);
+  const [topicsChild, setTopicsChild] = useState<Child | null>(null);
+  const [topicPreferences, setTopicPreferences] = useState<string[]>([]);
+  const [savingTopics, setSavingTopics] = useState(false);
+  const [progressSummaries, setProgressSummaries] = useState<Record<string, ProgressSummary>>({});
 
   // Determine the country-based grades for the child form
   const country = (session?.user?.country as Country) ?? "AU";
@@ -90,7 +96,29 @@ function DashboardContent() {
     try {
       const res = await fetch("/api/children");
       const data = await res.json();
-      setChildren(data.children || []);
+      const nextChildren = data.children || [];
+      setChildren(nextChildren);
+
+      const summaries = await Promise.all(
+        nextChildren.map(async (child: Child) => {
+          try {
+            const summaryRes = await fetch(`/api/progress/summary?childId=${child.childId}`);
+            const summaryData = await summaryRes.json();
+            if (!summaryRes.ok) return null;
+            return { childId: child.childId, summary: summaryData.summary as ProgressSummary };
+          } catch {
+            return null;
+          }
+        })
+      );
+
+      const summaryMap = summaries.reduce((acc, item) => {
+        if (item) {
+          acc[item.childId] = item.summary;
+        }
+        return acc;
+      }, {} as Record<string, ProgressSummary>);
+      setProgressSummaries(summaryMap);
     } catch {
       toast.error("Failed to load profiles");
     } finally {
@@ -153,8 +181,8 @@ function DashboardContent() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       window.location.href = data.url;
-    } catch {
-      toast.error("Failed to open billing portal");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to open billing portal");
       setManagingSubscription(false);
     }
   };
@@ -169,6 +197,17 @@ function DashboardContent() {
 
   const rewardBalance = (child: Child) => {
     return Math.max(0, (child.rewardPoints || 0) - (child.rewardPointsRedeemed || 0));
+  };
+
+  const topicOptionsForChild = (child: Child) => {
+    const ageGroup = (child.ageGroup || (child.yearLevel === "prep" ? "foundation" : child.yearLevel)) as Parameters<typeof getTopicsForGrade>[0];
+    return Array.from(
+      new Set(
+        (["maths", "english", "science"] as const).flatMap((subject) =>
+          getTopicsForGrade(ageGroup, subject, country).slice(0, 8)
+        )
+      )
+    );
   };
 
   const openPinModal = (child: Child) => {
@@ -229,6 +268,45 @@ function DashboardContent() {
       toast.error("Failed to remove child PIN");
     } finally {
       setRemovingPin(false);
+    }
+  };
+
+  const openTopicsModal = (child: Child) => {
+    setTopicsChild(child);
+    setTopicPreferences(child.topicPreferences || []);
+    setShowTopicsModal(true);
+  };
+
+  const toggleTopicPreference = (topic: string) => {
+    setTopicPreferences((current) =>
+      current.includes(topic) ? current.filter((item) => item !== topic) : [...current, topic]
+    );
+  };
+
+  const saveTopicPreferences = async () => {
+    if (!topicsChild) return;
+
+    setSavingTopics(true);
+    try {
+      const res = await fetch(`/api/children/${topicsChild.childId}/preferences`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topicPreferences }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Failed to save topic preferences");
+        return;
+      }
+
+      await fetchChildren();
+      toast.success(`${topicsChild.childName}'s interests were saved`);
+      setShowTopicsModal(false);
+      setTopicsChild(null);
+    } catch {
+      toast.error("Failed to save topic preferences");
+    } finally {
+      setSavingTopics(false);
     }
   };
 
@@ -399,9 +477,22 @@ function DashboardContent() {
             </div>
 
             <div className="flex items-center gap-2 mb-4">
-              <span className={`px-3 py-1 rounded-full text-xs font-black ${child.diagnosticComplete ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
-                {child.diagnosticComplete ? "✅ Diagnostic complete" : "🧪 Diagnostic pending"}
-              </span>
+              {child.diagnosticComplete ? (
+                <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-700">
+                  ✅ Diagnostic complete
+                </span>
+              ) : (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    router.push(`/diagnostic?childId=${child.childId}`);
+                  }}
+                  className="px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors"
+                  title="Start diagnostic"
+                >
+                  🧪 Diagnostic pending
+                </button>
+              )}
               {!child.diagnosticComplete && (
                 <span className="text-xs font-bold text-gray-400">Run diagnostic before first learning set</span>
               )}
@@ -469,11 +560,25 @@ function DashboardContent() {
                   Kid Login
                 </button>
               </div>
+              <button
+                onClick={() => openTopicsModal(child)}
+                className="w-full btn-secondary text-sm py-2"
+              >
+                Interests {child.topicPreferences?.length ? `(${child.topicPreferences.length})` : "Set topics"}
+              </button>
               <p className="text-xs font-semibold text-gray-500">
                 {child.hasChildPin
                   ? "PIN ready for kid login"
                   : "Add a PIN so this child can open their own learning screen"}
               </p>
+              {child.topicPreferences?.length ? (
+                <p className="text-xs font-semibold text-purple-600">
+                  Prefers: {child.topicPreferences.slice(0, 3).join(", ")}
+                  {child.topicPreferences.length > 3 ? "..." : ""}
+                </p>
+              ) : (
+                <p className="text-xs font-semibold text-gray-400">No topic preferences saved yet</p>
+              )}
             </div>
           </motion.div>
         ))}
@@ -515,6 +620,46 @@ function DashboardContent() {
           <p className="text-sm font-bold text-gray-500">Diagnostic complete</p>
           <p className="text-3xl font-black text-gray-800">{children.filter((child) => child.diagnosticComplete).length}</p>
         </div>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {(["maths", "english", "science"] as const).map((subject) => (
+          <div key={subject} className="bg-white rounded-3xl p-5 shadow-card">
+            <p className="text-sm font-bold text-gray-500 capitalize">{subject}</p>
+            <p className="text-3xl font-black text-gray-800 mt-1">
+              {children.length
+                ? Math.round(children.reduce((sum, child) => {
+                    const summary = progressSummaries[child.childId];
+                    return sum + (summary?.accuracyBySubject[subject] ?? 0);
+                  }, 0) / children.length)
+                : 0}%
+            </p>
+            <div className="mt-4 space-y-2">
+              {children.map((child) => {
+                const sessions = progressSummaries[child.childId]?.sessionsBySubject[subject] || [];
+                const latest = sessions[0];
+                return (
+                  <div key={child.childId} className="rounded-2xl bg-gray-50 p-3">
+                    <div className="flex items-center justify-between text-sm font-bold text-gray-700">
+                      <span>{child.childName}</span>
+                      <span>{progressSummaries[child.childId]?.accuracyBySubject[subject] ?? 0}%</span>
+                    </div>
+                    <div className="mt-2 bg-gray-200 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500"
+                        style={{ width: `${progressSummaries[child.childId]?.accuracyBySubject[subject] ?? 0}%` }}
+                      />
+                    </div>
+                    {latest && (
+                      <p className="text-xs font-semibold text-gray-400 mt-2">
+                        Latest: {latest.correct}/{latest.totalQuestions} in {latest.topic}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
       <div className="bg-white rounded-3xl p-6 shadow-card">
         <div className="overflow-x-auto">
@@ -600,9 +745,11 @@ function DashboardContent() {
           <p className="text-sm text-gray-500">Manage subscription, PINs, and sign out from here.</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={handleManageSubscription} disabled={managingSubscription} className="btn-secondary">
-            {managingSubscription ? "Loading..." : "Manage Subscription"}
-          </button>
+          {(subscriptionStatus === "active" || subscriptionStatus === "past_due" || subscriptionStatus === "cancelled") && (
+            <button onClick={handleManageSubscription} disabled={managingSubscription} className="btn-secondary">
+              {managingSubscription ? "Loading..." : "Manage Subscription"}
+            </button>
+          )}
           <button onClick={() => signOut({ callbackUrl: "/" })} className="btn-danger">
             Sign Out
           </button>
@@ -813,6 +960,71 @@ function DashboardContent() {
                   </motion.button>
                 </div>
               </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showTopicsModal && topicsChild && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowTopicsModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-4xl p-8 max-w-2xl w-full shadow-kid"
+            >
+              <h2 className="text-2xl font-black text-gray-800 mb-2 text-center">
+                {topicsChild.childName}&apos;s interests
+              </h2>
+              <p className="text-sm font-semibold text-gray-500 text-center mb-6">
+                Pick topics this child likes. Questions will lean toward these topics when available.
+              </p>
+
+              <div className="max-h-96 overflow-y-auto pr-1">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {topicOptionsForChild(topicsChild).map((topic) => {
+                    const selected = topicPreferences.includes(topic);
+                    return (
+                      <button
+                        key={topic}
+                        type="button"
+                        onClick={() => toggleTopicPreference(topic)}
+                        className={`rounded-2xl border-2 px-3 py-2 text-left font-bold text-sm transition-all ${
+                          selected
+                            ? "border-purple-500 bg-purple-50 text-purple-700"
+                            : "border-gray-200 text-gray-600 hover:border-purple-300"
+                        }`}
+                      >
+                        {topic}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => setShowTopicsModal(false)}
+                  className="flex-1 btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveTopicPreferences}
+                  disabled={savingTopics}
+                  className="flex-1 btn-primary disabled:opacity-50"
+                >
+                  {savingTopics ? "Saving..." : "Save Interests"}
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}

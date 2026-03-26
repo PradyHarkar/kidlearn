@@ -2,30 +2,25 @@
 
 ## Current Objective
 
-Validate the shared agent contract and keep the testing/security/reporting lane aligned with LangGraph concepts.
+Validate DASHBOARD-TABS-V1: tabbed dashboard sections, diagnostic badge, and `?tab=` routing.
 
 ## What Changed
 
-The repo now has a branch-agnostic `.agents` layer with:
-
-- task file
-- ownership file
-- per-agent status files
-- handoff files
-- message files
-- report folder
-
-The `agents:*` npm scripts are available.
+Codex implemented the dashboard tabs in `app/dashboard/page.tsx`.
+The page now has `Students`, `Progress`, `Rewards`, and `Account` sections.
+Child cards now show a diagnostic badge.
+The selected tab is driven by the `?tab=` query parameter.
 
 ## What Claude Should Do Next
 
 Read `.agents/task.json`, `.agents/ownership.json`, and your status file first.
 
-- verify the status and message helpers
-- keep your lane on testing/security/reporting
-- prepare test hooks for any future LangGraph runtime
+- add or update Suite 13 tests for the dashboard tabs
+- verify the query-param navigation and tab defaults
+- verify diagnostic badge behavior on child cards
+- confirm existing PIN, rewards, and learning actions still work
 - keep Confluence credentials external to the repo
 
 ## Risks
 
-If Claude reads older `.collab` or `.secops` handoffs first, it may follow stale context. Treat `.agents/task.json` as the current coordination source for this work.
+No backend/API changes were made. If the dashboard test lane finds a UI regression, fix it before merge.

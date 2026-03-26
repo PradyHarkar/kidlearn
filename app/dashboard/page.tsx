@@ -13,6 +13,14 @@ import Link from "next/link";
 import type { Country } from "@/types";
 
 const AVATARS = ["🐼", "🦁", "🐸", "🦊", "🐧", "🦄", "🐻", "🐯"];
+type DashboardTab = "students" | "progress" | "rewards" | "account";
+
+const DASHBOARD_TABS: Array<{ key: DashboardTab; label: string; emoji: string }> = [
+  { key: "students", label: "Students", emoji: "👶" },
+  { key: "progress", label: "Progress", emoji: "📈" },
+  { key: "rewards", label: "Rewards", emoji: "🎁" },
+  { key: "account", label: "Account", emoji: "👤" },
+];
 
 export default function DashboardPage() {
   return (
@@ -50,6 +58,7 @@ function DashboardContent() {
   // Determine the country-based grades for the child form
   const country = (session?.user?.country as Country) ?? "AU";
   const grades = COUNTRY_CONFIGS[country]?.grades ?? COUNTRY_CONFIGS.AU.grades;
+  const activeTab = (searchParams.get("tab") as DashboardTab) || "students";
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -152,6 +161,10 @@ function DashboardContent() {
 
   const gradeLabel = (child: Child) => {
     return `🎓 ${getLearnerDisplayLabel(child)}`;
+  };
+
+  const setTab = (tab: DashboardTab) => {
+    router.push(`/dashboard?tab=${tab}`);
   };
 
   const rewardBalance = (child: Child) => {
@@ -330,6 +343,274 @@ function DashboardContent() {
     return null;
   };
 
+  const renderStudentsTab = () => (
+    <div className="mb-8">
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <h2 className="text-2xl font-black text-gray-800">👶 Child Profiles</h2>
+        <button onClick={() => setShowAddChild(true)} className="btn-primary hidden sm:inline-flex">
+          + Add Child Profile
+        </button>
+      </div>
+
+      {children.length === 0 && !showAddChild && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="bg-white rounded-3xl p-10 text-center shadow-card"
+        >
+          <div className="text-6xl mb-4">👨‍👩‍👧</div>
+          <h3 className="text-xl font-black text-gray-700 mb-2">No children yet!</h3>
+          <p className="text-gray-500 mb-6 font-semibold">Add your first child profile to get started.</p>
+          <button onClick={() => setShowAddChild(true)} className="btn-primary">
+            + Add Child Profile
+          </button>
+        </motion.div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {children.map((child, i) => (
+          <motion.div
+            key={child.childId}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: i * 0.1 }}
+            className="bg-white rounded-3xl p-6 shadow-card hover:shadow-kid transition-all cursor-pointer group"
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center text-4xl">
+                  {child.avatar}
+                </div>
+                <div>
+                  <h3 className="font-black text-gray-800 text-lg">{child.childName}</h3>
+                  <p className="text-gray-500 text-sm font-semibold">{gradeLabel(child)}</p>
+                </div>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteChild(child.childId, child.childName);
+                }}
+                className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all text-xl"
+                title="Remove profile"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 mb-4">
+              <span className={`px-3 py-1 rounded-full text-xs font-black ${child.diagnosticComplete ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+                {child.diagnosticComplete ? "✅ Diagnostic complete" : "🧪 Diagnostic pending"}
+              </span>
+              {!child.diagnosticComplete && (
+                <span className="text-xs font-bold text-gray-400">Run diagnostic before first learning set</span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+              <div className="bg-yellow-50 rounded-xl p-2 text-center">
+                <p className="text-xl font-black text-yellow-600">🔥 {child.streakDays || 0}</p>
+                <p className="text-xs font-bold text-yellow-600">Streak</p>
+              </div>
+              <div className="bg-blue-50 rounded-xl p-2 text-center">
+                <p className="text-xl font-black text-blue-600">⭐ {child.totalStars || 0}</p>
+                <p className="text-xs font-bold text-blue-600">Stars</p>
+              </div>
+              <div className="bg-purple-50 rounded-xl p-2 text-center">
+                <p className="text-xl font-black text-purple-600">🪙 {child.totalCoins || 0}</p>
+                <p className="text-xs font-bold text-purple-600">Coins</p>
+              </div>
+              <div className="bg-emerald-50 rounded-xl p-2 text-center">
+                <p className="text-xl font-black text-emerald-600">+ {rewardBalance(child)}</p>
+                <p className="text-xs font-bold text-emerald-600">Points</p>
+              </div>
+            </div>
+
+            <div className="space-y-2 mb-4">
+              {["maths", "english", "science"].map((subj) => {
+                const diffKey = `currentDifficulty${subj.charAt(0).toUpperCase() + subj.slice(1)}` as keyof Child;
+                const val = (child[diffKey] as number) || 1;
+                const colors: Record<string, string> = { maths: "from-pink-400 to-rose-500", english: "from-cyan-400 to-blue-500", science: "from-emerald-400 to-teal-500" };
+                const icons: Record<string, string> = { maths: "🔢", english: "📖", science: "🔬" };
+                return (
+                  <div key={subj}>
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="font-bold text-gray-600 capitalize">{icons[subj]} {subj.charAt(0).toUpperCase() + subj.slice(1)}</span>
+                      <span className="font-black text-gray-700">{val}/10</span>
+                    </div>
+                    <div className="bg-gray-100 rounded-full h-2">
+                      <div className={`h-full rounded-full bg-gradient-to-r ${colors[subj]}`} style={{ width: `${(val / 10) * 100}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="space-y-2">
+              <motion.button
+                onClick={() => { setSelectedChild(child); setShowSubjectSelect(true); }}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                className="w-full btn-primary text-center py-3"
+              >
+                🚀 Start Learning!
+              </motion.button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => openPinModal(child)}
+                  className="flex-1 btn-secondary text-sm py-2"
+                >
+                  {child.hasChildPin ? "Update PIN" : "Set PIN"}
+                </button>
+                <button
+                  onClick={() => router.push(`/kids?child=${child.childId}`)}
+                  className="flex-1 btn-secondary text-sm py-2"
+                >
+                  Kid Login
+                </button>
+              </div>
+              <p className="text-xs font-semibold text-gray-500">
+                {child.hasChildPin
+                  ? "PIN ready for kid login"
+                  : "Add a PIN so this child can open their own learning screen"}
+              </p>
+            </div>
+          </motion.div>
+        ))}
+
+        {children.length < 3 && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            onClick={() => setShowAddChild(true)}
+            className="bg-white rounded-3xl p-6 shadow-card hover:shadow-kid transition-all cursor-pointer border-3 border-dashed border-purple-200 hover:border-purple-400 flex flex-col items-center justify-center min-h-48"
+          >
+            <div className="text-5xl mb-3">➕</div>
+            <p className="font-black text-purple-600 text-lg">Add Child</p>
+            <p className="text-gray-400 text-sm font-semibold mt-1">
+              {3 - children.length} slot{3 - children.length !== 1 ? "s" : ""} remaining
+            </p>
+          </motion.div>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderProgressTab = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-2xl font-black text-gray-800">📈 Progress</h2>
+        <span className="text-sm font-bold text-gray-500">Live difficulty and streak overview</span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white rounded-3xl p-5 shadow-card">
+          <p className="text-sm font-bold text-gray-500">Total Children</p>
+          <p className="text-3xl font-black text-gray-800">{children.length}</p>
+        </div>
+        <div className="bg-white rounded-3xl p-5 shadow-card">
+          <p className="text-sm font-bold text-gray-500">Active PIN logins</p>
+          <p className="text-3xl font-black text-gray-800">{children.filter((child) => child.hasChildPin).length}</p>
+        </div>
+        <div className="bg-white rounded-3xl p-5 shadow-card">
+          <p className="text-sm font-bold text-gray-500">Diagnostic complete</p>
+          <p className="text-3xl font-black text-gray-800">{children.filter((child) => child.diagnosticComplete).length}</p>
+        </div>
+      </div>
+      <div className="bg-white rounded-3xl p-6 shadow-card">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-left text-gray-500 uppercase text-xs tracking-wider">
+              <tr>
+                <th className="py-2 pr-3">Child</th>
+                <th className="py-2 pr-3">Maths</th>
+                <th className="py-2 pr-3">English</th>
+                <th className="py-2 pr-3">Science</th>
+                <th className="py-2 pr-3">Last Subject</th>
+              </tr>
+            </thead>
+            <tbody>
+              {children.map((child) => (
+                <tr key={child.childId} className="border-t border-gray-100">
+                  <td className="py-3 pr-3 font-bold text-gray-800">{child.childName}</td>
+                  <td className="py-3 pr-3">{(child.currentDifficultyMaths || 1)}/10</td>
+                  <td className="py-3 pr-3">{(child.currentDifficultyEnglish || 1)}/10</td>
+                  <td className="py-3 pr-3">{(child.currentDifficultyScience || 1)}/10</td>
+                  <td className="py-3 pr-3">{child.lastSubject || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderRewardsTab = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-2xl font-black text-gray-800">🎁 Rewards</h2>
+        <Link href="/rewards" className="btn-primary text-sm">
+          Open Rewards Center
+        </Link>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {children.map((child) => (
+          <div key={child.childId} className="bg-white rounded-3xl p-5 shadow-card">
+            <p className="font-black text-gray-800 text-lg">{child.childName}</p>
+            <p className="text-gray-500 text-sm font-semibold">{gradeLabel(child)}</p>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <div className="bg-emerald-50 rounded-2xl p-3">
+                <p className="text-xs font-bold text-emerald-600">Available points</p>
+                <p className="text-2xl font-black text-emerald-700">{rewardBalance(child)}</p>
+              </div>
+              <div className="bg-indigo-50 rounded-2xl p-3">
+                <p className="text-xs font-bold text-indigo-600">Redeemed</p>
+                <p className="text-2xl font-black text-indigo-700">{child.rewardPointsRedeemed || 0}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="bg-white rounded-3xl p-6 shadow-card">
+        <p className="font-bold text-gray-700">
+          Every 20-question set earns 20 points. Use the Rewards center to redeem gift cards or combine sibling points when needed.
+        </p>
+      </div>
+    </div>
+  );
+
+  const renderAccountTab = () => (
+    <div className="space-y-6">
+      {renderSubscriptionBanner()}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="bg-white rounded-3xl p-6 shadow-card">
+          <p className="text-sm font-bold text-gray-500">Parent</p>
+          <p className="text-2xl font-black text-gray-800">{session?.user?.name}</p>
+          <p className="text-sm text-gray-500 mt-1">{session?.user?.email}</p>
+        </div>
+        <div className="bg-white rounded-3xl p-6 shadow-card">
+          <p className="text-sm font-bold text-gray-500">Country</p>
+          <p className="text-2xl font-black text-gray-800">{country}</p>
+          <p className="text-sm text-gray-500 mt-1">Dashboard content is matched to this profile.</p>
+        </div>
+      </div>
+      <div className="bg-white rounded-3xl p-6 shadow-card flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+        <div>
+          <p className="font-black text-gray-800">Account actions</p>
+          <p className="text-sm text-gray-500">Manage subscription, PINs, and sign out from here.</p>
+        </div>
+        <div className="flex gap-3">
+          <button onClick={handleManageSubscription} disabled={managingSubscription} className="btn-secondary">
+            {managingSubscription ? "Loading..." : "Manage Subscription"}
+          </button>
+          <button onClick={() => signOut({ callbackUrl: "/" })} className="btn-danger">
+            Sign Out
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
       {/* Header */}
@@ -376,146 +657,27 @@ function DashboardContent() {
           </div>
         </motion.div>
 
-        {/* Subscription Banner */}
-        {renderSubscriptionBanner()}
-
-        {/* Child Profiles */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-black text-gray-800 mb-4">👶 Child Profiles</h2>
-
-          {children.length === 0 && !showAddChild && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="bg-white rounded-3xl p-10 text-center shadow-card"
+        <div className="mb-6 flex flex-wrap gap-2">
+          {DASHBOARD_TABS.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setTab(tab.key)}
+              className={`px-4 py-2 rounded-full font-black text-sm transition-all border-2 ${
+                activeTab === tab.key
+                  ? "bg-purple-600 text-white border-purple-600"
+                  : "bg-white text-gray-700 border-gray-200 hover:border-purple-300"
+              }`}
             >
-              <div className="text-6xl mb-4">👨‍👩‍👧</div>
-              <h3 className="text-xl font-black text-gray-700 mb-2">No children yet!</h3>
-              <p className="text-gray-500 mb-6 font-semibold">Add your first child profile to get started.</p>
-              <button onClick={() => setShowAddChild(true)} className="btn-primary">
-                + Add Child Profile
-              </button>
-            </motion.div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {children.map((child, i) => (
-              <motion.div
-                key={child.childId}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.1 }}
-                className="bg-white rounded-3xl p-6 shadow-card hover:shadow-kid transition-all cursor-pointer group"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center text-4xl">
-                      {child.avatar}
-                    </div>
-                    <div>
-                      <h3 className="font-black text-gray-800 text-lg">{child.childName}</h3>
-                      <p className="text-gray-500 text-sm font-semibold">{gradeLabel(child)}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteChild(child.childId, child.childName);
-                    }}
-                    className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all text-xl"
-                    title="Remove profile"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-                  <div className="bg-yellow-50 rounded-xl p-2 text-center">
-                    <p className="text-xl font-black text-yellow-600">🔥 {child.streakDays || 0}</p>
-                    <p className="text-xs font-bold text-yellow-600">Streak</p>
-                  </div>
-                  <div className="bg-blue-50 rounded-xl p-2 text-center">
-                    <p className="text-xl font-black text-blue-600">⭐ {child.totalStars || 0}</p>
-                    <p className="text-xs font-bold text-blue-600">Stars</p>
-                  </div>
-                  <div className="bg-purple-50 rounded-xl p-2 text-center">
-                    <p className="text-xl font-black text-purple-600">🪙 {child.totalCoins || 0}</p>
-                    <p className="text-xs font-bold text-purple-600">Coins</p>
-                  </div>
-                  <div className="bg-emerald-50 rounded-xl p-2 text-center">
-                    <p className="text-xl font-black text-emerald-600">+ {rewardBalance(child)}</p>
-                    <p className="text-xs font-bold text-emerald-600">Points</p>
-                  </div>
-                </div>
-
-                <div className="space-y-2 mb-4">
-                  {["maths", "english", "science"].map((subj) => {
-                    const diffKey = `currentDifficulty${subj.charAt(0).toUpperCase() + subj.slice(1)}` as keyof Child;
-                    const val = (child[diffKey] as number) || 1;
-                    const colors: Record<string, string> = { maths: "from-pink-400 to-rose-500", english: "from-cyan-400 to-blue-500", science: "from-emerald-400 to-teal-500" };
-                    const icons: Record<string, string> = { maths: "🔢", english: "📖", science: "🔬" };
-                    return (
-                      <div key={subj}>
-                        <div className="flex items-center justify-between text-xs mb-1">
-                          <span className="font-bold text-gray-600 capitalize">{icons[subj]} {subj.charAt(0).toUpperCase() + subj.slice(1)}</span>
-                          <span className="font-black text-gray-700">{val}/10</span>
-                        </div>
-                        <div className="bg-gray-100 rounded-full h-2">
-                          <div className={`h-full rounded-full bg-gradient-to-r ${colors[subj]}`} style={{ width: `${(val / 10) * 100}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="space-y-2">
-                  <motion.button
-                    onClick={() => { setSelectedChild(child); setShowSubjectSelect(true); }}
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                    className="w-full btn-primary text-center py-3"
-                  >
-                    🚀 Start Learning!
-                  </motion.button>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => openPinModal(child)}
-                      className="flex-1 btn-secondary text-sm py-2"
-                    >
-                      {child.hasChildPin ? "Update PIN" : "Set PIN"}
-                    </button>
-                    <button
-                      onClick={() => router.push(`/kids?child=${child.childId}`)}
-                      className="flex-1 btn-secondary text-sm py-2"
-                    >
-                      Kid Login
-                    </button>
-                  </div>
-                  <p className="text-xs font-semibold text-gray-500">
-                    {child.hasChildPin
-                      ? "PIN ready for kid login"
-                      : "Add a PIN so this child can open their own learning screen"}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-
-            {children.length < 3 && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                onClick={() => setShowAddChild(true)}
-                className="bg-white rounded-3xl p-6 shadow-card hover:shadow-kid transition-all cursor-pointer border-3 border-dashed border-purple-200 hover:border-purple-400 flex flex-col items-center justify-center min-h-48"
-              >
-                <div className="text-5xl mb-3">➕</div>
-                <p className="font-black text-purple-600 text-lg">Add Child</p>
-                <p className="text-gray-400 text-sm font-semibold mt-1">
-                  {3 - children.length} slot{3 - children.length !== 1 ? "s" : ""} remaining
-                </p>
-              </motion.div>
-            )}
-          </div>
+              <span className="mr-2">{tab.emoji}</span>
+              {tab.label}
+            </button>
+          ))}
         </div>
+
+        {activeTab === "students" && renderStudentsTab()}
+        {activeTab === "progress" && renderProgressTab()}
+        {activeTab === "rewards" && renderRewardsTab()}
+        {activeTab === "account" && renderAccountTab()}
       </main>
 
       {/* Subject Selection Modal */}

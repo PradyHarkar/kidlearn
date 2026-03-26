@@ -2,6 +2,23 @@
 
 This file is the universal source of truth for multi-agent work in this repo.
 
+## Master Branch Rules
+
+**Coordination files go directly to master — no PR, no branch.**
+This includes: `.agents/task.json`, `.agents/status/`, `.agents/handoffs/`,
+`.agents/messages/`, `COORDINATION.md`.
+
+**Code never goes directly to master.**
+All product changes (app/, lib/, types/, scripts/test/) go on a feature branch
+and wait for explicit user approval before merging.
+
+**Master is the restoration point.**
+If any feature branch causes problems, `git reset --hard <last good commit>`
+on master restores the last clean state instantly.
+
+**You are the merge gate.**
+No feature branch touches master without the user saying yes.
+
 ## Priority Order
 
 1. Current branch shown by `git branch --show-current`.

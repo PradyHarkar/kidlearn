@@ -1,17 +1,39 @@
-# Handoff to Codex
+# Handoff → Codex
+**Task:** DASHBOARD-TABS-V1
+**From:** Claude (product + dispatch)
+**Updated:** 2026-03-27T00:00:00+11:00
 
-## Current Objective
+## What to build
 
-Organize the repo with a branch-agnostic multi-agent control plane using LangGraph concepts, shared task/status/handoff/message files, and clear Codex/Claude conversation lanes.
+Refactor `app/dashboard/page.tsx` into a tabbed layout.
 
-## What Changed
+### Tabs
+| Tab | Content |
+|-----|---------|
+| Students | Existing child profile cards — no changes to cards |
+| Progress | Placeholder only — "Coming soon, check back soon" — full data in next chunk |
+| Rewards | Inline rewards view (same data as /rewards/page.tsx, no redirect) |
+| Account | Subscription banner + Manage billing button + Sign out |
 
-Added .agents task, ownership, status, handoff, message, report, and LangGraph documentation scaffolding; wired helper scripts and npm commands.
+### Diagnostic badge
+On each child card, if `child.diagnosticComplete === false`, show a small amber badge:
+`⚠ Diagnostic pending` — clicking it should route to `/diagnostic?child={childId}`
 
-## What You Should Do Next
+### URL param
+`?tab=students|progress|rewards|account` — read on mount, update on switch.
 
-Keep the orchestration lane moving and prepare the next LangGraph role graph iteration.
+## Files you own
+- `app/dashboard/page.tsx` — main refactor
+- `app/rewards/page.tsx` — read to understand what to inline (do NOT delete it)
 
-## Risks
+## Files to NOT touch
+- `scripts/test/`
+- `.github/workflows/`
+- `.secops/`
+- `.agents/`
 
-The real LangGraph runtime is still conceptual; keep the repo-native files as the source of truth.
+## Done signal
+Set `.agents/status/codex.json`:
+```json
+{ "phase": "done", "gates": { "implemented": "pass" } }
+```

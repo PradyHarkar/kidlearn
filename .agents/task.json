@@ -1,8 +1,58 @@
 {
   "protocolVersion": 1,
-  "updatedAt": "2026-03-26T11:17:37.912Z",
-  "currentObjective": "Organize the repo with a branch-agnostic multi-agent control plane using LangGraph concepts, shared task/status/handoff/message files, and clear Codex/Claude conversation lanes. Keep Confluence as the requirements source and never commit secrets.",
+  "updatedAt": "2026-03-27T00:00:00+11:00",
+  "currentObjective": "U3+U8+U7 — Tabbed parent dashboard: Students | Progress | Rewards | Account tabs, diagnostic badge on child card, rewards consolidated into dashboard tab.",
   "dispatchAgent": "codex",
+  "activeTask": {
+    "id": "DASHBOARD-TABS-V1",
+    "product": {
+      "problemStatement": "The parent dashboard is a single flat page. Rewards live on a dead-end /rewards URL that most parents never find. The diagnostic placement test ran but there is no visual indicator that a child still needs it. Parents have no structured navigation — everything is buried in one scroll.",
+      "user": "Parent — managing 1-3 children aged 5-14, checking in daily on learning progress, occasionally adjusting settings or managing subscription.",
+      "useCases": [
+        "Parent opens dashboard and sees four clear tabs: Students, Progress, Rewards, Account",
+        "Parent sees a 'Diagnostic pending' badge on a child card if diagnosticComplete is false",
+        "Parent clicks Rewards tab and sees the full rewards view without navigating away",
+        "Parent clicks Account tab and sees subscription status, billing button, sign-out",
+        "Child card retains all existing stats (streak, stars, coins, difficulty bars)"
+      ],
+      "nfrs": [
+        "Tab switch must feel instant — no full page reload, client-side state only",
+        "Active tab persists in URL query param (?tab=rewards) so deep-linking works",
+        "Mobile-first — tabs must work on small screens (horizontal scroll or compact labels)",
+        "No new API calls needed for this chunk — all data already loaded on dashboard"
+      ],
+      "acceptanceCriteria": [
+        "Dashboard renders with 4 tabs: Students, Progress, Rewards, Account",
+        "Students tab shows existing child profile cards unchanged",
+        "Rewards tab shows the same content currently at /rewards/page.tsx (inline, not redirect)",
+        "Account tab shows subscription banner + manage billing button + sign out",
+        "Child card shows amber 'Diagnostic pending' badge when child.diagnosticComplete === false",
+        "?tab= query param updates on tab change and restores active tab on reload",
+        "All 136 existing tests still pass",
+        "New Suite 13 tests cover: tab navigation, diagnostic badge visibility, rewards tab content"
+      ],
+      "antiScope": [
+        "Do NOT build the Progress tab data yet — that needs /api/progress/topics (U1+U2, next chunk)",
+        "Do NOT change /rewards/page.tsx URL — it can stay, just also render inline on dashboard",
+        "Do NOT add any new API endpoints in this chunk"
+      ]
+    },
+    "codexTasks": [
+      "Refactor app/dashboard/page.tsx — add tab state, tab bar component (Students | Progress | Rewards | Account)",
+      "Students tab: move existing child profile grid into Students tab content",
+      "Rewards tab: import and render rewards content inline (reuse lib/services, not page redirect)",
+      "Account tab: move subscription banner + manage billing + sign-out into Account tab",
+      "Progress tab: render placeholder 'Coming soon' — data layer built in next chunk",
+      "Child card: add amber badge 'Diagnostic pending' when child.diagnosticComplete === false",
+      "Wire ?tab= query param to active tab state (useSearchParams)"
+    ],
+    "claudeTasks": [
+      "Write Suite 13 — tab navigation tests, diagnostic badge, rewards tab, account tab content",
+      "Verify all 136 existing tests still pass after dashboard refactor",
+      "Security check — no new data exposed in tab views that wasn't already accessible"
+    ]
+  },
+  "dispatchedAt": "2026-03-27T00:00:00+11:00",
   "cadenceSeconds": 5,
   "statusCadenceSeconds": 60,
   "mergePolicy": "No merge without explicit user approval.",

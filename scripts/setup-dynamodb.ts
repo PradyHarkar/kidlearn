@@ -1,7 +1,7 @@
 import {
-  DynamoDBClient,
   CreateTableCommand,
   DescribeTableCommand,
+  DynamoDBClient,
   ResourceInUseException,
 } from "@aws-sdk/client-dynamodb";
 
@@ -25,17 +25,21 @@ async function tableExists(tableName: string): Promise<boolean> {
 async function createTable(params: Parameters<typeof client.send>[0]["input"]) {
   const tableName = (params as { TableName: string }).TableName;
   if (await tableExists(tableName)) {
-    console.log(`✓ Table ${tableName} already exists`);
+    console.log(`Table ${tableName} already exists`);
     return;
   }
   try {
-    await client.send(new CreateTableCommand(params as Parameters<typeof CreateTableCommand>[0]["input"]));
-    console.log(`✓ Created table: ${tableName}`);
+    await client.send(
+      new CreateTableCommand(
+        params as Parameters<typeof CreateTableCommand>[0]["input"]
+      )
+    );
+    console.log(`Created table: ${tableName}`);
   } catch (error: unknown) {
     if (error instanceof ResourceInUseException) {
-      console.log(`✓ Table ${tableName} already exists`);
+      console.log(`Table ${tableName} already exists`);
     } else {
-      console.error(`✗ Failed to create ${tableName}:`, error);
+      console.error(`Failed to create ${tableName}:`, error);
       throw error;
     }
   }
@@ -44,7 +48,6 @@ async function createTable(params: Parameters<typeof client.send>[0]["input"]) {
 async function setupTables() {
   console.log("Setting up DynamoDB tables...\n");
 
-  // Users table
   await createTable({
     TableName: "kidlearn-users",
     BillingMode: "PAY_PER_REQUEST",
@@ -52,9 +55,7 @@ async function setupTables() {
       { AttributeName: "userId", AttributeType: "S" },
       { AttributeName: "email", AttributeType: "S" },
     ],
-    KeySchema: [
-      { AttributeName: "userId", KeyType: "HASH" },
-    ],
+    KeySchema: [{ AttributeName: "userId", KeyType: "HASH" }],
     GlobalSecondaryIndexes: [
       {
         IndexName: "email-index",
@@ -64,7 +65,6 @@ async function setupTables() {
     ],
   });
 
-  // Children table
   await createTable({
     TableName: "kidlearn-children",
     BillingMode: "PAY_PER_REQUEST",
@@ -78,7 +78,6 @@ async function setupTables() {
     ],
   });
 
-  // Questions table
   await createTable({
     TableName: "kidlearn-questions",
     BillingMode: "PAY_PER_REQUEST",
@@ -92,7 +91,6 @@ async function setupTables() {
     ],
   });
 
-  // Progress table
   await createTable({
     TableName: "kidlearn-progress",
     BillingMode: "PAY_PER_REQUEST",
@@ -106,7 +104,6 @@ async function setupTables() {
     ],
   });
 
-  // Achievements table
   await createTable({
     TableName: "kidlearn-achievements",
     BillingMode: "PAY_PER_REQUEST",
@@ -120,7 +117,6 @@ async function setupTables() {
     ],
   });
 
-  // Sessions table (for NextAuth)
   await createTable({
     TableName: "kidlearn-sessions",
     BillingMode: "PAY_PER_REQUEST",
@@ -150,7 +146,46 @@ async function setupTables() {
     },
   });
 
-  console.log("\n✅ All DynamoDB tables set up successfully!");
+  await createTable({
+    TableName: "kidlearn-reward-transactions",
+    BillingMode: "PAY_PER_REQUEST",
+    AttributeDefinitions: [
+      { AttributeName: "childId", AttributeType: "S" },
+      { AttributeName: "transactionId", AttributeType: "S" },
+    ],
+    KeySchema: [
+      { AttributeName: "childId", KeyType: "HASH" },
+      { AttributeName: "transactionId", KeyType: "RANGE" },
+    ],
+  });
+
+  await createTable({
+    TableName: "kidlearn-redemptions",
+    BillingMode: "PAY_PER_REQUEST",
+    AttributeDefinitions: [
+      { AttributeName: "childId", AttributeType: "S" },
+      { AttributeName: "redemptionId", AttributeType: "S" },
+    ],
+    KeySchema: [
+      { AttributeName: "childId", KeyType: "HASH" },
+      { AttributeName: "redemptionId", KeyType: "RANGE" },
+    ],
+  });
+
+  await createTable({
+    TableName: "kidlearn-question-issues",
+    BillingMode: "PAY_PER_REQUEST",
+    AttributeDefinitions: [
+      { AttributeName: "questionId", AttributeType: "S" },
+      { AttributeName: "issueId", AttributeType: "S" },
+    ],
+    KeySchema: [
+      { AttributeName: "questionId", KeyType: "HASH" },
+      { AttributeName: "issueId", KeyType: "RANGE" },
+    ],
+  });
+
+  console.log("\nAll DynamoDB tables set up successfully!");
 }
 
 setupTables().catch(console.error);

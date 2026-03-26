@@ -1,0 +1,36 @@
+{
+  "protocolVersion": 1,
+  "updatedAt": "2026-03-26T06:05:00+11:00",
+  "mergePolicy": "Do not merge to master without explicit user approval.",
+  "agents": {
+    "codex": {
+      "branch": "codex/rewards-kid-access",
+      "defaultRole": "backend-integrator",
+      "ownedPaths": [
+        "lib/kid-session.ts",
+        "lib/actor-session.ts",
+        "lib/dynamodb.ts",
+        "lib/auth-options.ts",
+        "app/api/kids/",
+        "app/api/questions/route.ts",
+        "app/api/progress/route.ts",
+        "app/api/questions/report/route.ts",
+        "app/api/children/route.ts",
+        "app/dashboard/page.tsx",
+        "app/rewards/page.tsx",
+        "app/kids/page.tsx",
+        "types/index.ts"
+      ]
+    },
+    "claude": {
+      "branch": "claude/learn-results-reporting",
+      "defaultRole": "frontend-experience",
+      "ownedPaths": [
+        "app/learn/page.tsx",
+        "app/results/page.tsx",
+        "app/page.tsx",
+        "scripts/process-question-issues.ts"
+      ]
+    }
+  }
+}

@@ -29,6 +29,9 @@ export const TABLES = {
   ACHIEVEMENTS: process.env.DYNAMODB_ACHIEVEMENTS_TABLE || "kidlearn-achievements",
   SESSIONS: process.env.DYNAMODB_SESSIONS_TABLE || "kidlearn-sessions",
   SUBSCRIPTIONS: process.env.DYNAMODB_SUBSCRIPTIONS_TABLE || "kidlearn-subscriptions",
+  REWARD_TRANSACTIONS: process.env.DYNAMODB_REWARD_TRANSACTIONS_TABLE || "kidlearn-reward-transactions",
+  REDEMPTIONS: process.env.DYNAMODB_REDEMPTIONS_TABLE || "kidlearn-redemptions",
+  QUESTION_ISSUES: process.env.DYNAMODB_QUESTION_ISSUES_TABLE || "kidlearn-question-issues",
 };
 
 export async function putItem(table: string, item: Record<string, unknown> | object) {
@@ -70,16 +73,22 @@ export async function updateItem(
   expressionValues: Record<string, unknown>,
   expressionNames?: Record<string, string>
 ) {
-  return createDdb().send(
-    new UpdateCommand({
-      TableName: table,
-      Key: key,
-      UpdateExpression: updateExpression,
-      ExpressionAttributeValues: expressionValues,
-      ExpressionAttributeNames: expressionNames,
-      ReturnValues: "ALL_NEW",
-    })
-  );
+  const input: ConstructorParameters<typeof UpdateCommand>[0] = {
+    TableName: table,
+    Key: key,
+    UpdateExpression: updateExpression,
+    ReturnValues: "ALL_NEW",
+  };
+
+  if (Object.keys(expressionValues).length > 0) {
+    input.ExpressionAttributeValues = expressionValues;
+  }
+
+  if (expressionNames && Object.keys(expressionNames).length > 0) {
+    input.ExpressionAttributeNames = expressionNames;
+  }
+
+  return createDdb().send(new UpdateCommand(input));
 }
 
 export async function deleteItem(table: string, key: Record<string, unknown>) {

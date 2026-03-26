@@ -7,7 +7,7 @@ import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 // Cache the secret so we don't hit Secrets Manager on every request
 let cachedSecret: string | undefined;
 
-async function getNextAuthSecret(): Promise<string> {
+export async function getNextAuthSecret(): Promise<string> {
   if (cachedSecret) return cachedSecret;
 
   // Works locally / if explicitly set

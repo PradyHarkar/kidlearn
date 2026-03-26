@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { actorCanAccessChild, getActorSession } from "@/lib/actor-session";
 import { getProgressForChild, submitProgressForChild } from "@/lib/services/progress";
-import { getSession } from "@/lib/auth";
 
 const sessionResultSchema = z.object({
   childId: z.string(),
@@ -19,14 +19,17 @@ const sessionResultSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const actor = await getActorSession();
+    if (!actor) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const userId = session.user.id;
     const body = await req.json();
     const { childId, subject, questions } = sessionResultSchema.parse(body);
 
-    const result = await submitProgressForChild(userId, childId, subject, questions);
+    if (!actorCanAccessChild(actor, childId)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const result = await submitProgressForChild(actor.userId, childId, subject, questions);
     if (!result) return NextResponse.json({ error: "Child not found" }, { status: 404 });
 
     return NextResponse.json(result);
@@ -41,13 +44,17 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const actor = await getActorSession();
+    if (!actor) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(req.url);
     const childId = searchParams.get("childId");
 
     if (!childId) return NextResponse.json({ error: "childId required" }, { status: 400 });
+
+    if (!actorCanAccessChild(actor, childId)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const progress = await getProgressForChild(childId);
     return NextResponse.json({ progress });

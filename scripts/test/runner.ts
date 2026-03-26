@@ -35,6 +35,7 @@ import { runSubscriptionSuite }      from "./suites/05-subscription";
 import { runAdaptiveUnitSuite }      from "./suites/06-adaptive-unit";
 import { runReportQuestionSuite }    from "./suites/07-report-question";
 import { runSessionShapeSuite }      from "./suites/08-session-shape";
+import { runTutorSuite }             from "./suites/09-tutor";
 
 // ── Parse CLI args ────────────────────────────────────────────────────────────
 
@@ -102,6 +103,7 @@ async function main() {
     "subscription":   runSubscriptionSuite,
     "report":         runReportQuestionSuite,
     "session-shape":  runSessionShapeSuite,
+    "tutor":          runTutorSuite,
   };
 
   const toRun = opts.suite

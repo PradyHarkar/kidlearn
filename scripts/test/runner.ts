@@ -27,12 +27,14 @@
 
 import { writeFileSync } from "node:fs";
 import { printSummary, getResults } from "./lib/assert";
-import { runAuthSuite }          from "./suites/01-auth";
-import { runChildrenSuite }      from "./suites/02-children";
-import { runQuestionsSuite }     from "./suites/03-questions";
-import { runProgressSuite }      from "./suites/04-progress";
-import { runSubscriptionSuite }  from "./suites/05-subscription";
-import { runAdaptiveUnitSuite }  from "./suites/06-adaptive-unit";
+import { runAuthSuite }              from "./suites/01-auth";
+import { runChildrenSuite }          from "./suites/02-children";
+import { runQuestionsSuite }         from "./suites/03-questions";
+import { runProgressSuite }          from "./suites/04-progress";
+import { runSubscriptionSuite }      from "./suites/05-subscription";
+import { runAdaptiveUnitSuite }      from "./suites/06-adaptive-unit";
+import { runReportQuestionSuite }    from "./suites/07-report-question";
+import { runSessionShapeSuite }      from "./suites/08-session-shape";
 
 // ── Parse CLI args ────────────────────────────────────────────────────────────
 
@@ -92,12 +94,14 @@ async function main() {
 
   // ── Run suites ────────────────────────────────────────────────────────────
   const suiteMap: Record<string, (url: string) => Promise<void>> = {
-    "adaptive":     runAdaptiveUnitSuite,   // pure unit tests first — fastest
-    "auth":         runAuthSuite,
-    "children":     runChildrenSuite,
-    "questions":    runQuestionsSuite,
-    "progress":     runProgressSuite,
-    "subscription": runSubscriptionSuite,
+    "adaptive":       runAdaptiveUnitSuite,   // pure unit tests first — fastest
+    "auth":           runAuthSuite,
+    "children":       runChildrenSuite,
+    "questions":      runQuestionsSuite,
+    "progress":       runProgressSuite,
+    "subscription":   runSubscriptionSuite,
+    "report":         runReportQuestionSuite,
+    "session-shape":  runSessionShapeSuite,
   };
 
   const toRun = opts.suite

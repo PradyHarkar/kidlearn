@@ -18,7 +18,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { getAuthOptions } from "@/lib/auth-options";
+import { getAuthOptions, getNextAuthSecret } from "@/lib/auth-options";
 import { putItem, TABLES } from "@/lib/dynamodb";
 import { toAgeGroup, toLegacyYearLevel } from "@/lib/learner";
 import { v4 as uuidv4 } from "uuid";
@@ -87,7 +87,8 @@ export async function POST(req: NextRequest) {
     const { questions, secret } = uploadSchema.parse(body);
 
     // Allow either authenticated session or secret key (for bulk imports)
-    if (!session?.user && secret !== process.env.NEXTAUTH_SECRET) {
+    const nextAuthSecret = await getNextAuthSecret();
+    if (!session?.user && secret !== nextAuthSecret) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

@@ -156,6 +156,22 @@ function ResultsContent() {
             </div>
           </div>
 
+          {/* Reward points — prominent banner */}
+          {(result.rewardPointsEarned ?? 0) > 0 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.25 }}
+              className="bg-gradient-to-r from-purple-500 to-indigo-500 rounded-3xl p-4 text-center mb-4 shadow-md"
+            >
+              <p className="text-white/80 font-bold text-sm">Reward Points Earned</p>
+              <p className="text-white font-black text-4xl leading-tight">+{result.rewardPointsEarned} pts</p>
+              <p className="text-white/70 text-xs font-semibold mt-0.5">
+                1 point per question · {result.totalQuestions} questions answered
+              </p>
+            </motion.div>
+          )}
+
           {/* Stats grid */}
           <div className="grid grid-cols-2 gap-3 mb-4">
             {[
@@ -214,11 +230,11 @@ function ResultsContent() {
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => {
-                router.back();
+                router.push(`/learn?child=${result.childId}&subject=${result.subject}`);
               }}
               className="w-full btn-primary text-xl py-4"
             >
-              🔄 Play Again!
+              🚀 Next 20 Questions!
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -226,7 +242,7 @@ function ResultsContent() {
               onClick={() => router.push("/dashboard")}
               className="w-full btn-secondary text-lg"
             >
-              🏠 Home
+              🏠 Done for Now
             </motion.button>
           </div>
         </div>

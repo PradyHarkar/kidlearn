@@ -129,8 +129,21 @@ export async function runQuestionsSuite(baseUrl: string) {
   // ── Upload: unauthorized (no secret, no session) → 401 ───────────────────
   await test(SUITE, "POST /api/questions/upload: no auth → 401", async () => {
     const anon = new TestClient(baseUrl);
+    // Must send a valid question body — auth check happens after Zod validation
     const res = await anon.post("/api/questions/upload", {
-      questions: [{ questionText: "Test", answerOptions: [], difficulty: 1, topics: [], explanation: "", subject: "maths", ageGroup: "year3" }],
+      questions: [{
+        questionText: "Test question",
+        answerOptions: [
+          { text: "A", isCorrect: true },
+          { text: "B", isCorrect: false },
+        ],
+        difficulty: 1,
+        topics: ["test"],
+        explanation: "test",
+        subject: "maths",
+        ageGroup: "year3",
+      }],
+      secret: "definitely-wrong-secret",
     });
     assertStatus(res.status, 401, res.raw);
   });

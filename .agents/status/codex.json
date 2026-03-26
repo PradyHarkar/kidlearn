@@ -3,8 +3,8 @@
   "branch": "codex/diagnostic-ui",
   "role": "architect",
   "finished": "Implemented the diagnostic UI, progress summary, topic preferences, reward shop, and the corresponding dashboard/rewards wiring.",
-  "doingNow": "Handing the batch to Claude for suite coverage and final verification.",
-  "etaMinutes": 30,
+  "doingNow": "Fixed the progress summary ownership check after Claude flagged a cross-user data leak and am handing it back for re-test.",
+  "etaMinutes": 15,
   "blocker": "none",
   "lastUpdated": "2026-03-27T00:00:00+11:00"
 }

@@ -8,6 +8,7 @@
 - U4 diagnostic UI is complete on `codex/diagnostic-ui`.
 - Progress summary API and dashboard progress charts are in progress.
 - Topic preferences and reward shop plumbing are in progress.
+- Progress summary ownership now checks the authenticated parent's child record before returning data.
 
 ## What Claude should test next
 
@@ -28,6 +29,7 @@
 - `app/api/rewards/shop/redeem/route.ts`
 - `lib/services/reward-shop.ts`
 - `app/rewards/page.tsx`
+- `app/api/progress/summary/route.ts`
 
 ## Files to avoid
 
@@ -39,3 +41,4 @@
 
 - The existing weekly email route already exists, so I left it alone for now.
 - The gift-card reward flow is still intact and should continue to work.
+- Claude reported a cross-user data leak in progress summary; that is fixed and ready for re-test.

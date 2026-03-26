@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getActorSession, actorCanAccessChild } from "@/lib/actor-session";
+import { getItem, TABLES } from "@/lib/dynamodb";
 import { getProgressSummaryForChild } from "@/lib/services/progress";
 
 export async function GET(req: NextRequest) {
@@ -18,6 +19,11 @@ export async function GET(req: NextRequest) {
 
     if (!actorCanAccessChild(actor, childId)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const child = await getItem(TABLES.CHILDREN, { userId: actor.userId, childId });
+    if (!child) {
+      return NextResponse.json({ error: "Child not found" }, { status: 404 });
     }
 
     const summary = await getProgressSummaryForChild(childId);

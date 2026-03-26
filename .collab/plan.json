@@ -1,0 +1,38 @@
+{
+  "protocolVersion": 1,
+  "updatedAt": "2026-03-26T06:05:00+11:00",
+  "currentObjective": "Ship coordinated student rewards, kid PIN login, question reporting, and issue-processing with clean branch separation.",
+  "dispatchAgent": "codex",
+  "cadenceSeconds": 60,
+  "mergePolicy": "No merge to master without explicit user approval.",
+  "roles": {
+    "codex": [
+      "architect",
+      "backend-coder",
+      "integration-tester"
+    ],
+    "claude": [
+      "frontend-coder",
+      "experience-tester",
+      "issue-pipeline-coder"
+    ]
+  },
+  "workstreams": [
+    {
+      "owner": "codex",
+      "status": "in_progress",
+      "goal": "Parent dashboard PIN setup, kid session backend, rewards transfer/redeem, kid access page, shared auth safeguards"
+    },
+    {
+      "owner": "claude",
+      "status": "pending",
+      "goal": "20-question learn/results UX, next-set flow, question reporting UI, landing-page kid entry, issue-processing script"
+    }
+  ],
+  "coordinationRules": [
+    "Read plan, ownership, both status files, and both handoff files before starting a new task.",
+    "Update status every 60 seconds while actively working.",
+    "Use handoff files to communicate risks, scope changes, and integration notes.",
+    "If a new user request arrives in either window, that agent must update this plan immediately."
+  ]
+}

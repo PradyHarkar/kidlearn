@@ -128,6 +128,9 @@ export class KidLearnStack extends cdk.Stack {
       DYNAMODB_ACHIEVEMENTS_TABLE: "kidlearn-achievements",
       DYNAMODB_SESSIONS_TABLE: "kidlearn-sessions",
       DYNAMODB_SUBSCRIPTIONS_TABLE: "kidlearn-subscriptions",
+      DYNAMODB_REWARD_TRANSACTIONS_TABLE: "kidlearn-reward-transactions",
+      DYNAMODB_REDEMPTIONS_TABLE: "kidlearn-redemptions",
+      DYNAMODB_QUESTION_ISSUES_TABLE: "kidlearn-question-issues",
       NODE_ENV: "production",
     };
 

@@ -20,6 +20,11 @@ export type YearLevel = AgeGroup | "prep";
 
 export type Subject = "maths" | "english" | "science";
 export type DifficultyLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+export type ReporterType = "child" | "parent";
+export type QuestionIssueStatus = "reported" | "triaged" | "resolved" | "dismissed";
+export type RewardTransactionType = "earned" | "redeemed" | "merged_in" | "merged_out" | "adjusted";
+export type RewardRedemptionStatus = "pending" | "approved" | "fulfilled" | "rejected";
+export type KidLoginMethod = "pin" | "face" | "voice";
 
 export interface User {
   userId: string;
@@ -46,6 +51,12 @@ export interface Child {
   currentDifficultyMaths: number;
   currentDifficultyEnglish: number;
   currentDifficultyScience: number;
+  rewardPoints?: number;
+  rewardPointsRedeemed?: number;
+  hasChildPin?: boolean;
+  childPinHash?: string;
+  pinConfiguredAt?: string;
+  allowedKidLoginMethods?: KidLoginMethod[];
   streakDays: number;
   lastActiveDate: string;
   totalCoins: number;
@@ -132,6 +143,60 @@ export interface ProgressRecord {
   createdAt: string;
 }
 
+export interface RewardCatalogItem {
+  rewardId: string;
+  title: string;
+  provider: string;
+  pointsCost: number;
+  currency: Currency;
+  valueMinor: number;
+  active: boolean;
+}
+
+export interface RewardTransaction {
+  childId: string;
+  transactionId: string;
+  userId: string;
+  type: RewardTransactionType;
+  pointsDelta: number;
+  balanceAfter: number;
+  relatedChildId?: string;
+  rewardId?: string;
+  redemptionId?: string;
+  note?: string;
+  createdAt: string;
+}
+
+export interface RewardRedemption {
+  childId: string;
+  redemptionId: string;
+  userId: string;
+  rewardId: string;
+  rewardTitle: string;
+  pointsSpent: number;
+  status: RewardRedemptionStatus;
+  mergedFromChildIds?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface QuestionIssue {
+  questionId: string;
+  issueId: string;
+  reporterType: ReporterType;
+  reporterId: string;
+  userId: string;
+  childId?: string;
+  subject?: Subject;
+  topics?: string[];
+  reason: string;
+  details?: string;
+  status: QuestionIssueStatus;
+  llmSuggestedFix?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Achievement {
   childId: string;
   achievementId: string;
@@ -152,6 +217,7 @@ export interface SessionResult {
   incorrect: number;
   skipped: number;
   accuracy: number;
+  rewardPointsEarned?: number;
   coinsEarned: number;
   starsEarned: number;
   newAchievements: Achievement[];

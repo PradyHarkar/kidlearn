@@ -1,23 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getActorSession, actorCanAccessChild } from "@/lib/actor-session";
 import { getQuestionsForChild } from "@/lib/services/questions";
 import { Subject } from "@/types";
-import { getSession } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const actor = await getActorSession();
+    if (!actor) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(req.url);
     const subject = searchParams.get("subject") as Subject;
     const childId = searchParams.get("childId");
-    const userId = session.user.id;
 
     if (!subject || !childId) {
       return NextResponse.json({ error: "subject and childId required" }, { status: 400 });
     }
 
-    const result = await getQuestionsForChild(userId, childId, subject);
+    if (!actorCanAccessChild(actor, childId)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const result = await getQuestionsForChild(actor.userId, childId, subject);
     if (!result) return NextResponse.json({ error: "Child not found" }, { status: 404 });
 
     return NextResponse.json({

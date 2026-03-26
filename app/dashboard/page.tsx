@@ -41,6 +41,11 @@ function DashboardContent() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | undefined>();
   const [trialDaysRemaining, setTrialDaysRemaining] = useState(0);
   const [managingSubscription, setManagingSubscription] = useState(false);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinChild, setPinChild] = useState<Child | null>(null);
+  const [pinForm, setPinForm] = useState({ pin: "", allowFaceLogin: false, allowVoiceLogin: false });
+  const [savingPin, setSavingPin] = useState(false);
+  const [removingPin, setRemovingPin] = useState(false);
 
   // Determine the country-based grades for the child form
   const country = (session?.user?.country as Country) ?? "AU";
@@ -147,6 +152,75 @@ function DashboardContent() {
 
   const gradeLabel = (child: Child) => {
     return `🎓 ${getLearnerDisplayLabel(child)}`;
+  };
+
+  const rewardBalance = (child: Child) => {
+    return Math.max(0, (child.rewardPoints || 0) - (child.rewardPointsRedeemed || 0));
+  };
+
+  const openPinModal = (child: Child) => {
+    setPinChild(child);
+    setPinForm({
+      pin: "",
+      allowFaceLogin: child.allowedKidLoginMethods?.includes("face") || false,
+      allowVoiceLogin: child.allowedKidLoginMethods?.includes("voice") || false,
+    });
+    setShowPinModal(true);
+  };
+
+  const saveChildPin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pinChild) return;
+
+    setSavingPin(true);
+    try {
+      const res = await fetch(`/api/children/${pinChild.childId}/pin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(pinForm),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Failed to save child PIN");
+        return;
+      }
+
+      await fetchChildren();
+      toast.success(`${pinChild.childName}'s PIN login is ready`);
+      setShowPinModal(false);
+      setPinChild(null);
+      setPinForm({ pin: "", allowFaceLogin: false, allowVoiceLogin: false });
+    } catch {
+      toast.error("Failed to save child PIN");
+    } finally {
+      setSavingPin(false);
+    }
+  };
+
+  const removeChildPin = async () => {
+    if (!pinChild) return;
+
+    setRemovingPin(true);
+    try {
+      const res = await fetch(`/api/children/${pinChild.childId}/pin`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Failed to remove child PIN");
+        return;
+      }
+
+      await fetchChildren();
+      toast.success(`${pinChild.childName}'s PIN login was removed`);
+      setShowPinModal(false);
+      setPinChild(null);
+      setPinForm({ pin: "", allowFaceLogin: false, allowVoiceLogin: false });
+    } catch {
+      toast.error("Failed to remove child PIN");
+    } finally {
+      setRemovingPin(false);
+    }
   };
 
   if (status === "loading" || loading) {
@@ -270,6 +344,12 @@ function DashboardContent() {
           </span>
         </div>
         <div className="flex items-center gap-3">
+          <Link href="/rewards" className="text-gray-600 hover:text-purple-600 font-bold text-sm transition-colors">
+            Rewards
+          </Link>
+          <Link href="/kids" className="text-gray-600 hover:text-purple-600 font-bold text-sm transition-colors hidden sm:inline">
+            Kid PIN Login
+          </Link>
           <span className="text-gray-600 font-semibold hidden sm:block">
             👋 Hi, {session?.user?.name}!
           </span>
@@ -353,7 +433,7 @@ function DashboardContent() {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 mb-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
                   <div className="bg-yellow-50 rounded-xl p-2 text-center">
                     <p className="text-xl font-black text-yellow-600">🔥 {child.streakDays || 0}</p>
                     <p className="text-xs font-bold text-yellow-600">Streak</p>
@@ -365,6 +445,10 @@ function DashboardContent() {
                   <div className="bg-purple-50 rounded-xl p-2 text-center">
                     <p className="text-xl font-black text-purple-600">🪙 {child.totalCoins || 0}</p>
                     <p className="text-xs font-bold text-purple-600">Coins</p>
+                  </div>
+                  <div className="bg-emerald-50 rounded-xl p-2 text-center">
+                    <p className="text-xl font-black text-emerald-600">+ {rewardBalance(child)}</p>
+                    <p className="text-xs font-bold text-emerald-600">Points</p>
                   </div>
                 </div>
 
@@ -388,14 +472,35 @@ function DashboardContent() {
                   })}
                 </div>
 
-                <motion.button
-                  onClick={() => { setSelectedChild(child); setShowSubjectSelect(true); }}
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="w-full btn-primary text-center py-3"
-                >
-                  🚀 Start Learning!
-                </motion.button>
+                <div className="space-y-2">
+                  <motion.button
+                    onClick={() => { setSelectedChild(child); setShowSubjectSelect(true); }}
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="w-full btn-primary text-center py-3"
+                  >
+                    🚀 Start Learning!
+                  </motion.button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => openPinModal(child)}
+                      className="flex-1 btn-secondary text-sm py-2"
+                    >
+                      {child.hasChildPin ? "Update PIN" : "Set PIN"}
+                    </button>
+                    <button
+                      onClick={() => router.push(`/kids?child=${child.childId}`)}
+                      className="flex-1 btn-secondary text-sm py-2"
+                    >
+                      Kid Login
+                    </button>
+                  </div>
+                  <p className="text-xs font-semibold text-gray-500">
+                    {child.hasChildPin
+                      ? `PIN ready${child.allowedKidLoginMethods?.includes("face") || child.allowedKidLoginMethods?.includes("voice") ? " - biometric preferences saved for the next phase" : ""}`
+                      : "Add a PIN so this child can open their own learning screen"}
+                  </p>
+                </div>
               </motion.div>
             ))}
 
@@ -472,6 +577,111 @@ function DashboardContent() {
               >
                 Cancel
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showPinModal && pinChild && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowPinModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-4xl p-8 max-w-md w-full shadow-kid"
+            >
+              <h2 className="text-2xl font-black text-gray-800 mb-2 text-center">
+                {pinChild.childName}&apos;s PIN Login
+              </h2>
+              <p className="text-sm font-semibold text-gray-500 text-center mb-6">
+                A 4 to 6 digit PIN lets this child enter KidLearn directly. Face and voice options are saved as
+                preferences now and can be turned on once secure biometric verification is added.
+              </p>
+
+              <form onSubmit={saveChildPin} className="space-y-5">
+                <div>
+                  <label className="block text-sm font-bold text-gray-600 mb-1 ml-1">Child PIN</label>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    pattern="\d{4,6}"
+                    value={pinForm.pin}
+                    onChange={(e) => setPinForm((current) => ({ ...current, pin: e.target.value.replace(/\D/g, "").slice(0, 6) }))}
+                    className="input-field"
+                    placeholder="4 to 6 digits"
+                    minLength={4}
+                    maxLength={6}
+                    required
+                  />
+                </div>
+
+                <label className="flex items-start gap-3 rounded-2xl border-2 border-gray-200 p-4">
+                  <input
+                    type="checkbox"
+                    checked={pinForm.allowFaceLogin}
+                    onChange={(e) => setPinForm((current) => ({ ...current, allowFaceLogin: e.target.checked }))}
+                    className="mt-1 h-4 w-4 rounded border-gray-300 text-purple-600"
+                  />
+                  <div>
+                    <p className="font-bold text-gray-700">Save face-login preference</p>
+                    <p className="text-xs font-semibold text-gray-500">Stored now so secure device biometrics can be layered in next.</p>
+                  </div>
+                </label>
+
+                <label className="flex items-start gap-3 rounded-2xl border-2 border-gray-200 p-4">
+                  <input
+                    type="checkbox"
+                    checked={pinForm.allowVoiceLogin}
+                    onChange={(e) => setPinForm((current) => ({ ...current, allowVoiceLogin: e.target.checked }))}
+                    className="mt-1 h-4 w-4 rounded border-gray-300 text-purple-600"
+                  />
+                  <div>
+                    <p className="font-bold text-gray-700">Save voice-login preference</p>
+                    <p className="text-xs font-semibold text-gray-500">Stored now so voiceprint verification can be added safely later.</p>
+                  </div>
+                </label>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowPinModal(false)}
+                    className="flex-1 btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  {pinChild.hasChildPin && (
+                    <button
+                      type="button"
+                      onClick={removeChildPin}
+                      disabled={removingPin}
+                      className="btn-danger"
+                    >
+                      {removingPin ? "Removing..." : "Remove PIN"}
+                    </button>
+                  )}
+                  <motion.button
+                    type="submit"
+                    disabled={savingPin || pinForm.pin.length < 4}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex-1 btn-primary flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {savingPin ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      "Save PIN"
+                    )}
+                  </motion.button>
+                </div>
+              </form>
             </motion.div>
           </motion.div>
         )}

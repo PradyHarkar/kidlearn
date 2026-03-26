@@ -26,7 +26,16 @@ export async function GET() {
       { ":userId": userId }
     );
 
-    return NextResponse.json({ children });
+    return NextResponse.json({
+      children: children.map((item) => {
+        const child = item as Record<string, unknown>;
+        const { childPinHash: _childPinHash, ...rest } = child;
+        return {
+          ...rest,
+          hasChildPin: !!child.childPinHash,
+        };
+      }),
+    });
   } catch (error) {
     console.error("Get children error:", error);
     return NextResponse.json({ error: "Failed to fetch children" }, { status: 500 });
@@ -67,6 +76,10 @@ export async function POST(req: NextRequest) {
       currentDifficultyMaths: initialDifficulty,
       currentDifficultyEnglish: initialDifficulty,
       currentDifficultyScience: initialDifficulty,
+      hasChildPin: false,
+      rewardPoints: 0,
+      rewardPointsRedeemed: 0,
+      allowedKidLoginMethods: ["pin"],
       streakDays: 0,
       lastActiveDate: new Date().toISOString(),
       totalCoins: 0,

@@ -42,6 +42,8 @@ function getCurrentDifficulty(child: Child, subject: Subject): number {
   return baseDifficulty;
 }
 
+export const DEFAULT_QUESTION_SET_SIZE = 20;
+
 function selectQuestionsByDifficulty(questions: Question[], targetDifficulty: number): Question[] {
   let filtered = questions.filter((q) => Math.abs(q.difficulty - targetDifficulty) <= 1);
 
@@ -53,7 +55,7 @@ function selectQuestionsByDifficulty(questions: Question[], targetDifficulty: nu
     filtered = questions;
   }
 
-  return filtered.sort(() => Math.random() - 0.5).slice(0, 10);
+  return filtered.sort(() => Math.random() - 0.5).slice(0, DEFAULT_QUESTION_SET_SIZE);
 }
 
 async function loadQuestionsForPartition(pk: string): Promise<Question[]> {
@@ -73,7 +75,7 @@ async function loadQuestionsForPartition(pk: string): Promise<Question[]> {
     questions.push(...(result.Items as Question[] | undefined ?? []));
     lastEvaluatedKey = result.LastEvaluatedKey;
 
-    // We do not need to pull the entire partition to serve a 10-question session.
+    // We do not need to pull the entire partition to serve a 20-question session.
     if (questions.length >= 1500) {
       break;
     }

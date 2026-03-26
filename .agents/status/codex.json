@@ -2,9 +2,9 @@
   "agent": "codex",
   "branch": "codex/diagnostic-ui",
   "role": "architect",
-  "finished": "Implemented the diagnostic UI page and connected dashboard diagnostic badges into the flow.",
-  "doingNow": "Finishing the U1-U2-U5 batch: progress summary pagination, topic preferences, and reward shop.",
-  "etaMinutes": 90,
+  "finished": "Implemented the diagnostic UI, progress summary, topic preferences, reward shop, and the corresponding dashboard/rewards wiring.",
+  "doingNow": "Handing the batch to Claude for suite coverage and final verification.",
+  "etaMinutes": 30,
   "blocker": "none",
   "lastUpdated": "2026-03-27T00:00:00+11:00"
 }

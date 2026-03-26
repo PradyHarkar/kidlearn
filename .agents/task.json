@@ -1,52 +1,52 @@
 {
   "protocolVersion": 1,
-  "updatedAt": "2026-03-26T12:30:00.000Z",
-  "currentObjective": "Implement U4-DIAGNOSTIC-UI: a child diagnostic page backed by the existing /api/diagnostic and /api/diagnostic/submit contract.",
+  "updatedAt": "2026-03-26T13:05:00.000Z",
+  "currentObjective": "Deliver the next Codex workstream batch: U1 progress charts, U2 topic preferences, and U5 reward shop. U4 diagnostic UI is complete and awaiting Claude test pass.",
   "dispatchAgent": "codex",
   "activeTask": {
-    "id": "U4-DIAGNOSTIC-UI",
+    "id": "U1-U2-U5-BATCH",
     "product": {
-      "problemStatement": "Parents can start a diagnostic from the dashboard, but there was no dedicated child-facing diagnostic page. The API existed, the dashboard badge linked nowhere useful, and there was no guided 5-question flow to calibrate the starting maths level.",
-      "user": "Parent or child opening the diagnostic from the dashboard to set the correct starting learning level.",
+      "problemStatement": "Parents need a dashboard that shows learning progress, lets them set topic interests, and lets kids spend points on in-app rewards. The diagnostic page already exists and the dashboard badge now links into it, but the rest of the product stack still needs the richer parent/kid flows.",
+      "user": "Parent managing multiple children, plus the child using the learning and reward flows.",
       "useCases": [
-        "Parent clicks Diagnostic pending on the dashboard and lands on a focused 5-question maths diagnostic page",
-        "Child answers 5 questions one by one and submits them at the end",
-        "If the child already completed the diagnostic, the page shows their calibrated difficulty and next learning link",
-        "After completion, the child can jump straight into the next 20-question learning set"
+        "Parent opens Progress tab and sees recent accuracy by subject",
+        "Parent sets topic preferences so questions lean toward subjects the child likes",
+        "Parent or child buys avatar/theme rewards with earned points",
+        "Diagnostic badge sends the parent into the new diagnostic flow"
       ],
       "nfrs": [
-        "Use the existing diagnostic API contract with no backend changes",
-        "Keep the flow mobile-friendly and simple enough for a child to use",
-        "Fail safely back to the dashboard if the child or session is missing",
-        "Keep the UI accessible and readable on small screens"
+        "Reuse the existing progress and reward data model where possible",
+        "Keep topic preference filtering safe and reversible if no matching pool exists",
+        "Do not break the current reward gift-card flow",
+        "Keep the UI compact and mobile friendly"
       ],
       "acceptanceCriteria": [
-        "Page loads from /diagnostic?childId=...",
-        "GET /api/diagnostic?childId=... drives the page state",
-        "5 diagnostic questions are shown one at a time",
-        "POST /api/diagnostic/submit is called with childId and 5 answers",
-        "If diagnostic is complete already, the page shows the completed state",
-        "Dashboard diagnostic badge can route into the page"
+        "Progress tab shows progress summary charts / session history",
+        "Topic preferences can be saved per child and affect question selection",
+        "Reward shop route exists and items can be redeemed from the rewards page",
+        "Existing diagnostic and reward gift-card flows still work",
+        "Typecheck passes"
       ],
       "antiScope": [
         "Do NOT change the diagnostic API contract",
-        "Do NOT add new database tables",
-        "Do NOT build the other U1/U2/U3/U5 workstreams in this branch"
+        "Do NOT rewrite the weekly email flow unless needed for correctness",
+        "Do NOT remove the existing gift card reward flow"
       ]
     },
     "codexTasks": [
-      "Create app/diagnostic/page.tsx with a 5-question guided flow",
-      "Handle the already-completed state and expose the next learning link",
-      "Hook dashboard diagnostic badge to /diagnostic?childId=...",
-      "Keep the UI compatible with the existing diagnostic API shapes"
+      "Add GET /api/progress/summary and dashboard progress charts",
+      "Add child topic preferences API and topic-interest picker UI",
+      "Add reward shop API and wire the rewards page to it",
+      "Keep the existing diagnostic link and gift card flows intact"
     ],
     "claudeTasks": [
-      "Test the diagnostic page end to end",
-      "Verify GET and POST contract expectations match the UI",
-      "Check that dashboard badge navigation reaches the new page"
+      "Test the new progress summary and dashboard charts",
+      "Test topic preference persistence and question filtering",
+      "Test reward shop browsing and redemption",
+      "Verify the diagnostic page still passes the existing contract tests"
     ]
   },
-  "dispatchedAt": "2026-03-26T12:30:00.000Z",
+  "dispatchedAt": "2026-03-26T13:05:00.000Z",
   "cadenceSeconds": 5,
   "statusCadenceSeconds": 60,
   "mergePolicy": "No merge without explicit user approval.",
@@ -95,7 +95,7 @@
       "id": "U4-DIAGNOSTIC-UI",
       "owner": "codex",
       "branch": "codex/diagnostic-ui",
-      "status": "in_progress",
+      "status": "done",
       "goal": "Build a dedicated diagnostic page for the existing diagnostic API and connect the dashboard badge into it.",
       "chunks": [
         "Create the /diagnostic page",
@@ -104,6 +104,60 @@
         "Hand off to Claude for test coverage"
       ],
       "estimatedMinutes": 35
+    },
+    {
+      "id": "U1-PROGRESS-CHARTS",
+      "owner": "codex",
+      "branch": "codex/u1-progress-charts",
+      "status": "in_progress",
+      "goal": "Add a progress summary API and render subject/session charts on the dashboard progress tab.",
+      "chunks": [
+        "Create progress summary API",
+        "Fetch summary data in dashboard",
+        "Render subject accuracy cards and session history"
+      ],
+      "estimatedMinutes": 40
+    },
+    {
+      "id": "U2-TOPIC-PREFERENCES",
+      "owner": "codex",
+      "branch": "codex/u2-topic-preferences",
+      "status": "in_progress",
+      "goal": "Let parents save child topic preferences and use those preferences in question selection.",
+      "chunks": [
+        "Add child preferences API",
+        "Persist topicPreferences on child records",
+        "Filter question selection by preferences when available",
+        "Expose a simple picker UI"
+      ],
+      "estimatedMinutes": 50
+    },
+    {
+      "id": "U5-REWARD-SHOP",
+      "owner": "codex",
+      "branch": "codex/u5-reward-shop",
+      "status": "in_progress",
+      "goal": "Add an avatar/theme reward shop and allow point-based redemption.",
+      "chunks": [
+        "Create reward shop catalog API",
+        "Create redeem endpoint",
+        "Render shop items in rewards page",
+        "Keep the gift card catalog working"
+      ],
+      "estimatedMinutes": 60
+    },
+    {
+      "id": "U3-WEEKLY-EMAIL",
+      "owner": "shared",
+      "branch": "",
+      "status": "pending",
+      "goal": "Send weekly parent email summaries for active/trial subscriptions.",
+      "chunks": [
+        "Scan children progress",
+        "Build weekly HTML email",
+        "Wire cron trigger"
+      ],
+      "estimatedMinutes": 60
     }
   ],
   "coordinationRules": [

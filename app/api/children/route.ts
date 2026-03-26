@@ -80,6 +80,7 @@ export async function POST(req: NextRequest) {
       hasChildPin: false,
       rewardPoints: 0,
       rewardPointsRedeemed: 0,
+      topicPreferences: [],
       allowedKidLoginMethods: ["pin"],
       streakDays: 0,
       lastActiveDate: new Date().toISOString(),

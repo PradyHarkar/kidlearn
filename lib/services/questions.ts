@@ -74,6 +74,21 @@ function buildAvailableQuestionPool(questions: Question[], blockedQuestionIds: S
   );
 }
 
+function normalizeTopic(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function filterByTopicPreferences(questions: Question[], preferences: string[] | undefined) {
+  if (!preferences?.length) return questions;
+
+  const preferenceSet = new Set(preferences.map(normalizeTopic));
+  const matching = questions.filter((question) =>
+    (question.topics || []).some((topic) => preferenceSet.has(normalizeTopic(topic)))
+  );
+
+  return matching.length >= DEFAULT_QUESTION_SET_SIZE / 2 ? matching : questions;
+}
+
 function selectQuestionsByDifficulty(
   questions: Question[],
   targetDifficulty: number,
@@ -184,9 +199,10 @@ export async function getQuestionsForChild(userId: string, childId: string, subj
     : mergeQuestionSets(genericQuestions);
   const blockedQuestionIds = await loadReportedQuestionIds();
   const availableQuestions = buildAvailableQuestionPool(typedQuestions, blockedQuestionIds);
+  const topicFilteredQuestions = filterByTopicPreferences(availableQuestions, typedChild.topicPreferences);
 
   return {
-    questions: selectQuestionsByDifficulty(typedQuestions, currentDifficulty, blockedQuestionIds),
+    questions: selectQuestionsByDifficulty(topicFilteredQuestions, currentDifficulty, blockedQuestionIds),
     difficulty: currentDifficulty,
     yearLevel: toLegacyYearLevel(ageGroup),
     ageGroup,

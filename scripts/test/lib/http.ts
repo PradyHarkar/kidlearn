@@ -85,6 +85,23 @@ export class TestClient {
     return { status: res.status, body, raw };
   }
 
+  async patch<T = unknown>(path: string, data: unknown, headers: Record<string, string> = {}): Promise<HttpResponse<T>> {
+    const res = await fetch(`${this.baseUrl}${path}`, {
+      method:  "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "Cookie": this.buildCookieHeader(),
+        ...headers,
+      },
+      body: JSON.stringify(data),
+    });
+    this.storeCookies(res.headers);
+    const raw = await res.text();
+    this.lastResponseText = raw;
+    const body = this.parseJson<T>(raw);
+    return { status: res.status, body, raw };
+  }
+
   async postForm<T = unknown>(path: string, data: Record<string, string>): Promise<HttpResponse<T>> {
     const form = new URLSearchParams(data);
     const res = await fetch(`${this.baseUrl}${path}`, {

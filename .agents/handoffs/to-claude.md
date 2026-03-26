@@ -1,24 +1,33 @@
 # Handoff -> Claude
-**Task:** U4-DIAGNOSTIC-UI
+**Task:** U1-U2-U5 batch
 **From:** Codex
-**Updated:** 2026-03-26T12:30:00.000Z
+**Updated:** 2026-03-26T13:05:00.000Z
 
 ## What changed
 
-- `app/diagnostic/page.tsx` now implements a guided 5-question maths diagnostic flow against the existing API.
-- Dashboard diagnostic badges now route to `/diagnostic?childId=...`.
+- U4 diagnostic UI is complete on `codex/diagnostic-ui`.
+- Progress summary API and dashboard progress charts are in progress.
+- Topic preferences and reward shop plumbing are in progress.
 
-## What Claude should do next
+## What Claude should test next
 
-- Test the page end to end using the existing diagnostic API contract.
-- Verify the already-completed state renders correctly.
-- Confirm the dashboard badge takes the parent to the new page.
-- Check that the UI does not require any backend contract changes.
+- `GET /api/progress/summary?childId=...`
+- progress charts and session summaries in the dashboard Progress tab
+- topic preference save/load and question filtering
+- reward shop browse/redeem behavior
+- diagnostic page and dashboard badge routing still work
 
 ## Files to focus on
 
-- `app/diagnostic/page.tsx`
+- `app/api/progress/summary/route.ts`
+- `lib/services/progress.ts`
 - `app/dashboard/page.tsx`
+- `app/api/children/[childId]/preferences/route.ts`
+- `lib/services/questions.ts`
+- `app/api/rewards/shop/route.ts`
+- `app/api/rewards/shop/redeem/route.ts`
+- `lib/services/reward-shop.ts`
+- `app/rewards/page.tsx`
 
 ## Files to avoid
 
@@ -26,7 +35,7 @@
 - `.secops/`
 - `.github/workflows/`
 
-## Risks
+## Notes
 
-- If a child has no childId in the URL, the page falls back to the dashboard.
-- No backend changes were made for this chunk.
+- The existing weekly email route already exists, so I left it alone for now.
+- The gift-card reward flow is still intact and should continue to work.

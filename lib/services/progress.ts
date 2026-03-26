@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
+import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 import {
   calculateCoinsEarned,
   calculateDifficultyAdjustment,
@@ -9,8 +10,8 @@ import {
   updateChildDifficulty,
 } from "@/lib/adaptive";
 import { checkAndGrantAchievements, updateStreak } from "@/lib/achievements";
-import { getItem, putItem, queryItems, TABLES, updateItem } from "@/lib/dynamodb";
-import type { Child, Subject, YearLevel } from "@/types";
+import { createDdb, getItem, putItem, queryItems, TABLES, updateItem } from "@/lib/dynamodb";
+import type { Child, ProgressSessionSummary, ProgressSummary, Subject, YearLevel } from "@/types";
 
 export interface SessionQuestionInput {
   questionId: string;
@@ -194,4 +195,87 @@ export async function getProgressForChild(childId: string) {
     undefined,
     100
   );
+}
+
+function summarizeSessions(records: Array<Record<string, unknown>>, subject: Subject): ProgressSessionSummary[] {
+  const grouped = new Map<string, Array<Record<string, unknown>>>();
+
+  for (const record of records) {
+    if ((record.subject as Subject | undefined) !== subject) continue;
+    const sessionId = String(record.sessionId || "");
+    if (!sessionId) continue;
+    const bucket = grouped.get(sessionId) || [];
+    bucket.push(record);
+    grouped.set(sessionId, bucket);
+  }
+
+  return Array.from(grouped.entries())
+    .map(([sessionId, items]) => {
+      const total = items.length;
+      const correct = items.filter((item) => !!item.correct).length;
+      const first = items[0] || {};
+      const last = items[items.length - 1] || {};
+      const accuracy = total ? Math.round((correct / total) * 100) : 0;
+      const topics = Array.from(new Set(items.map((item) => String(item.topic || "")).filter(Boolean)));
+
+      return {
+        sessionId,
+        subject,
+        completedAt: String(last.createdAt || first.createdAt || ""),
+        totalQuestions: total,
+        correct,
+        incorrect: total - correct,
+        accuracy,
+        difficultyStart: Number(first.difficultyAttempted ?? first.difficulty ?? 1),
+        difficultyEnd: Number(last.difficultyAttempted ?? last.difficulty ?? 1),
+        topic: topics[0] || "general",
+      };
+    })
+    .sort((a, b) => b.completedAt.localeCompare(a.completedAt))
+    .slice(0, 7);
+}
+
+export async function getProgressSummaryForChild(childId: string): Promise<ProgressSummary> {
+  const records: Array<Record<string, unknown>> = [];
+  const ddb = createDdb();
+  let lastEvaluatedKey: Record<string, unknown> | undefined;
+
+  while (true) {
+    const result = await ddb.send(new QueryCommand({
+      TableName: TABLES.PROGRESS,
+      KeyConditionExpression: "childId = :childId",
+      ExpressionAttributeValues: { ":childId": childId },
+      ExclusiveStartKey: lastEvaluatedKey,
+      Limit: 300,
+    }));
+
+    const page = (result.Items || []) as Array<Record<string, unknown>>;
+    records.push(...page);
+    lastEvaluatedKey = result.LastEvaluatedKey;
+
+    if (!lastEvaluatedKey) {
+      break;
+    }
+  }
+
+  const sessionsBySubject = {
+    maths: summarizeSessions(records, "maths"),
+    english: summarizeSessions(records, "english"),
+    science: summarizeSessions(records, "science"),
+  };
+
+  const accuracyBySubject = (["maths", "english", "science"] as Subject[]).reduce((acc, subject) => {
+    const recordsForSubject = records.filter((record) => record.subject === subject);
+    const total = recordsForSubject.length;
+    const correct = recordsForSubject.filter((record) => !!record.correct).length;
+    acc[subject] = total ? Math.round((correct / total) * 100) : 0;
+    return acc;
+  }, {} as Record<Subject, number>);
+
+  return {
+    childId,
+    totalSessions: new Set(records.map((record) => record.sessionId as string)).size,
+    sessionsBySubject,
+    accuracyBySubject,
+  };
 }

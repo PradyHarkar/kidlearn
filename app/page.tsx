@@ -65,8 +65,17 @@ export default function HomePage() {
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex gap-3"
+            className="flex gap-2 sm:gap-3 flex-wrap justify-end"
           >
+            <Link href="/kids/login">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-yellow-400 text-gray-800 font-black py-2 px-4 rounded-2xl shadow hover:bg-yellow-300 transition-all text-sm sm:text-base"
+              >
+                🧒 Kid Login
+              </motion.button>
+            </Link>
             <Link href="/login">
               <motion.button
                 whileHover={{ scale: 1.05 }}

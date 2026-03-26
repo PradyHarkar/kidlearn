@@ -21,6 +21,8 @@
     "test:tsunami": "npx tsx scripts/test/runner.ts --url http://localhost:3000",
     "test:tsunami:prod": "npx tsx scripts/test/runner.ts",
     "test:unit": "npx tsx scripts/test/runner.ts --suite adaptive --no-setup --no-teardown",
+    "process:issues": "npx tsx scripts/process-question-issues.ts",
+    "process:issues:dry": "npx tsx scripts/process-question-issues.ts --dry-run",
     "infra:synth": "cdk synth",
     "infra:diff": "cdk diff",
     "infra:deploy": "cdk deploy --require-approval never",

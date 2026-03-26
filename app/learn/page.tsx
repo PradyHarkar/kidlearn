@@ -9,6 +9,17 @@ import { Question, Subject } from "@/types";
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
 
+const SESSION_SIZE = 20;
+
+const REPORT_REASONS = [
+  "Wrong answer marked",
+  "Question is incorrect",
+  "Too difficult",
+  "Too easy",
+  "Confusing wording",
+  "Other",
+];
+
 interface QuestionResult {
   questionId: string;
   correct: boolean;
@@ -41,14 +52,24 @@ function LearnContent() {
   const [coins, setCoins] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [streak, setStreak] = useState(0);
+
+  // Report question modal
+  const [reportingQuestion, setReportingQuestion] = useState<Question | null>(null);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDetails, setReportDetails] = useState("");
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const questionStartTime = useRef(Date.now());
+
+  // Reward points = number of questions answered
+  const pointsEarned = results.length;
 
   // Resolve media pointer to renderable content
   const resolveMedia = (imageUrl: string | undefined, emoji: string | undefined): string | null => {
     if (imageUrl) {
       if (imageUrl.startsWith("emoji:")) return imageUrl.slice(6);
-      if (imageUrl.startsWith("svg:")) return null; // SVG assets not yet resolved — fall back to text
+      if (imageUrl.startsWith("svg:")) return null;
     }
     return emoji || null;
   };
@@ -94,7 +115,8 @@ function LearnContent() {
       const questionsData = await questionsRes.json();
 
       setCurrentDifficulty(questionsData.difficulty || 1);
-      setQuestions(questionsData.questions || []);
+      // Cap to SESSION_SIZE questions per session
+      setQuestions((questionsData.questions || []).slice(0, SESSION_SIZE));
     } catch {
       toast.error("Failed to load. Please try again!");
       router.push("/dashboard");
@@ -136,7 +158,6 @@ function LearnContent() {
         setConsecutiveCorrect(0);
       }
 
-      // Big confetti for correct answers
       confetti({
         particleCount: 80,
         spread: 80,
@@ -213,6 +234,41 @@ function LearnContent() {
     }
   };
 
+  const openReport = (q: Question) => {
+    setReportingQuestion(q);
+    setReportReason("");
+    setReportDetails("");
+  };
+
+  const closeReport = () => {
+    setReportingQuestion(null);
+  };
+
+  const submitReport = async () => {
+    if (!reportingQuestion || !reportReason) return;
+    setReportSubmitting(true);
+    try {
+      await fetch("/api/questions/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          questionId: reportingQuestion.questionId,
+          childId: childId ?? undefined,
+          subject,
+          topics: reportingQuestion.topics,
+          reason: reportReason,
+          details: reportDetails || undefined,
+        }),
+      });
+      toast.success("Thanks for the feedback! 👍");
+      closeReport();
+    } catch {
+      toast.error("Could not send report. Try again!");
+    } finally {
+      setReportSubmitting(false);
+    }
+  };
+
   if (status === "loading" || loading) {
     const loadingGradient = subject === "maths"
       ? "bg-gradient-to-br from-pink-500 to-rose-600"
@@ -283,6 +339,10 @@ function LearnContent() {
             </div>
 
             <div className="flex items-center gap-2">
+              {/* Reward points */}
+              <div className="glass rounded-xl px-2.5 py-1 text-white font-bold text-sm flex items-center gap-1">
+                🏅 {pointsEarned}pts
+              </div>
               {streak > 1 && (
                 <div className="streak-badge">
                   🔥 {streak}
@@ -343,10 +403,23 @@ function LearnContent() {
             <div className="bg-white rounded-4xl shadow-kid overflow-hidden">
               {/* Question header with topic pills */}
               <div className="bg-gradient-to-r from-indigo-50 to-blue-50 px-6 pt-5 pb-3">
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  {q.topics.map(topic => (
-                    <span key={topic} className="topic-pill capitalize">{topic.replace(/-/g, " ")}</span>
-                  ))}
+                <div className="flex flex-wrap gap-1.5 mb-3 items-center justify-between">
+                  <div className="flex flex-wrap gap-1.5">
+                    {q.topics.map(topic => (
+                      <span key={topic} className="topic-pill capitalize">{topic.replace(/-/g, " ")}</span>
+                    ))}
+                  </div>
+                  {/* Report button */}
+                  <motion.button
+                    onClick={() => openReport(q)}
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.92 }}
+                    className="flex-shrink-0 text-xs text-gray-400 hover:text-red-400 font-semibold flex items-center gap-1 transition-colors"
+                    title="Report this question"
+                    aria-label="Report question"
+                  >
+                    🚩 Flag
+                  </motion.button>
                 </div>
 
                 {/* Question text + TTS */}
@@ -413,7 +486,6 @@ function LearnContent() {
                       aria-label={`Answer option ${optionLetters[idx]}: ${option.text}`}
                     >
                       <div className="flex items-center gap-3">
-                        {/* Letter badge */}
                         <div className={`flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center font-black text-lg
                           ${isAnswered && option.isCorrect ? "bg-green-400 text-white" :
                             isAnswered && isSelected && !option.isCorrect ? "bg-red-400 text-white" :
@@ -422,17 +494,14 @@ function LearnContent() {
                           {optionLetters[idx]}
                         </div>
 
-                        {/* Emoji / media */}
                         {resolveMedia(option.imageUrl, option.emoji) && (
                           <span className="text-3xl flex-shrink-0 leading-none">
                             {resolveMedia(option.imageUrl, option.emoji)}
                           </span>
                         )}
 
-                        {/* Text */}
                         <p className="font-black text-gray-800 text-lg flex-1 leading-snug">{option.text}</p>
 
-                        {/* Result icons */}
                         {isAnswered && option.isCorrect && (
                           <motion.span
                             initial={{ scale: 0, rotate: -180 }}
@@ -529,6 +598,75 @@ function LearnContent() {
           <Mascot mood={mascotMood} message={mascotMessage} size="sm" />
         </div>
       </div>
+
+      {/* ===== REPORT QUESTION MODAL ===== */}
+      <AnimatePresence>
+        {reportingQuestion && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={closeReport}
+          >
+            <motion.div
+              initial={{ scale: 0.85, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.85, opacity: 0 }}
+              transition={{ type: "spring", bounce: 0.3 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-kid"
+            >
+              <h3 className="text-xl font-black text-gray-800 mb-1">🚩 Report Question</h3>
+              <p className="text-gray-400 text-sm font-semibold mb-4 line-clamp-2">
+                &ldquo;{reportingQuestion.questionText.slice(0, 80)}&rdquo;
+              </p>
+
+              {/* Reason buttons */}
+              <div className="flex flex-col gap-2 mb-4">
+                {REPORT_REASONS.map(reason => (
+                  <button
+                    key={reason}
+                    onClick={() => setReportReason(reason)}
+                    className={`text-left px-4 py-2.5 rounded-2xl font-bold text-sm transition-all border-2 ${
+                      reportReason === reason
+                        ? "border-red-400 bg-red-50 text-red-700"
+                        : "border-gray-200 text-gray-600 hover:border-gray-300"
+                    }`}
+                  >
+                    {reason}
+                  </button>
+                ))}
+              </div>
+
+              {/* Optional details */}
+              <textarea
+                value={reportDetails}
+                onChange={e => setReportDetails(e.target.value)}
+                placeholder="Extra details (optional)..."
+                rows={2}
+                className="w-full border-2 border-gray-200 rounded-2xl px-3 py-2 text-sm font-semibold text-gray-700 resize-none focus:outline-none focus:border-purple-300 mb-4"
+              />
+
+              <div className="flex gap-3">
+                <button
+                  onClick={closeReport}
+                  className="flex-1 py-3 rounded-2xl border-2 border-gray-200 font-bold text-gray-600 hover:bg-gray-50 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={submitReport}
+                  disabled={!reportReason || reportSubmitting}
+                  className="flex-1 py-3 rounded-2xl bg-red-500 hover:bg-red-600 disabled:opacity-40 font-black text-white transition-all"
+                >
+                  {reportSubmitting ? "Sending..." : "Send Report"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

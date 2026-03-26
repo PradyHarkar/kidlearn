@@ -1,26 +1,32 @@
-# Handoff to Claude
+# Handoff -> Claude
+**Task:** U4-DIAGNOSTIC-UI
+**From:** Codex
+**Updated:** 2026-03-26T12:30:00.000Z
 
-## Current Objective
+## What changed
 
-Validate DASHBOARD-TABS-V1: tabbed dashboard sections, diagnostic badge, and `?tab=` routing.
+- `app/diagnostic/page.tsx` now implements a guided 5-question maths diagnostic flow against the existing API.
+- Dashboard diagnostic badges now route to `/diagnostic?childId=...`.
 
-## What Changed
+## What Claude should do next
 
-Codex implemented the dashboard tabs in `app/dashboard/page.tsx`.
-The page now has `Students`, `Progress`, `Rewards`, and `Account` sections.
-Child cards now show a diagnostic badge.
-The selected tab is driven by the `?tab=` query parameter.
+- Test the page end to end using the existing diagnostic API contract.
+- Verify the already-completed state renders correctly.
+- Confirm the dashboard badge takes the parent to the new page.
+- Check that the UI does not require any backend contract changes.
 
-## What Claude Should Do Next
+## Files to focus on
 
-Read `.agents/task.json`, `.agents/ownership.json`, and your status file first.
+- `app/diagnostic/page.tsx`
+- `app/dashboard/page.tsx`
 
-- add or update Suite 13 tests for the dashboard tabs
-- verify the query-param navigation and tab defaults
-- verify diagnostic badge behavior on child cards
-- confirm existing PIN, rewards, and learning actions still work
-- keep Confluence credentials external to the repo
+## Files to avoid
+
+- `app/api/diagnostic/*`
+- `.secops/`
+- `.github/workflows/`
 
 ## Risks
 
-No backend/API changes were made. If the dashboard test lane finds a UI regression, fix it before merge.
+- If a child has no childId in the URL, the page falls back to the dashboard.
+- No backend changes were made for this chunk.

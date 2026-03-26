@@ -1,58 +1,52 @@
 {
   "protocolVersion": 1,
-  "updatedAt": "2026-03-27T00:00:00+11:00",
-  "currentObjective": "Implement DASHBOARD-TABS-V1: tabbed dashboard with Students, Progress, Rewards, and Account sections, diagnostic badge on child cards, and ?tab= routing.",
+  "updatedAt": "2026-03-26T12:30:00.000Z",
+  "currentObjective": "Implement U4-DIAGNOSTIC-UI: a child diagnostic page backed by the existing /api/diagnostic and /api/diagnostic/submit contract.",
   "dispatchAgent": "codex",
   "activeTask": {
-    "id": "DASHBOARD-TABS-V1",
+    "id": "U4-DIAGNOSTIC-UI",
     "product": {
-      "problemStatement": "The parent dashboard is a single flat page. Rewards live on a dead-end /rewards URL that many parents never find. The diagnostic placement test ran but there is no visual indicator that a child still needs it. Parents have no structured navigation, so everything is buried in one scroll.",
-      "user": "Parent managing 1-3 children aged 5-14, checking learning progress, adjusting settings, or managing subscription.",
+      "problemStatement": "Parents can start a diagnostic from the dashboard, but there was no dedicated child-facing diagnostic page. The API existed, the dashboard badge linked nowhere useful, and there was no guided 5-question flow to calibrate the starting maths level.",
+      "user": "Parent or child opening the diagnostic from the dashboard to set the correct starting learning level.",
       "useCases": [
-        "Parent opens dashboard and sees four clear tabs: Students, Progress, Rewards, Account",
-        "Parent sees a Diagnostic pending badge on a child card if diagnosticComplete is false",
-        "Parent clicks Rewards tab and sees the full rewards view without navigating away",
-        "Parent clicks Account tab and sees subscription status, billing button, sign-out",
-        "Child card retains all existing stats such as streak, stars, coins, and difficulty bars"
+        "Parent clicks Diagnostic pending on the dashboard and lands on a focused 5-question maths diagnostic page",
+        "Child answers 5 questions one by one and submits them at the end",
+        "If the child already completed the diagnostic, the page shows their calibrated difficulty and next learning link",
+        "After completion, the child can jump straight into the next 20-question learning set"
       ],
       "nfrs": [
-        "Tab switch must feel instant - no full page reload, client-side state only",
-        "Active tab persists in URL query param (?tab=rewards) so deep-linking works",
-        "Mobile-first - tabs must work on small screens",
-        "No new API calls needed for this chunk - all data already loaded on dashboard"
+        "Use the existing diagnostic API contract with no backend changes",
+        "Keep the flow mobile-friendly and simple enough for a child to use",
+        "Fail safely back to the dashboard if the child or session is missing",
+        "Keep the UI accessible and readable on small screens"
       ],
       "acceptanceCriteria": [
-        "Dashboard renders with 4 tabs: Students, Progress, Rewards, Account",
-        "Students tab shows existing child profile cards unchanged",
-        "Rewards tab shows the same content currently at /rewards/page.tsx inline",
-        "Account tab shows subscription banner, manage billing button, and sign out",
-        "Child card shows amber Diagnostic pending badge when child.diagnosticComplete === false",
-        "?tab= query param updates on tab change and restores active tab on reload",
-        "All existing tests still pass",
-        "Suite 13 tests cover tab navigation, diagnostic badge visibility, and rewards tab content"
+        "Page loads from /diagnostic?childId=...",
+        "GET /api/diagnostic?childId=... drives the page state",
+        "5 diagnostic questions are shown one at a time",
+        "POST /api/diagnostic/submit is called with childId and 5 answers",
+        "If diagnostic is complete already, the page shows the completed state",
+        "Dashboard diagnostic badge can route into the page"
       ],
       "antiScope": [
-        "Do NOT build the Progress tab data yet - that needs /api/progress/topics in a future chunk",
-        "Do NOT change /rewards/page.tsx URL - it can stay and also render inline on dashboard",
-        "Do NOT add any new API endpoints in this chunk"
+        "Do NOT change the diagnostic API contract",
+        "Do NOT add new database tables",
+        "Do NOT build the other U1/U2/U3/U5 workstreams in this branch"
       ]
     },
     "codexTasks": [
-      "Refactor app/dashboard/page.tsx - add tab state and tab bar component",
-      "Students tab: move existing child profile grid into Students tab content",
-      "Rewards tab: import and render rewards content inline",
-      "Account tab: move subscription banner, manage billing, and sign-out into Account tab",
-      "Progress tab: render placeholder Coming soon until the data layer exists",
-      "Child card: add amber badge Diagnostic pending when child.diagnosticComplete === false",
-      "Wire ?tab= query param to active tab state"
+      "Create app/diagnostic/page.tsx with a 5-question guided flow",
+      "Handle the already-completed state and expose the next learning link",
+      "Hook dashboard diagnostic badge to /diagnostic?childId=...",
+      "Keep the UI compatible with the existing diagnostic API shapes"
     ],
     "claudeTasks": [
-      "Write Suite 13 - tab navigation tests, diagnostic badge, rewards tab, account tab content",
-      "Verify all existing tests still pass after dashboard refactor",
-      "Security check - no new data exposed in tab views that was not already accessible"
+      "Test the diagnostic page end to end",
+      "Verify GET and POST contract expectations match the UI",
+      "Check that dashboard badge navigation reaches the new page"
     ]
   },
-  "dispatchedAt": "2026-03-27T00:00:00+11:00",
+  "dispatchedAt": "2026-03-26T12:30:00.000Z",
   "cadenceSeconds": 5,
   "statusCadenceSeconds": 60,
   "mergePolicy": "No merge without explicit user approval.",
@@ -88,7 +82,7 @@
       "owner": "codex",
       "branch": "codex/agents-foundation",
       "status": "done",
-      "goal": "Implement DASHBOARD-TABS-V1 with a tabbed dashboard, diagnostic badge on child cards, and query-param navigation.",
+      "goal": "Implement the repo-native coordination layer and dashboard tabs foundation.",
       "chunks": [
         "Add tab routing and section state",
         "Split dashboard into Students, Progress, Rewards, and Account sections",
@@ -98,18 +92,18 @@
       "estimatedMinutes": 35
     },
     {
-      "id": "LANGGRAPH-SETUP",
-      "owner": "shared",
-      "branch": "",
-      "status": "pending",
-      "goal": "Add a LangGraph orchestration plan and map product/test/security/housekeeping roles onto the repo-native contract.",
+      "id": "U4-DIAGNOSTIC-UI",
+      "owner": "codex",
+      "branch": "codex/diagnostic-ui",
+      "status": "in_progress",
+      "goal": "Build a dedicated diagnostic page for the existing diagnostic API and connect the dashboard badge into it.",
       "chunks": [
-        "Define role graph",
-        "Define polling cadence",
-        "Define merge gates",
-        "Document Confluence intake"
+        "Create the /diagnostic page",
+        "Submit 5 answers to the existing diagnostic endpoint",
+        "Handle already-complete state",
+        "Hand off to Claude for test coverage"
       ],
-      "estimatedMinutes": 60
+      "estimatedMinutes": 35
     }
   ],
   "coordinationRules": [

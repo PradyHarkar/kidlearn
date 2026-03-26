@@ -399,9 +399,22 @@ function DashboardContent() {
             </div>
 
             <div className="flex items-center gap-2 mb-4">
-              <span className={`px-3 py-1 rounded-full text-xs font-black ${child.diagnosticComplete ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
-                {child.diagnosticComplete ? "✅ Diagnostic complete" : "🧪 Diagnostic pending"}
-              </span>
+              {child.diagnosticComplete ? (
+                <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-700">
+                  ✅ Diagnostic complete
+                </span>
+              ) : (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    router.push(`/diagnostic?childId=${child.childId}`);
+                  }}
+                  className="px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors"
+                  title="Start diagnostic"
+                >
+                  🧪 Diagnostic pending
+                </button>
+              )}
               {!child.diagnosticComplete && (
                 <span className="text-xs font-bold text-gray-400">Run diagnostic before first learning set</span>
               )}

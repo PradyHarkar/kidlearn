@@ -73,6 +73,7 @@ export async function POST(req: NextRequest) {
       ageGroup,
       yearLevel: toLegacyYearLevel(ageGroup),  // kept for backwards compat
       avatar,
+      diagnosticComplete: false,
       currentDifficultyMaths: initialDifficulty,
       currentDifficultyEnglish: initialDifficulty,
       currentDifficultyScience: initialDifficulty,

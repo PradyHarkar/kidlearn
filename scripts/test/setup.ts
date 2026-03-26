@@ -110,6 +110,7 @@ async function seedChildren(ddb: DynamoDBDocumentClient) {
         ageGroup:                 row.ageGroup,
         yearLevel:                row.ageGroup === "foundation" ? "prep" : row.ageGroup,
         avatar:                   "🧪",
+        diagnosticComplete:       false,
         currentDifficultyMaths:   difficulty,
         currentDifficultyEnglish: difficulty,
         currentDifficultyScience: difficulty,

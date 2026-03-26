@@ -1,6 +1,6 @@
 {
   "protocolVersion": 1,
-  "updatedAt": "2026-03-26T09:00:00+11:00",
+  "updatedAt": "2026-03-26T09:35:00+11:00",
   "currentObjective": "Build C1 AI Tutor Chat (Claude) and S7 Diagnostic Placement Test (Codex) — parallel feature tracks.",
   "dispatchAgent": "claude",
   "cadenceSeconds": 60,
@@ -35,7 +35,7 @@
       "id": "S7",
       "owner": "codex",
       "branch": "codex/diagnostic-placement",
-      "status": "pending",
+      "status": "completed",
       "goal": "Diagnostic Placement Test — 5-question adaptive quiz on first session to calibrate currentDifficultyMaths. New app/api/diagnostic/route.ts + DynamoDB write. Must not touch app/learn/page.tsx.",
       "chunks": [
         "1. app/api/diagnostic/route.ts — question selection + score → difficulty mapping",
@@ -43,7 +43,7 @@
         "3. types/index.ts — DiagnosticQuestion, DiagnosticResult types",
         "4. Suite 10 test coverage"
       ],
-      "estimatedMinutes": 60
+      "estimatedMinutes": 0
     }
   ],
   "coordinationRules": [

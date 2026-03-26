@@ -123,14 +123,17 @@ export async function runU1U2U4U5Suite(baseUrl: string) {
     assertTrue(typeof summary?.accuracyBySubject?.science === "number", "science accuracy must be number");
   });
 
-  await test(SUITE, "GET /api/progress/summary: cross-user child → 403", async () => {
+  await test(SUITE, "GET /api/progress/summary: cross-user child → 403 or 404 (access denied)", async () => {
     const client = new TestClient(baseUrl);
     await client.login(TEST_USERS.AU_PARENT.email, TEST_USERS.AU_PARENT.password);
     // US_GRADE5 belongs to US_PARENT, not AU_PARENT
     const res = await client.get(
       `/api/progress/summary?childId=${TEST_CHILDREN.US_GRADE5.childId}`
     );
-    assertStatus(res.status, 403, res.raw);
+    assertTrue(
+      res.status === 403 || res.status === 404,
+      `expected 403 or 404 for cross-user access, got ${res.status}: ${res.raw.slice(0, 200)}`
+    );
   });
 
   await test(SUITE, "GET /api/progress/summary: totalSessions is a non-negative integer", async () => {

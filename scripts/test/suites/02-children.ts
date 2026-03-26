@@ -108,7 +108,7 @@ export async function runChildrenSuite(baseUrl: string) {
   // ── Create IN Class 8 child ────────────────────────────────────────────────
   await test(SUITE, "POST /api/children: IN class8 → difficulty 9", async () => {
     const client = new TestClient(baseUrl);
-    await client.login(TEST_USERS.IN_PARENT.email, TEST_USERS.IN_PARENT.password);
+    await freshUser("IN", client);
 
     const res = await client.post<{ child?: { currentDifficultyMaths?: number; ageGroup?: string } }>("/api/children", {
       childName: "TsunamiTestChild_IN_C8",

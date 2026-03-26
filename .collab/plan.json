@@ -1,38 +1,58 @@
 {
   "protocolVersion": 1,
-  "updatedAt": "2026-03-26T06:05:00+11:00",
-  "currentObjective": "Ship coordinated student rewards, kid PIN login, question reporting, and issue-processing with clean branch separation.",
-  "dispatchAgent": "codex",
+  "updatedAt": "2026-03-26T09:00:00+11:00",
+  "currentObjective": "Build C1 AI Tutor Chat (Claude) and S7 Diagnostic Placement Test (Codex) — parallel feature tracks.",
+  "dispatchAgent": "claude",
   "cadenceSeconds": 60,
   "mergePolicy": "No merge to master without explicit user approval.",
   "roles": {
     "codex": [
-      "architect",
       "backend-coder",
       "integration-tester"
     ],
     "claude": [
       "frontend-coder",
-      "experience-tester",
-      "issue-pipeline-coder"
+      "api-coder",
+      "experience-tester"
     ]
   },
   "workstreams": [
     {
-      "owner": "codex",
+      "id": "C1",
+      "owner": "claude",
+      "branch": "claude/ai-tutor-chat",
       "status": "in_progress",
-      "goal": "Parent dashboard PIN setup, kid session backend, rewards transfer/redeem, kid access page, shared auth safeguards"
+      "goal": "AI Tutor Chat — after a wrong answer, kid taps 💬 Why? to get a Bedrock-generated explanation. UI in app/learn/page.tsx + new app/api/tutor/route.ts endpoint.",
+      "chunks": [
+        "1. app/api/tutor/route.ts — Bedrock call, auth guard, rate limit",
+        "2. app/learn/page.tsx — Why? button + chat drawer UI",
+        "3. Suite 09 test coverage",
+        "4. Merge-ready review pass"
+      ],
+      "estimatedMinutes": 60
     },
     {
-      "owner": "claude",
+      "id": "S7",
+      "owner": "codex",
+      "branch": "codex/diagnostic-placement",
       "status": "pending",
-      "goal": "20-question learn/results UX, next-set flow, question reporting UI, landing-page kid entry, issue-processing script"
+      "goal": "Diagnostic Placement Test — 5-question adaptive quiz on first session to calibrate currentDifficultyMaths. New app/api/diagnostic/route.ts + DynamoDB write. Must not touch app/learn/page.tsx.",
+      "chunks": [
+        "1. app/api/diagnostic/route.ts — question selection + score → difficulty mapping",
+        "2. app/api/diagnostic/submit/route.ts — persist result to child record",
+        "3. types/index.ts — DiagnosticQuestion, DiagnosticResult types",
+        "4. Suite 10 test coverage"
+      ],
+      "estimatedMinutes": 60
     }
   ],
   "coordinationRules": [
     "Read plan, ownership, both status files, and both handoff files before starting a new task.",
     "Update status every 60 seconds while actively working.",
-    "Use handoff files to communicate risks, scope changes, and integration notes.",
-    "If a new user request arrives in either window, that agent must update this plan immediately."
+    "Chunk work: ≤4 atomic commits, each tested independently before moving on.",
+    "Report etaMinutes honestly — never set to 0 until truly done.",
+    "Set blocker immediately if a test fails or a blocker is hit — do not continue around the problem.",
+    "Declare chunk scope in handoff file on task start so user has full visibility.",
+    "No merge to master without explicit user approval."
   ]
 }

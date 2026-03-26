@@ -29,6 +29,15 @@ making the user repeat context in both windows.
    - tester
    The current role split must be written into `.collab/plan.json`.
 
+## Discipline Rules (enforced on all agents)
+
+8. **Chunk your work**: Break every feature into ≤4 atomic commits. Each commit must be shippable and tested independently.
+9. **Report time remaining**: Every status update must include a realistic `etaMinutes` — not 0 unless truly done.
+10. **Test before moving on**: Each chunk must pass TestTsunami (or the relevant suite) before the next chunk starts.
+11. **No silent failures**: If a test fails or a blocker hits, update `blocker` in the status file immediately. Do not keep going around the problem.
+12. **No skipping ahead**: Do not start chunk N+1 until chunk N is committed, tested, and status updated.
+13. **Declare scope upfront**: On task start, write estimated chunks and ETAs into the handoff file so the user has full visibility.
+
 ## Status Cadence
 
 Every 60 seconds, each agent updates its status file with:

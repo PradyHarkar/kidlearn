@@ -47,6 +47,8 @@ export interface ThemeJourneyTokens {
   cardStyle: ChildCardStyle;
   rewardStyle: ChildRewardStyle;
   backgroundImageHint: string;
+  backgroundImageUrl: string;
+  cardImageUrl: string;
 }
 
 export interface ChildThemePreset {
@@ -73,6 +75,8 @@ export interface ChildThemePreset {
   badge: string;
   mascotGlow: string;
   backgroundImageHint: string;
+  backgroundImageUrl: string;
+  cardImageUrl: string;
   defaultButtonStyle: ChildButtonStyle;
   defaultCardStyle: ChildCardStyle;
   defaultRewardStyle: ChildRewardStyle;
@@ -135,6 +139,8 @@ export const CHILD_THEME_PRESETS: ChildThemePreset[] = [
     badge: "bg-purple-100 text-purple-800",
     mascotGlow: "shadow-purple-100",
     backgroundImageHint: "fantasy castle clouds rainbow",
+    backgroundImageUrl: "/themes/fantasy/bg.jpg",
+    cardImageUrl: "/themes/fantasy/card.png",
     defaultButtonStyle: "gradient",
     defaultCardStyle: "soft",
     defaultRewardStyle: "coins",
@@ -163,6 +169,8 @@ export const CHILD_THEME_PRESETS: ChildThemePreset[] = [
     badge: "bg-pink-100 text-pink-800",
     mascotGlow: "shadow-pink-100",
     backgroundImageHint: "unicorn sparkles rainbow pink",
+    backgroundImageUrl: "/themes/unicorn/bg.jpg",
+    cardImageUrl: "/themes/unicorn/card.png",
     defaultButtonStyle: "cartoon",
     defaultCardStyle: "soft",
     defaultRewardStyle: "stars",
@@ -191,6 +199,8 @@ export const CHILD_THEME_PRESETS: ChildThemePreset[] = [
     badge: "bg-slate-800 text-indigo-100",
     mascotGlow: "shadow-cyan-500/20",
     backgroundImageHint: "space planets stars purple galaxy",
+    backgroundImageUrl: "/themes/space/bg.jpg",
+    cardImageUrl: "/themes/space/card.png",
     defaultButtonStyle: "gradient",
     defaultCardStyle: "bold",
     defaultRewardStyle: "gems",
@@ -219,6 +229,8 @@ export const CHILD_THEME_PRESETS: ChildThemePreset[] = [
     badge: "bg-green-100 text-green-800",
     mascotGlow: "shadow-green-100",
     backgroundImageHint: "soccer field stadium goal",
+    backgroundImageUrl: "/themes/soccer/bg.jpg",
+    cardImageUrl: "/themes/soccer/card.png",
     defaultButtonStyle: "cartoon",
     defaultCardStyle: "bold",
     defaultRewardStyle: "coins",
@@ -247,6 +259,8 @@ export const CHILD_THEME_PRESETS: ChildThemePreset[] = [
     badge: "bg-emerald-100 text-emerald-800",
     mascotGlow: "shadow-emerald-100",
     backgroundImageHint: "jungle animals trees leaves",
+    backgroundImageUrl: "/themes/jungle/bg.jpg",
+    cardImageUrl: "/themes/jungle/card.png",
     defaultButtonStyle: "cartoon",
     defaultCardStyle: "soft",
     defaultRewardStyle: "gems",
@@ -275,6 +289,8 @@ export const CHILD_THEME_PRESETS: ChildThemePreset[] = [
     badge: "bg-cyan-100 text-cyan-800",
     mascotGlow: "shadow-cyan-100",
     backgroundImageHint: "ocean fish bubbles coral",
+    backgroundImageUrl: "/themes/ocean/bg.jpg",
+    cardImageUrl: "/themes/ocean/card.png",
     defaultButtonStyle: "gradient",
     defaultCardStyle: "soft",
     defaultRewardStyle: "coins",
@@ -516,5 +532,7 @@ export function getThemeJourneyTokens(
     cardStyle: preset.defaultCardStyle,
     rewardStyle: preset.defaultRewardStyle,
     backgroundImageHint: preset.backgroundImageHint,
+    backgroundImageUrl: preset.backgroundImageUrl,
+    cardImageUrl: preset.cardImageUrl,
   };
 }

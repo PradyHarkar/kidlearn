@@ -122,6 +122,11 @@ function LearnContent() {
   const actionButtonClass = isCartoonStyle
     ? "rounded-full shadow-lg border-2 border-white/50 uppercase tracking-wide"
     : "rounded-2xl shadow-md";
+  const questionCardBackground = {
+    backgroundImage: `linear-gradient(rgba(255,255,255,0.74), rgba(255,255,255,0.88)), url(${journeyTheme.cardImageUrl})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  } as const;
 
   // Resolve media pointer to renderable content
   const resolveMedia = (imageUrl: string | undefined, emoji: string | undefined): string | null => {
@@ -723,7 +728,7 @@ function LearnContent() {
             className="flex flex-col gap-4"
           >
             {/* Question Card */}
-            <div className={`${questionCardClass} overflow-hidden`}>
+            <div className={`${questionCardClass} overflow-hidden`} style={questionCardBackground}>
               {/* Question header with topic pills */}
               <div className={`${journeyTheme.heroPanelSoft} px-6 pt-5 pb-3`}>
                 <div className="flex flex-wrap gap-1.5 mb-3 items-center justify-between">

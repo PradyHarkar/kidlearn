@@ -2,7 +2,7 @@ import { getInitialDifficultyForAgeGroup, shouldResetDifficulty } from "@/lib/ad
 import { getGradeConfig, getTopicsForGrade } from "@/lib/curriculum";
 import { createDdb, getItem, scanItems, TABLES } from "@/lib/dynamodb";
 import { resolveChildAgeGroup, toLegacyYearLevel } from "@/lib/learner";
-import { getDefaultTileThemeId } from "@/lib/services/tile-themes";
+import { getDefaultChildPreferences, getLegacyTileThemeIdFromChildTheme, resolveChildThemeKey } from "@/lib/services/tile-themes";
 import type { AgeGroup, Child, ChildJourneyTheme, Country, Question, QuestionIssue, Subject, YearLevel } from "@/types";
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 
@@ -229,8 +229,9 @@ export async function getQuestionsForChild(userId: string, childId: string, subj
     totalAvailable: availableQuestions.length,
     curriculumContext: buildCurriculumContext(typedChild, ageGroup, subject),
     appearance: {
-      tileThemeId: typedChild.tileThemeId || getDefaultTileThemeId(typedChild),
+      tileThemeId: typedChild.tileThemeId || getLegacyTileThemeIdFromChildTheme(resolveChildThemeKey(typedChild.preferences?.theme, typedChild)),
       tileFavoriteTags: typedChild.tileFavoriteTags || [],
+      preferences: typedChild.preferences || getDefaultChildPreferences(typedChild),
     },
   };
 }

@@ -39,7 +39,7 @@ export async function runTileCustomizationSuite(baseUrl: string) {
         rewardStyle?: string;
       };
     }>(
-      `/api/children/${TEST_CHILDREN.AU_YEAR3.childId}/appearance`
+      `/api/children/${TEST_CHILDREN.AU_YEAR5.childId}/appearance`
     );
     assertStatus(res.status, 200, res.raw);
     assertDefined(res.body.tileThemeId, "tileThemeId required");
@@ -48,15 +48,15 @@ export async function runTileCustomizationSuite(baseUrl: string) {
     assertEqual(
       res.body.tileThemeId,
       getDefaultTileThemeId({
-        ageGroup: "year3",
-        yearLevel: "year3",
+        ageGroup: "year5",
+        yearLevel: "year5",
         country: "AU",
       }),
       "appearance endpoint should fall back to the same default theme used by creation"
     );
-    const defaults = getDefaultChildPreferences({ ageGroup: "year3", yearLevel: "year3", country: "AU" });
+    const defaults = getDefaultChildPreferences({ ageGroup: "year5", yearLevel: "year5", country: "AU" });
     assertEqual(res.body.preferences?.theme, defaults.theme, "default theme should be fantasy");
-    assertEqual(res.body.preferences?.avatar, defaults.avatar, "default avatar should be returned");
+    assertEqual(res.body.preferences?.avatar, "🧪", "child avatar should be returned when preferences are missing");
     assertEqual(res.body.preferences?.buttonStyle, defaults.buttonStyle, "default button style should be returned");
     assertEqual(res.body.preferences?.cardStyle, defaults.cardStyle, "default card style should be returned");
     assertEqual(res.body.preferences?.rewardStyle, defaults.rewardStyle, "default reward style should be returned");

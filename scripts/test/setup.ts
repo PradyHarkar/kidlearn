@@ -18,6 +18,14 @@ import {
   makeTestQuestions,
 } from "./fixtures";
 
+// Age-group → default tile theme (mirrors lib/services/tile-themes.ts getDefaultTileThemeId)
+function defaultTileThemeId(ageGroup: string): string {
+  if (ageGroup === "foundation" || ageGroup === "year1") return "themes-rainbow";
+  if (ageGroup === "year2"      || ageGroup === "year3") return "games-arcade";
+  if (ageGroup === "year4"      || ageGroup === "year5") return "places-castle";
+  return "themes-ocean"; // year6–year8
+}
+
 const TABLES = {
   USERS:         process.env.DYNAMODB_USERS_TABLE         || "kidlearn-users",
   CHILDREN:      process.env.DYNAMODB_CHILDREN_TABLE      || "kidlearn-children",
@@ -66,21 +74,27 @@ async function seedChildren(ddb: DynamoDBDocumentClient) {
   console.log("  Seeding test children...");
   const now = new Date().toISOString();
 
-  // AU children belong to AU parent
   const auUserId = TEST_USERS.AU_PARENT.userId;
   const usUserId = TEST_USERS.US_PARENT.userId;
   const inUserId = TEST_USERS.IN_PARENT.userId;
   const ukUserId = TEST_USERS.UK_PARENT.userId;
 
+  // AU_PARENT (auUserId) owns exactly the children that codex-ui + dashboard tests need
+  // to access via the appearance/progress APIs authenticated as AU_PARENT.
+  // AU_YEAR3/YEAR5/YEAR7 must be under auUserId so the appearance endpoint finds them.
+  // AU_YEAR3_DIGEST is isolated for suite 20 to keep weekly digest accuracy deterministic.
+  // The remaining AU children go under auUserId+"-b" (no test authenticates as that user).
   const childRows = [
-    { userId: auUserId, ...TEST_CHILDREN.AU_FOUNDATION,  country: "AU" },
-    { userId: auUserId, ...TEST_CHILDREN.AU_YEAR1,        country: "AU" },
-    { userId: auUserId, ...TEST_CHILDREN.AU_YEAR3,        country: "AU" },
-    // Year 5/6/7/8 go under a second AU user (3 child limit) — reuse AU parent userId with extra suffix
-    { userId: auUserId + "-b", ...TEST_CHILDREN.AU_YEAR5, country: "AU" },
-    { userId: auUserId + "-b", ...TEST_CHILDREN.AU_YEAR6, country: "AU" },
-    { userId: auUserId + "-b", ...TEST_CHILDREN.AU_YEAR7, country: "AU" },
-    { userId: auUserId + "-b", ...TEST_CHILDREN.AU_YEAR8, country: "AU" },
+    { userId: auUserId,       ...TEST_CHILDREN.AU_YEAR3,       country: "AU" },
+    { userId: auUserId,       ...TEST_CHILDREN.AU_YEAR5,       country: "AU" },
+    { userId: auUserId,       ...TEST_CHILDREN.AU_YEAR7,       country: "AU" },
+    // Dedicated child for suite 20 — not touched by any other suite
+    { userId: auUserId,       ...TEST_CHILDREN.AU_YEAR3_DIGEST, country: "AU" },
+    // Overflow AU children (no suite authenticates as auUserId+"-b")
+    { userId: auUserId + "-b", ...TEST_CHILDREN.AU_FOUNDATION,  country: "AU" },
+    { userId: auUserId + "-b", ...TEST_CHILDREN.AU_YEAR1,       country: "AU" },
+    { userId: auUserId + "-b", ...TEST_CHILDREN.AU_YEAR6,       country: "AU" },
+    { userId: auUserId + "-b", ...TEST_CHILDREN.AU_YEAR8,       country: "AU" },
     // Regression child: stored difficulty=1 but ageGroup=year5
     {
       userId: auUserId + "-b",
@@ -88,12 +102,12 @@ async function seedChildren(ddb: DynamoDBDocumentClient) {
       country: "AU",
       overrideDifficulty: 1, // simulates old buggy data
     },
-    { userId: usUserId, ...TEST_CHILDREN.US_KINDER,  country: "US" },
-    { userId: usUserId, ...TEST_CHILDREN.US_GRADE5,  country: "US" },
-    { userId: usUserId, ...TEST_CHILDREN.US_GRADE8,  country: "US" },
-    { userId: inUserId, ...TEST_CHILDREN.IN_CLASS8,  country: "IN" },
+    { userId: usUserId, ...TEST_CHILDREN.US_KINDER,    country: "US" },
+    { userId: usUserId, ...TEST_CHILDREN.US_GRADE5,    country: "US" },
+    { userId: usUserId, ...TEST_CHILDREN.US_GRADE8,    country: "US" },
+    { userId: inUserId, ...TEST_CHILDREN.IN_CLASS8,    country: "IN" },
     { userId: ukUserId, ...TEST_CHILDREN.UK_RECEPTION, country: "UK" },
-    { userId: ukUserId, ...TEST_CHILDREN.UK_YEAR7,    country: "UK" },
+    { userId: ukUserId, ...TEST_CHILDREN.UK_YEAR7,     country: "UK" },
   ];
 
   for (const row of childRows) {
@@ -115,6 +129,13 @@ async function seedChildren(ddb: DynamoDBDocumentClient) {
         currentDifficultyMaths:   difficulty,
         currentDifficultyEnglish: difficulty,
         currentDifficultyScience: difficulty,
+        tileThemeId:              defaultTileThemeId(row.ageGroup),
+        tileFavoriteTags:         [],
+        hasChildPin:              false,
+        allowedKidLoginMethods:   ["pin"],
+        rewardPoints:             0,
+        rewardPointsRedeemed:     0,
+        topicPreferences:         [],
         streakDays:               0,
         lastActiveDate:           now,
         totalCoins:               0,
@@ -122,6 +143,12 @@ async function seedChildren(ddb: DynamoDBDocumentClient) {
         stats: {
           totalQuestionsAttempted: 0,
           totalCorrect:            0,
+          mathsAttempted:          0,
+          englishAttempted:        0,
+          scienceAttempted:        0,
+          mathsCorrect:            0,
+          englishCorrect:          0,
+          scienceCorrect:          0,
           mathsAccuracy:           0,
           englishAccuracy:         0,
           scienceAccuracy:         0,
@@ -131,7 +158,7 @@ async function seedChildren(ddb: DynamoDBDocumentClient) {
         _testFixture: true,
       },
     }));
-    console.log(`    ✓ ${row.childName} (difficulty=${difficulty})`);
+    console.log(`    ✓ ${row.childName} (difficulty=${difficulty}, theme=${defaultTileThemeId(row.ageGroup)})`);
   }
 }
 

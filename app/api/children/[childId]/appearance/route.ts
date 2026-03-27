@@ -3,19 +3,21 @@ import { z } from "zod";
 import { actorCanAccessChild, getActorSession } from "@/lib/actor-session";
 import { getItem, updateItem, TABLES } from "@/lib/dynamodb";
 import {
-  CHILD_THEME_PRESETS,
   getDefaultChildPreferences,
   getLegacyTileThemeIdFromChildTheme,
+  getDefaultTileThemeId,
+  TILE_THEME_PRESETS,
   resolveChildThemeKey,
 } from "@/lib/services/tile-themes";
-import type { Child, ChildButtonStyle, ChildCardStyle, ChildRewardStyle, ChildThemeKey } from "@/types";
+import type { Child, ChildThemeKey } from "@/types";
 
-const VALID_THEME_IDS = CHILD_THEME_PRESETS.map((p) => p.id) as [ChildThemeKey, ...ChildThemeKey[]];
+const VALID_THEME_IDS = TILE_THEME_PRESETS.map((p) => p.id) as [string, ...string[]];
+const VALID_CHILD_THEME_KEYS = ["fantasy", "unicorn", "space", "soccer", "jungle", "ocean"] as const satisfies readonly ChildThemeKey[];
 
 const schema = z.object({
-  theme: z.enum(VALID_THEME_IDS).optional(),
+  theme: z.enum(VALID_CHILD_THEME_KEYS).optional(),
   tileThemeId: z.enum(VALID_THEME_IDS).optional(),
-  avatar: z.string().min(1).max(32).optional(),
+  avatar: z.string().min(1).max(16).optional(),
   buttonStyle: z.enum(["gradient", "cartoon"]).optional(),
   cardStyle: z.enum(["soft", "bold"]).optional(),
   rewardStyle: z.enum(["coins", "stars", "gems"]).optional(),
@@ -43,18 +45,23 @@ export async function GET(
     }
 
     const typedChild = child as Child;
-    const preferences = typedChild.preferences || getDefaultChildPreferences(typedChild);
-    const resolvedTheme = resolveChildThemeKey(preferences.theme, typedChild);
+    const defaults = getDefaultChildPreferences({
+      ageGroup: typedChild.ageGroup || (typedChild.yearLevel === "prep" ? "foundation" : (typedChild.yearLevel as Child["ageGroup"])),
+      yearLevel: typedChild.yearLevel,
+      country: typedChild.country,
+    });
+    const preferences = typedChild.preferences ?? {
+      theme: resolveChildThemeKey(typedChild.tileThemeId, typedChild),
+      avatar: typedChild.avatar || defaults.avatar,
+      buttonStyle: defaults.buttonStyle,
+      cardStyle: defaults.cardStyle,
+      rewardStyle: defaults.rewardStyle,
+    };
+
     return NextResponse.json({
-      tileThemeId: typedChild.tileThemeId || getLegacyTileThemeIdFromChildTheme(resolvedTheme),
+      tileThemeId: typedChild.tileThemeId || getDefaultTileThemeId(typedChild),
       tileFavoriteTags: typedChild.tileFavoriteTags || [],
-      preferences: {
-        theme: resolvedTheme,
-        avatar: preferences.avatar || typedChild.avatar || "🧒",
-        buttonStyle: preferences.buttonStyle || "gradient",
-        cardStyle: preferences.cardStyle || "soft",
-        rewardStyle: preferences.rewardStyle || "coins",
-      },
+      preferences,
     });
   } catch (error) {
     console.error("Get tile appearance error:", error);
@@ -83,31 +90,38 @@ export async function PATCH(
       return NextResponse.json({ error: "Child not found" }, { status: 404 });
     }
 
-    const current = child as Child;
-    const currentPrefs = current.preferences || getDefaultChildPreferences(current);
-    const resolvedTheme = resolveChildThemeKey(body.theme || body.tileThemeId || currentPrefs.theme, current);
+    const typedChild = child as Child;
+    const defaults = getDefaultChildPreferences({
+      ageGroup: typedChild.ageGroup || (typedChild.yearLevel === "prep" ? "foundation" : (typedChild.yearLevel as Child["ageGroup"])),
+      yearLevel: typedChild.yearLevel,
+      country: typedChild.country,
+    });
+    const resolvedTheme = body.theme
+      || (body.tileThemeId ? resolveChildThemeKey(body.tileThemeId, typedChild) : resolveChildThemeKey(typedChild.tileThemeId, typedChild));
     const nextPreferences = {
       theme: resolvedTheme,
-      avatar: body.avatar || currentPrefs.avatar || current.avatar || "🧒",
-      buttonStyle: (body.buttonStyle || currentPrefs.buttonStyle || "gradient") as ChildButtonStyle,
-      cardStyle: (body.cardStyle || currentPrefs.cardStyle || "soft") as ChildCardStyle,
-      rewardStyle: (body.rewardStyle || currentPrefs.rewardStyle || "coins") as ChildRewardStyle,
+      avatar: body.avatar || typedChild.avatar || defaults.avatar,
+      buttonStyle: body.buttonStyle || typedChild.preferences?.buttonStyle || defaults.buttonStyle,
+      cardStyle: body.cardStyle || typedChild.preferences?.cardStyle || defaults.cardStyle,
+      rewardStyle: body.rewardStyle || typedChild.preferences?.rewardStyle || defaults.rewardStyle,
     };
+    const nextTileThemeId = body.tileThemeId || getLegacyTileThemeIdFromChildTheme(nextPreferences.theme);
 
     await updateItem(
       TABLES.CHILDREN,
       { userId: actor.userId, childId },
-      "SET preferences = :preferences, tileThemeId = :tileThemeId, tileFavoriteTags = :tileFavoriteTags",
+      "SET avatar = :avatar, preferences = :preferences, tileThemeId = :tileThemeId, tileFavoriteTags = :tileFavoriteTags",
       {
+        ":avatar": nextPreferences.avatar,
         ":preferences": nextPreferences,
-        ":tileThemeId": getLegacyTileThemeIdFromChildTheme(resolvedTheme),
+        ":tileThemeId": nextTileThemeId,
         ":tileFavoriteTags": body.tileFavoriteTags || [],
       }
     );
 
     return NextResponse.json({
       success: true,
-      tileThemeId: getLegacyTileThemeIdFromChildTheme(resolvedTheme),
+      tileThemeId: nextTileThemeId,
       tileFavoriteTags: body.tileFavoriteTags || [],
       preferences: nextPreferences,
     });

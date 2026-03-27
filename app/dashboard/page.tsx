@@ -321,6 +321,12 @@ function DashboardContent() {
       }
     );
 
+  const featuredChild = useMemo(() => {
+    if (!children.length) return null;
+    return children.find((child) => child.childId === selectedProgressChildId) ?? children[0];
+  }, [children, selectedProgressChildId]);
+  const featuredTheme = featuredChild ? resolveChildJourneyTheme(featuredChild) : dashboardTheme;
+
   const topicOptionsForChild = (child: Child) => {
     const ageGroup = (child.ageGroup || (child.yearLevel === "prep" ? "foundation" : child.yearLevel)) as Parameters<typeof getTopicsForGrade>[0];
     return Array.from(
@@ -599,8 +605,144 @@ function DashboardContent() {
     return null;
   };
 
-  const renderStudentsTab = () => (
-    <div className="mb-8">
+  const renderStudentsTab = () => {
+    const heroChild = featuredChild;
+    const heroTheme = heroChild ? resolveChildJourneyTheme(heroChild) : dashboardTheme;
+    const heroSubject = heroChild?.lastSubject || "maths";
+    const heroSubjectLabel = heroSubject === "maths" ? "Maths" : heroSubject === "science" ? "Science" : "English";
+    const heroLevel =
+      heroSubject === "maths"
+        ? heroChild?.currentDifficultyMaths
+        : heroSubject === "science"
+          ? heroChild?.currentDifficultyScience
+          : heroChild?.currentDifficultyEnglish;
+    const heroQuestions = weeklyDigest?.totalQuestions ?? heroChild?.stats?.totalQuestionsAttempted ?? 0;
+    const heroAccuracy = weeklyDigest?.accuracy ?? (heroChild ? Math.round((heroChild?.stats?.totalCorrect || 0) / Math.max(1, heroChild?.stats?.totalQuestionsAttempted || 0) * 100) : 0);
+    const heroBadges = heroChild?.totalStars || 0;
+    const heroStreak = heroChild?.streakDays || 0;
+    const weeklyStrength = weeklyDigest?.topTopics?.[0]?.topic || topicSummary?.topTopics?.[0]?.topic || "Getting started";
+    const weeklyNeed = progressAlerts?.alerts?.[0]?.topic || heroChild?.topicPreferences?.[0] || "Explore new topics";
+
+    return (
+    <div className="space-y-6 sm:space-y-7">
+      <motion.section
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`relative overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-7 lg:p-8 border shadow-kid ${heroTheme.surfaceBorder} ${heroTheme.heroPanel}`}
+        style={{
+          backgroundImage: `linear-gradient(135deg, rgba(59,130,246,0.22), rgba(255,255,255,0.08)), url(${heroTheme.backgroundImageUrl})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-white/10 pointer-events-none" />
+        <div className="relative grid grid-cols-1 xl:grid-cols-[1.3fr_0.9fr] gap-5 items-center">
+          <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 items-center lg:items-start">
+            <div className="hidden lg:block shrink-0">
+              <Mascot mood="happy" size="lg" />
+            </div>
+            <div className="flex-1 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-white/90 shadow-sm">
+                {heroTheme.themeEmoji} {heroTheme.themeLabel} world
+              </div>
+              <h1 className="mt-4 text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight drop-shadow-sm">
+                Welcome back, {session?.user?.name}! 👋
+              </h1>
+              <p className="mt-2 text-white/90 text-base sm:text-lg font-semibold max-w-2xl">
+                Ready for a new adventure today? Pick a child, jump into a themed world, and keep the streak going.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2 justify-center lg:justify-start">
+                <span className="rounded-full bg-white/20 px-3 py-1.5 text-sm font-black text-white">🎯 {heroQuestions} This Week</span>
+                <span className="rounded-full bg-white/20 px-3 py-1.5 text-sm font-black text-white">📘 {heroAccuracy}% Accuracy</span>
+                <span className="rounded-full bg-white/20 px-3 py-1.5 text-sm font-black text-white">🔥 {heroStreak} Day Streak</span>
+                <span className="rounded-full bg-white/20 px-3 py-1.5 text-sm font-black text-white">🏆 {heroBadges} Badges</span>
+              </div>
+              <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    if (!heroChild) return;
+                    setSelectedChild(heroChild);
+                    setShowSubjectSelect(true);
+                  }}
+                  className={`rounded-full px-7 py-4 text-lg font-black shadow-2xl ${heroTheme.primaryButton}`}
+                >
+                  🚀 Continue Adventure
+                </motion.button>
+                <button
+                  onClick={() => setTab("progress")}
+                  className="rounded-full px-6 py-4 text-sm sm:text-base font-black bg-white/20 text-white border border-white/25 hover:bg-white/28 transition-colors"
+                >
+                  📊 View progress
+                </button>
+              </div>
+              <p className="mt-4 text-white/90 text-sm font-semibold">
+                Last played: {heroSubjectLabel} · Level {heroLevel || 1}
+              </p>
+            </div>
+          </div>
+
+          <div className="relative">
+            <div className="rounded-[2rem] bg-white/90 backdrop-blur-md border border-white/80 shadow-2xl overflow-hidden">
+              <div className="grid grid-cols-2 gap-3 p-4">
+                <div className="rounded-[1.5rem] bg-sky-50/90 p-3">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-600">This week</p>
+                  <p className="mt-1 text-2xl font-black text-slate-800">{heroQuestions}</p>
+                  <p className="text-xs font-semibold text-slate-500">Questions</p>
+                </div>
+                <div className="rounded-[1.5rem] bg-emerald-50/90 p-3">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-600">Accuracy</p>
+                  <p className="mt-1 text-2xl font-black text-slate-800">{heroAccuracy}%</p>
+                  <p className="text-xs font-semibold text-slate-500">Across subjects</p>
+                </div>
+                <div className="rounded-[1.5rem] bg-amber-50/90 p-3">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-600">Badges</p>
+                  <p className="mt-1 text-2xl font-black text-slate-800">{heroBadges}</p>
+                  <p className="text-xs font-semibold text-slate-500">Collected</p>
+                </div>
+                <div className="rounded-[1.5rem] bg-fuchsia-50/90 p-3">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-fuchsia-600">Streak</p>
+                  <p className="mt-1 text-2xl font-black text-slate-800">{heroStreak}</p>
+                  <p className="text-xs font-semibold text-slate-500">Days</p>
+                </div>
+              </div>
+              <div className="px-4 pb-4">
+                <div className={`rounded-[1.5rem] p-4 ${heroTheme.heroPanelSoft} border ${heroTheme.surfaceBorder}`}>
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Focus world</p>
+                  <p className="text-xl font-black text-slate-800 mt-1">{heroTheme.themeEmoji} {heroTheme.themeLabel}</p>
+                  <p className="text-sm font-semibold text-slate-600 mt-1">Theme backgrounds, tiles, and learning cards all follow this world.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.section>
+
+      <motion.section
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-[2rem] bg-white/80 backdrop-blur border border-white/70 shadow-card px-5 py-4 sm:px-6 sm:py-5"
+      >
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-black text-gray-800">📊 Weekly Summary</h2>
+            <p className="text-sm sm:text-base font-semibold text-gray-600">
+              {heroChild?.childName || "Your child"} is building momentum. {weeklyDigest ? "Live app summary" : "Waiting for the first weekly digest"}.
+            </p>
+          </div>
+          <button onClick={() => setTab("progress")} className="self-start rounded-full px-4 py-2 text-sm font-black bg-white text-purple-700 border border-purple-200 hover:bg-purple-50">
+            View full report →
+          </button>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-black text-emerald-700">✅ Strength: {weeklyStrength}</span>
+          <span className="rounded-full bg-amber-50 px-3 py-1.5 text-sm font-black text-amber-700">⚠️ Needs help: {weeklyNeed}</span>
+          <span className="rounded-full bg-violet-50 px-3 py-1.5 text-sm font-black text-violet-700">⭐ +{weeklyDigest?.rewardPointsEarned ?? heroQuestions} points</span>
+          <span className="rounded-full bg-sky-50 px-3 py-1.5 text-sm font-black text-sky-700">📈 {weeklyDigest?.totalSessions ?? 0} sessions</span>
+        </div>
+      </motion.section>
+
       <div className="flex items-center justify-between gap-3 mb-4">
         <h2 className="text-2xl font-black text-gray-800">👶 Child Profiles</h2>
         <button onClick={() => setShowAddChild(true)} className="btn-primary hidden sm:inline-flex">
@@ -635,9 +777,14 @@ function DashboardContent() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.1 }}
+              style={{
+                backgroundImage: `linear-gradient(rgba(255,255,255,0.68), rgba(255,255,255,0.82)), url(${theme.cardImageUrl})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }}
               className={`relative overflow-hidden rounded-3xl p-5 md:p-6 shadow-card hover:shadow-kid transition-all cursor-pointer group border ${theme.surfaceBorder} ${theme.surfaceCard}`}
             >
-              <div className={`absolute inset-0 bg-gradient-to-br ${theme.pageGlow} opacity-70 pointer-events-none`} />
+              <div className={`absolute inset-0 bg-gradient-to-br ${theme.pageGlow} opacity-60 pointer-events-none`} />
               <div className="relative">
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="flex items-center gap-3 min-w-0">
@@ -812,7 +959,8 @@ function DashboardContent() {
         )}
       </div>
     </div>
-  );
+    );
+  };
 
   const renderProgressTab = () => {
     const selectedProgressChild = selectedProgressChildId
@@ -1182,9 +1330,10 @@ function DashboardContent() {
   );
 
   return (
-    <div className={`min-h-screen ${dashboardTheme.pageGradient}`}>
+    <div className={`min-h-screen ${dashboardTheme.pageGradient} relative overflow-hidden`}>
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.55),transparent_35%),radial-gradient(circle_at_top_right,rgba(255,255,255,0.3),transparent_28%)]" />
       {/* Header */}
-      <header className={`shadow-card px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex justify-between items-center border-b ${dashboardTheme.surfaceBorder} ${dashboardTheme.heroPanelSoft}`}>
+      <header className={`relative z-10 shadow-card px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex justify-between items-center border-b ${dashboardTheme.surfaceBorder} ${dashboardTheme.heroPanelSoft}`}>
         <div className="flex items-center gap-3">
           <span className={`text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r ${dashboardTheme.themeKey === "space" ? "from-cyan-300 to-fuchsia-300" : "from-blue-600 to-purple-600"}`}>
             🌟 KidLearn
@@ -1209,7 +1358,7 @@ function DashboardContent() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <main className="relative z-10 max-w-[1540px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
         {/* Welcome Banner */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -1486,7 +1635,12 @@ function DashboardContent() {
                     key={preset.id}
                     type="button"
                     onClick={() => setAppearanceThemeId(preset.id)}
-                    className={`rounded-3xl px-4 py-3 text-left font-black transition-all border-2 ${
+                    style={{
+                      backgroundImage: `linear-gradient(rgba(255,255,255,0.72), rgba(255,255,255,0.92)), url(${preset.backgroundImageUrl})`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                    }}
+                    className={`rounded-3xl px-4 py-3 text-left font-black transition-all border-2 shadow-sm ${
                       appearanceThemeId === preset.id
                         ? "border-purple-500 ring-2 ring-purple-200 bg-purple-50"
                         : "border-slate-100 bg-white hover:border-purple-200"

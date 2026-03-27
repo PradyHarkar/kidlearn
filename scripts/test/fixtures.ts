@@ -81,6 +81,9 @@ export const TEST_CHILDREN = {
   UK_YEAR7:      { childId: "tt-child-uk-year7",      childName: "Tsunami UK Year7",      grade: "year7",     ageGroup: "year7"      as AgeGroup, expectedDifficulty: 8 },
   // Regression: the "old Ved" scenario — child with ageGroup=year5 but stored difficulty=1
   VED_REGRESSION: { childId: "tt-child-ved-regression", childName: "Tsunami Ved Regression", grade: "year5", ageGroup: "year5" as AgeGroup, expectedDifficulty: 6, storedDifficulty: 1 },
+  // Dedicated child for suite 20 (req001-progress-tracking) — not used by any other suite.
+  // Isolation guarantees the weekly digest accuracy is always exactly what suite 20 submits.
+  AU_YEAR3_DIGEST: { childId: "tt-child-au-year3-digest", childName: "Tsunami AU Year3 Digest", grade: "year3", ageGroup: "year3" as AgeGroup, expectedDifficulty: 4 },
 } as const;
 
 // ── Test Questions ────────────────────────────────────────────────────────────

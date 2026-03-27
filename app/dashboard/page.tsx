@@ -5,7 +5,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mascot } from "@/components/mascot/Mascot";
-import { Child, ProgressSummary, Subscription, SubscriptionStatus } from "@/types";
+import { Child, ProgressAlertSummary, ProgressSummary, Subscription, SubscriptionStatus, Subject, TopicPerformanceSummary, WeeklyDigestSummary } from "@/types";
 import { COUNTRY_CONFIGS } from "@/lib/curriculum";
 import { getLearnerDisplayLabel } from "@/lib/learner";
 import { getDefaultTileThemeId, getTileThemeGroups, getTileThemePreset, TILE_THEME_PRESETS } from "@/lib/services/tile-themes";
@@ -34,6 +34,25 @@ const TILE_FAVORITE_TAGS = [
   { id: "arcade", label: "Arcade", emoji: "🎮" },
   { id: "space", label: "Space", emoji: "🚀" },
 ];
+
+const TOPIC_RING_COLORS = ["#8b5cf6", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#ec4899"];
+
+function renderRingGradient<T extends { attempts: number }>(segments: T[]) {
+  const total = segments.reduce((sum, segment) => sum + segment.attempts, 0);
+  if (!total) {
+    return "conic-gradient(#e5e7eb 0% 100%)";
+  }
+
+  let offset = 0;
+  const stops = segments.map((segment, index) => {
+    const start = offset;
+    const width = (segment.attempts / total) * 100;
+    offset += width;
+    return `${TOPIC_RING_COLORS[index % TOPIC_RING_COLORS.length]} ${start}% ${offset}%`;
+  });
+
+  return `conic-gradient(${stops.join(", ")})`;
+}
 
 export default function DashboardPage() {
   return (
@@ -77,6 +96,11 @@ function DashboardContent() {
   const [appearanceFavoriteTags, setAppearanceFavoriteTags] = useState<string[]>([]);
   const [savingAppearance, setSavingAppearance] = useState(false);
   const [progressSummaries, setProgressSummaries] = useState<Record<string, ProgressSummary>>({});
+  const [selectedProgressChildId, setSelectedProgressChildId] = useState("");
+  const [topicSummary, setTopicSummary] = useState<TopicPerformanceSummary | null>(null);
+  const [progressAlerts, setProgressAlerts] = useState<ProgressAlertSummary | null>(null);
+  const [weeklyDigest, setWeeklyDigest] = useState<WeeklyDigestSummary | null>(null);
+  const [insightsLoading, setInsightsLoading] = useState(false);
 
   // Determine the country-based grades for the child form
   const country = (session?.user?.country as Country) ?? "AU";
@@ -94,6 +118,25 @@ function DashboardContent() {
       fetchSubscription();
     }
   }, [status]);
+
+  useEffect(() => {
+    if (!children.length) {
+      setSelectedProgressChildId("");
+      setTopicSummary(null);
+      setProgressAlerts(null);
+      setWeeklyDigest(null);
+      return;
+    }
+
+    if (!selectedProgressChildId || !children.some((child) => child.childId === selectedProgressChildId)) {
+      setSelectedProgressChildId(children[0].childId);
+    }
+  }, [children, selectedProgressChildId]);
+
+  useEffect(() => {
+    if (!selectedProgressChildId) return;
+    fetchProgressInsights(selectedProgressChildId);
+  }, [selectedProgressChildId]);
 
   useEffect(() => {
     // Set default grade when grades list is available and form grade is empty
@@ -116,6 +159,9 @@ function DashboardContent() {
       const data = await res.json();
       const nextChildren = data.children || [];
       setChildren(nextChildren);
+      if (!selectedProgressChildId && nextChildren[0]) {
+        setSelectedProgressChildId(nextChildren[0].childId);
+      }
 
       const summaries = await Promise.all(
         nextChildren.map(async (child: Child) => {
@@ -153,6 +199,33 @@ function DashboardContent() {
       setTrialDaysRemaining(data.trialDaysRemaining ?? 0);
     } catch {
       // Non-critical
+    }
+  };
+
+  const fetchProgressInsights = async (childId: string) => {
+    try {
+      setInsightsLoading(true);
+      const [topicsRes, alertsRes, digestRes] = await Promise.all([
+        fetch(`/api/progress/topics?childId=${childId}`),
+        fetch(`/api/progress/alerts?childId=${childId}`),
+        fetch(`/api/reports/weekly?childId=${childId}`),
+      ]);
+
+      const [topicsData, alertsData, digestData] = await Promise.all([
+        topicsRes.json(),
+        alertsRes.json(),
+        digestRes.json(),
+      ]);
+
+      setTopicSummary(topicsRes.ok ? topicsData.summary ?? null : null);
+      setProgressAlerts(alertsRes.ok ? alertsData.summary ?? null : null);
+      setWeeklyDigest(digestRes.ok ? digestData.digest ?? null : null);
+    } catch {
+      setTopicSummary(null);
+      setProgressAlerts(null);
+      setWeeklyDigest(null);
+    } finally {
+      setInsightsLoading(false);
     }
   };
 
@@ -612,7 +685,7 @@ function DashboardContent() {
                       <div key={subj} className="bg-white/60 rounded-2xl p-2.5 border border-white/60">
                         <div className="flex items-center justify-between text-xs mb-1">
                           <span className="font-bold text-gray-600 capitalize">{icons[subj]} {subj.charAt(0).toUpperCase() + subj.slice(1)}</span>
-                          <span className="font-black text-gray-700">{val}/10</span>
+                          <span className="font-black text-gray-700">Lv {val}</span>
                         </div>
                         <div className="bg-gray-100/90 rounded-full h-2">
                           <div className={`h-full rounded-full bg-gradient-to-r ${colors[subj]}`} style={{ width: `${(val / 10) * 100}%` }} />
@@ -698,11 +771,17 @@ function DashboardContent() {
     </div>
   );
 
-  const renderProgressTab = () => (
+  const renderProgressTab = () => {
+    const selectedProgressChild = selectedProgressChildId
+      ? children.find((child) => child.childId === selectedProgressChildId) || null
+      : null;
+    const selectedSummary = selectedProgressChild ? progressSummaries[selectedProgressChild.childId] : null;
+
+    return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-2xl font-black text-gray-800">📈 Progress</h2>
-        <span className="text-sm font-bold text-gray-500">Live difficulty and streak overview</span>
+        <span className="text-sm font-bold text-gray-500">Topic charts, alerts, and weekly digest</span>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-3xl p-5 shadow-card">
@@ -718,46 +797,241 @@ function DashboardContent() {
           <p className="text-3xl font-black text-gray-800">{children.filter((child) => child.diagnosticComplete).length}</p>
         </div>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {(["maths", "english", "science"] as const).map((subject) => (
-          <div key={subject} className="bg-white rounded-3xl p-5 shadow-card">
-            <p className="text-sm font-bold text-gray-500 capitalize">{subject}</p>
-            <p className="text-3xl font-black text-gray-800 mt-1">
-              {children.length
-                ? Math.round(children.reduce((sum, child) => {
-                    const summary = progressSummaries[child.childId];
-                    return sum + (summary?.accuracyBySubject[subject] ?? 0);
-                  }, 0) / children.length)
-                : 0}%
-            </p>
-            <div className="mt-4 space-y-2">
-              {children.map((child) => {
-                const sessions = progressSummaries[child.childId]?.sessionsBySubject[subject] || [];
-                const latest = sessions[0];
-                return (
-                  <div key={child.childId} className="rounded-2xl bg-gray-50 p-3">
-                    <div className="flex items-center justify-between text-sm font-bold text-gray-700">
-                      <span>{child.childName}</span>
-                      <span>{progressSummaries[child.childId]?.accuracyBySubject[subject] ?? 0}%</span>
+      {children.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {children.map((child) => {
+            const selected = child.childId === selectedProgressChildId;
+            return (
+              <button
+                key={child.childId}
+                onClick={() => setSelectedProgressChildId(child.childId)}
+                className={`rounded-full px-4 py-2 text-sm font-black transition-all border-2 ${
+                  selected
+                    ? "bg-purple-600 text-white border-purple-600"
+                    : "bg-white text-gray-700 border-gray-200 hover:border-purple-300"
+                }`}
+              >
+                {child.avatar} {child.childName}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {selectedProgressChild ? (
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <div className="xl:col-span-2 space-y-4">
+            <div className="bg-white rounded-3xl p-5 shadow-card">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <p className="text-sm font-bold text-gray-500">Focused child</p>
+                  <h3 className="text-2xl font-black text-gray-800">{selectedProgressChild.childName}</h3>
+                  <p className="text-sm text-gray-500 font-semibold">{gradeLabel(selectedProgressChild)}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    className="btn-secondary text-sm"
+                    onClick={() => router.push(`/learn?child=${selectedProgressChild.childId}&subject=maths`)}
+                  >
+                    Practice maths
+                  </button>
+                  <button
+                    className="btn-primary text-sm"
+                    onClick={() => router.push(`/learn?child=${selectedProgressChild.childId}`)}
+                  >
+                    Open learn
+                  </button>
+                </div>
+              </div>
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="text-xs font-bold text-slate-500">Streak</p>
+                  <p className="text-2xl font-black text-slate-800">🔥 {selectedProgressChild.streakDays || 0}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="text-xs font-bold text-slate-500">Points</p>
+                  <p className="text-2xl font-black text-slate-800">+{rewardBalance(selectedProgressChild)}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="text-xs font-bold text-slate-500">Sessions</p>
+                  <p className="text-2xl font-black text-slate-800">{selectedSummary?.totalSessions ?? 0}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-3">
+                  <p className="text-xs font-bold text-slate-500">Weekly accuracy</p>
+                  <p className="text-2xl font-black text-slate-800">{weeklyDigest?.accuracy ?? 0}%</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-3xl p-5 shadow-card">
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <div>
+                  <p className="text-sm font-bold text-gray-500">Subject performance pie chart</p>
+                  <h3 className="text-xl font-black text-gray-800">Topic-level strengths and weaknesses</h3>
+                </div>
+                <span className="text-xs font-black text-purple-600 uppercase tracking-[0.18em]">
+                  {topicSummary ? "Live topic data" : "Loading insights"}
+                </span>
+              </div>
+
+              {insightsLoading && (
+                <div className="rounded-2xl bg-slate-50 p-4 text-sm font-semibold text-gray-500">
+                  Loading topic insights...
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {(["maths", "english", "science"] as Subject[]).map((subject) => {
+                  const subjectSummary = topicSummary?.subjects?.[subject];
+                  const topics = subjectSummary?.topics || [];
+                  const ringTopics = topics.slice(0, 5);
+                  return (
+                    <div key={subject} className="rounded-3xl bg-slate-50 p-4 border border-slate-100">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-black uppercase tracking-[0.18em] text-gray-500">{subject}</p>
+                          <p className="text-2xl font-black text-gray-800">{subjectSummary?.accuracy ?? 0}%</p>
+                        </div>
+                        <div
+                          className="h-20 w-20 rounded-full p-2"
+                          style={{ background: renderRingGradient(ringTopics) }}
+                        >
+                          <div className="h-full w-full rounded-full bg-white flex items-center justify-center text-center">
+                            <div>
+                              <p className="text-sm font-black text-gray-800">{subjectSummary?.attempts ?? 0}</p>
+                              <p className="text-[10px] font-bold text-gray-400">attempts</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-4 space-y-2">
+                        {topics.length ? topics.slice(0, 4).map((topic) => (
+                          <div key={`${subject}-${topic.topic}`} className="flex items-center justify-between rounded-2xl bg-white px-3 py-2 text-sm">
+                            <span className="font-bold text-gray-700 truncate pr-3">{topic.topic}</span>
+                            <span className="font-black text-gray-900">{topic.accuracy}%</span>
+                          </div>
+                        )) : (
+                          <p className="text-sm font-semibold text-gray-500">No topic attempts yet for this subject.</p>
+                        )}
+                      </div>
                     </div>
-                    <div className="mt-2 bg-gray-200 rounded-full h-2 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500"
-                        style={{ width: `${progressSummaries[child.childId]?.accuracyBySubject[subject] ?? 0}%` }}
-                      />
-                    </div>
-                    {latest && (
-                      <p className="text-xs font-semibold text-gray-400 mt-2">
-                        Latest: {latest.correct}/{latest.totalQuestions} in {latest.topic}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
-        ))}
-      </div>
+
+          <div className="space-y-4">
+            <div className="bg-white rounded-3xl p-5 shadow-card">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div>
+                  <p className="text-sm font-bold text-gray-500">Needs help smart alert</p>
+                  <h3 className="text-xl font-black text-gray-800">Watch these topics</h3>
+                </div>
+                <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-700">
+                  {progressAlerts?.alerts.length ?? 0} alerts
+                </span>
+              </div>
+              {progressAlerts?.alerts.length ? (
+                <div className="space-y-3">
+                  {progressAlerts.alerts.map((alert) => (
+                    <div key={`${alert.subject}-${alert.topic}`} className={`rounded-2xl border p-3 ${alert.severity === "danger" ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50"}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-black uppercase tracking-[0.18em] text-gray-500">{alert.subject}</p>
+                          <p className="font-black text-gray-900">{alert.topic}</p>
+                          <p className="text-sm font-semibold text-gray-600 mt-1">{alert.message}</p>
+                        </div>
+                        <span className={`rounded-full px-2 py-1 text-[11px] font-black ${alert.severity === "danger" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
+                          {alert.accuracy}%
+                        </span>
+                      </div>
+                      <div className="mt-3 flex items-center gap-2">
+                        <button
+                          className="btn-primary text-sm py-2 px-3"
+                          onClick={() => router.push(alert.actionUrl)}
+                        >
+                          {alert.actionLabel}
+                        </button>
+                        <span className="text-xs font-semibold text-gray-500">
+                          Use the report flag if the question itself is wrong.
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">
+                  No smart alerts right now. The current pattern looks healthy.
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white rounded-3xl p-5 shadow-card">
+              <p className="text-sm font-bold text-gray-500">Weekly in-app digest</p>
+              <h3 className="text-xl font-black text-gray-800">This week at a glance</h3>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="rounded-2xl bg-indigo-50 p-3">
+                  <p className="text-xs font-bold text-indigo-600">Questions</p>
+                  <p className="text-2xl font-black text-indigo-700">{weeklyDigest?.totalQuestions ?? 0}</p>
+                </div>
+                <div className="rounded-2xl bg-emerald-50 p-3">
+                  <p className="text-xs font-bold text-emerald-600">Accuracy</p>
+                  <p className="text-2xl font-black text-emerald-700">{weeklyDigest?.accuracy ?? 0}%</p>
+                </div>
+                <div className="rounded-2xl bg-amber-50 p-3">
+                  <p className="text-xs font-bold text-amber-600">Points</p>
+                  <p className="text-2xl font-black text-amber-700">{weeklyDigest?.rewardPointsEarned ?? 0}</p>
+                </div>
+                <div className="rounded-2xl bg-sky-50 p-3">
+                  <p className="text-xs font-bold text-sky-600">Streak</p>
+                  <p className="text-2xl font-black text-sky-700">{weeklyDigest?.streakDays ?? 0}</p>
+                </div>
+              </div>
+              <div className="mt-4">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-gray-500">Top topics</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {(weeklyDigest?.topTopics ?? []).slice(0, 6).map((topic) => (
+                    <span key={`${topic.subject}-${topic.topic}`} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                      {topic.topic} · {topic.accuracy}%
+                    </span>
+                  ))}
+                  {!weeklyDigest?.topTopics?.length && (
+                    <span className="text-sm font-semibold text-gray-500">No weekly topics yet.</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-3xl p-5 shadow-card">
+              <p className="text-sm font-bold text-gray-500">Recent sessions</p>
+              <div className="mt-3 space-y-2">
+                {(weeklyDigest?.recentSessions ?? []).slice(0, 4).map((session) => (
+                  <div key={session.sessionId} className="rounded-2xl bg-slate-50 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-black text-gray-800 capitalize">{session.subject}</span>
+                      <span className="text-sm font-bold text-gray-600">{session.accuracy}%</span>
+                    </div>
+                    <p className="text-xs font-semibold text-gray-500 mt-1">
+                      {session.totalQuestions} questions · {session.topic}
+                    </p>
+                  </div>
+                ))}
+                {!weeklyDigest?.recentSessions?.length && (
+                  <div className="rounded-2xl bg-slate-50 p-4 text-sm font-semibold text-gray-500">
+                    Recent sessions will appear here after the first 20-question set.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-3xl bg-white p-6 shadow-card text-sm font-semibold text-gray-500">
+          Add a child profile to unlock progress charts, smart alerts, and weekly digests.
+        </div>
+      )}
+
       <div className="bg-white rounded-3xl p-6 shadow-card">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -774,9 +1048,9 @@ function DashboardContent() {
               {children.map((child) => (
                 <tr key={child.childId} className="border-t border-gray-100">
                   <td className="py-3 pr-3 font-bold text-gray-800">{child.childName}</td>
-                  <td className="py-3 pr-3">{(child.currentDifficultyMaths || 1)}/10</td>
-                  <td className="py-3 pr-3">{(child.currentDifficultyEnglish || 1)}/10</td>
-                  <td className="py-3 pr-3">{(child.currentDifficultyScience || 1)}/10</td>
+                  <td className="py-3 pr-3">Lv {child.currentDifficultyMaths || 1}</td>
+                  <td className="py-3 pr-3">Lv {child.currentDifficultyEnglish || 1}</td>
+                  <td className="py-3 pr-3">Lv {child.currentDifficultyScience || 1}</td>
                   <td className="py-3 pr-3">{child.lastSubject || "—"}</td>
                 </tr>
               ))}
@@ -785,7 +1059,8 @@ function DashboardContent() {
         </div>
       </div>
     </div>
-  );
+    );
+  };
 
   const renderRewardsTab = () => (
     <div className="space-y-6">

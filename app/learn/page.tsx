@@ -632,15 +632,105 @@ function LearnContent() {
   }
 
   const correct = results.filter(r => r.correct).length;
+  const attempted = results.length;
+  const accuracyPct = attempted ? Math.round((correct / attempted) * 100) : 0;
   const progressPct = ((currentIndex + (isAnswered ? 1 : 0)) / questions.length) * 100;
+  const currentQuestionNumber = currentIndex + 1;
+  const subjectLabel = subject === "maths" ? "Maths" : subject === "science" ? "Science" : "English";
+  const themePreviewLabel = journeyTheme.preset.label;
 
   const difficultyStars = Array.from({ length: 10 }, (_, i) => i < currentDifficulty ? "⭐" : "☆");
 
   return (
     <div className={`min-h-screen ${journeyTheme.pageGradient} flex flex-col relative overflow-hidden`}>
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.55),transparent_35%),radial-gradient(circle_at_top_right,rgba(255,255,255,0.35),transparent_28%)]" />
+      <div className="absolute inset-0 pointer-events-none opacity-35" style={{
+        backgroundImage: `linear-gradient(rgba(255,255,255,0.12), rgba(255,255,255,0.12)), url(${journeyTheme.backgroundImageUrl})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center top",
+        backgroundRepeat: "no-repeat",
+      }} />
+      <div className="relative z-10 max-w-7xl w-full mx-auto px-4 pt-4 sm:pt-5">
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`relative overflow-hidden rounded-[2.2rem] border shadow-2xl ${journeyTheme.surfaceBorder} ${journeyTheme.heroPanel}`}
+          style={{
+            backgroundImage: `linear-gradient(135deg, rgba(255,255,255,0.14), rgba(0,0,0,0.08)), url(${journeyTheme.backgroundImageUrl})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-black/10 pointer-events-none" />
+          <div className="relative grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-5 p-5 sm:p-6 lg:p-8 items-center">
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 items-center sm:items-start">
+              <div className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-[1.75rem] bg-white/20 border border-white/25 shadow-xl flex items-center justify-center text-4xl sm:text-5xl">
+                {journeyAvatar}
+              </div>
+              <div className="flex-1 text-center sm:text-left">
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-[11px] sm:text-xs font-black uppercase tracking-[0.22em] text-white/90 shadow-sm">
+                  {journeyTheme.themeEmoji} {journeyTheme.themeLabel} world
+                </div>
+                <h1 className="mt-4 text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight drop-shadow-sm">
+                  {subjectLabel} Adventure
+                </h1>
+                <p className="mt-2 text-white/92 text-base sm:text-lg font-semibold max-w-2xl">
+                  {journeyTheme.preset.subtitle}. Answer {SESSION_SIZE} questions, collect rewards, and keep the streak alive.
+                </p>
+                <div className="mt-5 flex flex-wrap gap-2 justify-center sm:justify-start">
+                  <span className="rounded-full bg-white/20 px-3 py-1.5 text-sm font-black text-white">🎯 {currentQuestionNumber}/{questions.length}</span>
+                  <span className="rounded-full bg-white/20 px-3 py-1.5 text-sm font-black text-white">📘 {subjectLabel}</span>
+                  <span className="rounded-full bg-white/20 px-3 py-1.5 text-sm font-black text-white">🔥 {streak} streak</span>
+                  <span className="rounded-full bg-white/20 px-3 py-1.5 text-sm font-black text-white">{rewardGlyph} {coins}</span>
+                </div>
+                <div className="mt-6 flex flex-wrap gap-3 justify-center sm:justify-start">
+                  <motion.button
+                    onClick={() => router.push("/dashboard")}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="rounded-full px-6 py-3.5 text-sm sm:text-base font-black bg-white/20 text-white border border-white/25 hover:bg-white/30 transition-colors"
+                  >
+                    ← Exit Adventure
+                  </motion.button>
+                  <button
+                    onClick={() => setShowHint(true)}
+                    className="rounded-full px-6 py-3.5 text-sm sm:text-base font-black bg-white text-slate-800 shadow-lg hover:scale-[1.01] transition-transform"
+                  >
+                    💡 Get a Hint
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-[1.9rem] bg-white/90 backdrop-blur-md border border-white/75 shadow-2xl overflow-hidden">
+              <div className="grid grid-cols-2 gap-3 p-4">
+                <div className="rounded-[1.3rem] bg-sky-50/90 p-3">
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sky-600">This question</p>
+                  <p className="mt-1 text-2xl font-black text-slate-800">{currentQuestionNumber}</p>
+                  <p className="text-xs font-semibold text-slate-500">of {questions.length}</p>
+                </div>
+                <div className="rounded-[1.3rem] bg-emerald-50/90 p-3">
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-600">Accuracy</p>
+                  <p className="mt-1 text-2xl font-black text-slate-800">{accuracyPct}%</p>
+                  <p className="text-xs font-semibold text-slate-500">So far</p>
+                </div>
+                <div className="rounded-[1.3rem] bg-amber-50/90 p-3">
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-600">Points</p>
+                  <p className="mt-1 text-2xl font-black text-slate-800">{pointsEarned}</p>
+                  <p className="text-xs font-semibold text-slate-500">earned</p>
+                </div>
+                <div className="rounded-[1.3rem] bg-fuchsia-50/90 p-3">
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-fuchsia-600">Theme</p>
+                  <p className="mt-1 text-lg font-black text-slate-800 leading-tight">{themePreviewLabel}</p>
+                  <p className="text-xs font-semibold text-slate-500">style</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.section>
+      </div>
       {/* ===== TOP BAR ===== */}
-      <div className="sticky top-0 z-20 bg-white/35 backdrop-blur-md px-4 py-3 border-b border-white/30">
+      <div className="hidden">
         <div className="max-w-2xl mx-auto">
           {/* Row 1: back + subject + stats */}
           <div className="flex items-center justify-between mb-2 gap-2">
@@ -710,7 +800,9 @@ function LearnContent() {
       </div>
 
       {/* ===== MAIN CONTENT ===== */}
-      <div className="flex-1 max-w-2xl w-full mx-auto px-4 py-4 flex flex-col gap-4">
+      <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-4">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.9fr)] items-start">
+          <div className="flex flex-col gap-4">
         {/* Timer pill */}
         <div className="flex justify-center">
           <div className={`rounded-full px-4 py-1 text-slate-900 font-black text-sm bg-white/75 ${timer > 30 ? "bg-red-200/80" : ""}`}>
@@ -964,6 +1056,92 @@ function LearnContent() {
         {/* Mascot */}
         <div className="flex justify-center mt-2">
           <Mascot mood={mascotMood} message={mascotMessage} size="sm" />
+        </div>
+          </div>
+
+          <aside className="space-y-4 xl:sticky xl:top-28">
+            <motion.section
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`rounded-[2rem] p-5 sm:p-6 border shadow-kid ${journeyTheme.surfaceCard} ${journeyTheme.surfaceBorder}`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">Journey guide</p>
+                  <h2 className="mt-1 text-2xl font-black text-slate-800">Your learning world</h2>
+                </div>
+                <span className={`${journeyTheme.badge} rounded-full px-3 py-1 text-xs font-black`}>
+                  {journeyTheme.preset.emoji} {themePreviewLabel}
+                </span>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="rounded-2xl bg-sky-50 p-3">
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sky-600">Streak</p>
+                  <p className="mt-1 text-2xl font-black text-slate-800">{streak}</p>
+                </div>
+                <div className="rounded-2xl bg-amber-50 p-3">
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-600">Coins</p>
+                  <p className="mt-1 text-2xl font-black text-slate-800">{coins}</p>
+                </div>
+                <div className="rounded-2xl bg-emerald-50 p-3">
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-600">Correct</p>
+                  <p className="mt-1 text-2xl font-black text-slate-800">{correct}</p>
+                </div>
+                <div className="rounded-2xl bg-fuchsia-50 p-3">
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-fuchsia-600">Lv</p>
+                  <p className="mt-1 text-2xl font-black text-slate-800">{currentDifficulty}</p>
+                </div>
+              </div>
+              <div className="mt-4 rounded-[1.5rem] overflow-hidden border border-white/70">
+                <div
+                  className="h-40 bg-cover bg-center"
+                  style={{
+                    backgroundImage: `linear-gradient(rgba(255,255,255,0.2), rgba(255,255,255,0.2)), url(${journeyTheme.backgroundImageUrl})`,
+                  }}
+                />
+                <div className={`p-4 ${journeyTheme.heroPanelSoft}`}>
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Theme choices</p>
+                  <p className="mt-1 text-lg font-black text-slate-800">{journeyTheme.preset.subtitle}</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-600">This world also flows into the question card, buttons, and progress strip.</p>
+                </div>
+              </div>
+            </motion.section>
+
+            <motion.section
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`rounded-[2rem] p-5 sm:p-6 border shadow-kid ${journeyTheme.surfaceCard} ${journeyTheme.surfaceBorder}`}
+            >
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">Helpful actions</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(q.topics || []).map(topic => (
+                  <span key={topic} className={`rounded-full px-3 py-1.5 text-sm font-black capitalize ${journeyTheme.chip}`}>
+                    {topic.replace(/-/g, " ")}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-4 grid gap-3">
+                <button
+                  onClick={() => openReport(q)}
+                  className="w-full rounded-2xl border-2 border-red-200 bg-red-50 px-4 py-3 text-left font-black text-red-700 hover:bg-red-100 transition-colors"
+                >
+                  🚩 Flag this question
+                </button>
+                <button
+                  onClick={() => speak(q.ttsText || q.questionText)}
+                  className={`w-full rounded-2xl border px-4 py-3 text-left font-black ${journeyTheme.secondaryButton}`}
+                >
+                  🔊 Read aloud again
+                </button>
+                <button
+                  onClick={() => router.push("/dashboard")}
+                  className={`w-full rounded-2xl border px-4 py-3 text-left font-black ${journeyTheme.secondaryButton}`}
+                >
+                  🏠 Back to dashboard
+                </button>
+              </div>
+            </motion.section>
+          </aside>
         </div>
       </div>
 

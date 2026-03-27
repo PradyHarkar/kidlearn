@@ -50,6 +50,7 @@ import { runReq001ProgressTrackingSuite }  from "./suites/20-req001-progress-tra
 import { runThemeEngineSuite }             from "./suites/21-theme-engine";
 import { runSubscriptionProgressRegressionSuite } from "./suites/22-subscription-progress-regressions";
 import { runQuestionQualityAuditSuite }           from "./suites/23-question-quality-audit";
+import { runWritingStudioSuite }                  from "./suites/24-writing-studio";
 
 // ── Parse CLI args ────────────────────────────────────────────────────────────
 
@@ -132,6 +133,7 @@ async function main() {
     "theme-engine":                runThemeEngineSuite,
     "subscription-progress-regressions": runSubscriptionProgressRegressionSuite,
     "question-quality-audit":             runQuestionQualityAuditSuite,
+    "writing-studio":                     runWritingStudioSuite,
   };
 
   const toRun = opts.suite

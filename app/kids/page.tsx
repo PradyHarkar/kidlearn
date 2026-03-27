@@ -243,7 +243,7 @@ function KidsContent() {
                 <div className="mt-4 bg-white/10 rounded-3xl p-4">
                   <p className="text-xs font-black uppercase tracking-[0.2em] text-white/60">Resume learning</p>
                   <p className="text-xl font-black mt-1">
-                    {kidSession.lastSubject === "maths" ? "Maths" : kidSession.lastSubject === "science" ? "Science" : "English"}
+                    {kidSession.lastSubject === "maths" ? "Maths" : kidSession.lastSubject === "science" ? "Science" : "Writing"}
                   </p>
                   <button
                     onClick={() => openSubject(kidSession.lastSubject as Subject)}
@@ -258,7 +258,7 @@ function KidsContent() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {renderSubjectButton("maths", "Maths", "maths-gradient")}
-            {renderSubjectButton("english", "English", "english-gradient")}
+            {renderSubjectButton("english", "Writing", "english-gradient")}
             {renderSubjectButton("science", "Science", "science-gradient")}
           </div>
         </div>

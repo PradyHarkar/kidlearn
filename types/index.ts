@@ -95,6 +95,9 @@ export interface Child {
     englishAccuracy: number;
     scienceAccuracy: number;
     favoriteTopics: string[];
+    writingSessionsStarted?: number;
+    writingSessionsCompleted?: number;
+    writingWordsWritten?: number;
   };
   createdAt?: string;
 }
@@ -194,6 +197,84 @@ export interface ChildJourneyTheme {
   tileThemeId: string;
   tileFavoriteTags: string[];
   preferences?: ChildPreferences;
+}
+
+export type WritingMode = "narrative" | "persuasive";
+
+export type WritingStepName =
+  | "setting"
+  | "character"
+  | "problem"
+  | "action"
+  | "ending"
+  | "opinion"
+  | "reason_1"
+  | "example"
+  | "reason_2"
+  | "conclusion";
+
+export interface WritingStepBlueprint {
+  stepName: WritingStepName;
+  label: string;
+  prompt: string;
+  hint: string;
+  minWords: number;
+  skills: string[];
+}
+
+export interface WritingModeBlueprint {
+  mode: WritingMode;
+  label: string;
+  subtitle: string;
+  durationMinutes: number;
+  steps: WritingStepBlueprint[];
+}
+
+export interface WritingStepState {
+  stepName: WritingStepName;
+  label: string;
+  content: string;
+  feedback: string[];
+  words: number;
+  penImageDataUrl?: string | null;
+  completedAt?: string;
+}
+
+export interface WritingDraftComparison {
+  addedWords: string[];
+  removedWords: string[];
+  changedWords: string[];
+  summary: string;
+}
+
+export interface WritingSessionState {
+  sessionId: string;
+  userId: string;
+  childId: string;
+  country?: Country;
+  ageGroup?: AgeGroup;
+  writingMode: WritingMode;
+  steps: WritingStepState[];
+  currentStepIndex: number;
+  isComplete: boolean;
+  originalDraft?: string;
+  finalDraft?: string;
+  revisedDraft?: string;
+  comparison?: WritingDraftComparison;
+  pointsEarned?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WritingSessionSummary {
+  sessionId: string;
+  childId: string;
+  writingMode: WritingMode;
+  completed: boolean;
+  currentStepIndex: number;
+  stepCount: number;
+  pointsEarned: number;
+  updatedAt: string;
 }
 
 export interface TopicPerformanceTopic {

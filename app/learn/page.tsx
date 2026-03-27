@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mascot } from "@/components/mascot/Mascot";
+import { EnglishWritingExperience } from "@/components/writing/EnglishWritingExperience";
 import { AgeGroup, ChildPreferences, Country, Question, Subject, YearLevel } from "@/types";
 import { getThemeJourneyTokens } from "@/lib/services/tile-themes";
 import toast from "react-hot-toast";
@@ -154,6 +155,7 @@ function LearnContent() {
   }, [status, childId, subject, router]);
 
   useEffect(() => {
+    if (subject === "english") return;
     if (status === "authenticated" && childId && subject) {
       loadData();
     }
@@ -161,6 +163,7 @@ function LearnContent() {
   }, [status, childId, subject]);
 
   useEffect(() => {
+    if (subject === "english") return;
     const elapsed = restoredTimerRef.current ?? 0;
     restoredTimerRef.current = null;
     questionStartTime.current = Date.now() - (elapsed * 1000);
@@ -592,6 +595,9 @@ function LearnContent() {
   };
 
   if (status === "loading" || loading) {
+    if (subject === "english") {
+      return <EnglishWritingExperience childId={childId} />;
+    }
     return (
       <div className={`min-h-screen flex items-center justify-center ${journeyTheme.pageGradient}`}>
         <div className="text-center">
@@ -600,6 +606,10 @@ function LearnContent() {
         </div>
       </div>
     );
+  }
+
+  if (subject === "english") {
+    return <EnglishWritingExperience childId={childId} />;
   }
 
   if (!questions.length) {

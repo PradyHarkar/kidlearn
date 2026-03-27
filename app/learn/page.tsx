@@ -656,9 +656,10 @@ function LearnContent() {
           animate={{ opacity: 1, y: 0 }}
           className={`relative overflow-hidden rounded-[2.2rem] border shadow-2xl ${journeyTheme.surfaceBorder} ${journeyTheme.heroPanel}`}
           style={{
-            backgroundImage: `linear-gradient(135deg, rgba(255,255,255,0.14), rgba(0,0,0,0.08)), url(${journeyTheme.backgroundImageUrl})`,
+            backgroundImage: `linear-gradient(135deg, rgba(2,6,23,0.52), rgba(15,23,42,0.18)), url(${journeyTheme.backgroundImageUrl})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
+            backgroundBlendMode: "multiply",
           }}
         >
           <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-black/10 pointer-events-none" />

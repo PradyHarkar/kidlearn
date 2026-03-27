@@ -630,9 +630,10 @@ function DashboardContent() {
         animate={{ opacity: 1, y: 0 }}
         className={`relative overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-7 lg:p-8 border shadow-kid ${heroTheme.surfaceBorder} ${heroTheme.heroPanel}`}
         style={{
-          backgroundImage: `linear-gradient(135deg, rgba(59,130,246,0.22), rgba(255,255,255,0.08)), url(${heroTheme.backgroundImageUrl})`,
+          backgroundImage: `linear-gradient(135deg, rgba(2,6,23,0.52), rgba(15,23,42,0.16)), url(${heroTheme.backgroundImageUrl})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
+          backgroundBlendMode: "multiply",
         }}
       >
         <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-white/10 pointer-events-none" />

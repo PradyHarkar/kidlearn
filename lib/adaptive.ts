@@ -59,9 +59,10 @@ export function calculatePerformanceWindow(
  */
 export async function getAdaptiveDifficulty(
   childId: string,
-  subject: Subject
+  subject: Subject,
+  fallbackAgeGroup: AgeGroup = "foundation"
 ): Promise<{ difficulty: number; yearLevel: YearLevel }> {
-  // Get recent 10 progress records for this subject
+  // Get recent 20 progress records for this subject (newest first)
   const result = await ddb.send(
     new QueryCommand({
       TableName: TABLES.PROGRESS,
@@ -81,8 +82,8 @@ export async function getAdaptiveDifficulty(
 
   if (records.length === 0) {
     return {
-      difficulty: getInitialDifficultyForAgeGroup("foundation"),
-      yearLevel: "prep",
+      difficulty: getInitialDifficultyForAgeGroup(fallbackAgeGroup),
+      yearLevel: fallbackAgeGroup === "foundation" ? "prep" : fallbackAgeGroup,
     };
   }
 

@@ -25,11 +25,6 @@ export interface QuestionsForChildResult {
 function getCurrentDifficulty(child: Child, subject: Subject): number {
   const ageGroup = resolveChildAgeGroup(child);
   const baselineDifficulty = getInitialDifficultyForAgeGroup(ageGroup);
-  const baseDifficulty = subject === "maths"
-    ? child.currentDifficultyMaths
-    : subject === "science"
-    ? (child.currentDifficultyScience || 1)
-    : child.currentDifficultyEnglish;
 
   if (child.lastActiveDate && shouldResetDifficulty(child.lastActiveDate)) {
     return baselineDifficulty;
@@ -39,15 +34,29 @@ function getCurrentDifficulty(child: Child, subject: Subject): number {
     return baselineDifficulty;
   }
 
-  return baseDifficulty;
+  const raw = subject === "maths"
+    ? child.currentDifficultyMaths
+    : subject === "science"
+    ? child.currentDifficultyScience
+    : child.currentDifficultyEnglish;
+
+  // Guard: if the stored field is missing or out of range, fall back to baseline
+  if (!raw || raw < 1 || raw > 10) {
+    return baselineDifficulty;
+  }
+
+  return raw;
 }
 
 export const DEFAULT_QUESTION_SET_SIZE = 20;
 
 function normalizeQuestionSignature(question: Question) {
   const questionText = question.questionText.trim().toLowerCase().replace(/\s+/g, " ");
+  // Sort options before joining so two questions that are identical but have
+  // answer options stored in different order are correctly identified as duplicates.
   const answerText = question.answerOptions
     .map((option) => option.text.trim().toLowerCase().replace(/\s+/g, " "))
+    .sort()
     .join("|");
   return `${questionText}::${answerText}`;
 }
@@ -105,7 +114,12 @@ function selectQuestionsByDifficulty(
     filtered = deduped;
   }
 
-  return filtered.sort(() => Math.random() - 0.5).slice(0, DEFAULT_QUESTION_SET_SIZE);
+  // Fisher-Yates shuffle — unbiased, unlike sort(() => Math.random() - 0.5)
+  for (let i = filtered.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [filtered[i], filtered[j]] = [filtered[j], filtered[i]];
+  }
+  return filtered.slice(0, DEFAULT_QUESTION_SET_SIZE);
 }
 
 async function loadQuestionsForPartition(pk: string): Promise<Question[]> {
@@ -194,8 +208,10 @@ export async function getQuestionsForChild(userId: string, childId: string, subj
   const childCountry = (typedChild.country as Country | undefined) ?? "AU";
   const countrySpecificQuestions = await loadQuestionsForPartition(`${subject}#${ageGroup}#${childCountry}`);
   const genericQuestions = await loadQuestionsForPartition(`${subject}#${ageGroup}`);
+  // Use country-specific questions first; supplement with generic ones so the
+  // pool is never artificially thin just because few country questions exist.
   const typedQuestions = countrySpecificQuestions.length > 0
-    ? countrySpecificQuestions
+    ? mergeQuestionSets(countrySpecificQuestions, genericQuestions)
     : mergeQuestionSets(genericQuestions);
   const blockedQuestionIds = await loadReportedQuestionIds();
   const availableQuestions = buildAvailableQuestionPool(typedQuestions, blockedQuestionIds);

@@ -77,7 +77,7 @@ export async function runTileCustomizationSuite(baseUrl: string) {
         rewardStyle?: string;
       };
     }>(
-      `/api/children/${TEST_CHILDREN.AU_YEAR3.childId}/appearance`,
+      `/api/children/${TEST_CHILDREN.AU_YEAR5.childId}/appearance`,
       {
         theme: "space",
         avatar: "🚀",
@@ -115,7 +115,7 @@ export async function runTileCustomizationSuite(baseUrl: string) {
         rewardStyle?: string;
       };
     }>(
-      `/api/children/${TEST_CHILDREN.AU_YEAR3.childId}/appearance`
+      `/api/children/${TEST_CHILDREN.AU_YEAR5.childId}/appearance`
     );
     assertStatus(res.status, 200, res.raw);
     assertEqual(res.body.tileThemeId, "games-space", "patched theme should persist");
@@ -133,7 +133,7 @@ export async function runTileCustomizationSuite(baseUrl: string) {
   await test(SUITE, "PATCH /api/children/:childId/appearance: invalid body -> 400", async () => {
     const client = new TestClient(baseUrl);
     await loginAuParent(client);
-    const res = await client.patch(`/api/children/${TEST_CHILDREN.AU_YEAR3.childId}/appearance`, {
+    const res = await client.patch(`/api/children/${TEST_CHILDREN.AU_YEAR5.childId}/appearance`, {
       theme: "space",
       avatar: "",
       tileFavoriteTags: ["", "sports"],

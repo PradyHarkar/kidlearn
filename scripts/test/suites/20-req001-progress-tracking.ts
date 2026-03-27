@@ -28,7 +28,9 @@ import {
 import { TEST_USERS, TEST_CHILDREN } from "../fixtures";
 
 const SUITE = "req001-progress-tracking";
-const CHILD_ID = TEST_CHILDREN.AU_YEAR3.childId;
+// Use a dedicated isolated child so no other suite's progress contaminates the weekly
+// accuracy calculation.  AU_YEAR3_DIGEST is only written to by this suite.
+const CHILD_ID = TEST_CHILDREN.AU_YEAR3_DIGEST.childId;
 const RUN_ID = Date.now().toString(36);
 const TOPIC = `req001-fractions-${RUN_ID}`;
 

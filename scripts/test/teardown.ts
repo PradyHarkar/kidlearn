@@ -56,12 +56,13 @@ async function deleteChildren(ddb: DynamoDBDocumentClient) {
   const ukUserId = TEST_USERS.UK_PARENT.userId;
 
   const childKeys = [
-    { userId: auUserId,          childId: TEST_CHILDREN.AU_FOUNDATION.childId },
-    { userId: auUserId,          childId: TEST_CHILDREN.AU_YEAR1.childId },
     { userId: auUserId,          childId: TEST_CHILDREN.AU_YEAR3.childId },
-    { userId: auUserId + "-b",   childId: TEST_CHILDREN.AU_YEAR5.childId },
+    { userId: auUserId,          childId: TEST_CHILDREN.AU_YEAR5.childId },
+    { userId: auUserId,          childId: TEST_CHILDREN.AU_YEAR7.childId },
+    { userId: auUserId,          childId: TEST_CHILDREN.AU_YEAR3_DIGEST.childId },
+    { userId: auUserId + "-b",   childId: TEST_CHILDREN.AU_FOUNDATION.childId },
+    { userId: auUserId + "-b",   childId: TEST_CHILDREN.AU_YEAR1.childId },
     { userId: auUserId + "-b",   childId: TEST_CHILDREN.AU_YEAR6.childId },
-    { userId: auUserId + "-b",   childId: TEST_CHILDREN.AU_YEAR7.childId },
     { userId: auUserId + "-b",   childId: TEST_CHILDREN.AU_YEAR8.childId },
     { userId: auUserId + "-b",   childId: TEST_CHILDREN.VED_REGRESSION.childId },
     { userId: usUserId,          childId: TEST_CHILDREN.US_KINDER.childId },

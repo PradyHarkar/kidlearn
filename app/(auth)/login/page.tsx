@@ -139,7 +139,7 @@ export default function LoginPage() {
             </motion.button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-2">
             <p className="text-gray-500 font-semibold">
               New here?{" "}
               <Link
@@ -147,6 +147,15 @@ export default function LoginPage() {
                 className="text-purple-600 font-black hover:text-blue-600 transition-colors"
               >
                 Create an account! 🌟
+              </Link>
+            </p>
+            <p className="text-gray-500 font-semibold">
+              Are you a kid?{" "}
+              <Link
+                href="/kids"
+                className="text-yellow-600 font-black hover:text-yellow-700 transition-colors"
+              >
+                🧒 Kid Login
               </Link>
             </p>
           </div>

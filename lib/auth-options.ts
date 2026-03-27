@@ -100,6 +100,15 @@ function buildAuthOptions(secret: string): AuthOptions {
         }
         return session;
       },
+      async redirect({ url, baseUrl }) {
+        // Allow relative URLs (e.g. "/login") — always safe
+        if (url.startsWith("/")) return `${baseUrl}${url}`;
+        // Allow same-origin absolute URLs
+        try {
+          if (new URL(url).origin === new URL(baseUrl).origin) return url;
+        } catch { /* ignore invalid URLs */ }
+        return baseUrl;
+      },
     },
     pages: {
       signIn: "/login",

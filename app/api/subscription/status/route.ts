@@ -34,7 +34,8 @@ export async function GET() {
     return NextResponse.json({
       subscription,
       subscriptionStatus,
-      trialDaysRemaining,
+      // Active subscribers are not on a trial — override to 0 regardless of trialEndsAt
+      trialDaysRemaining: subscriptionStatus === "active" ? 0 : trialDaysRemaining,
       trialEndsAt: trialEndsAtStr,
     });
   } catch (error) {

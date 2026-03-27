@@ -810,16 +810,6 @@ function DashboardContent() {
                     >
                       Customize tile
                     </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteChild(child.childId, child.childName);
-                      }}
-                      className="text-red-400 hover:text-red-600 transition-all text-xl opacity-80 hover:opacity-100"
-                      title="Remove profile"
-                    >
-                      ✕
-                    </button>
                   </div>
                 </div>
 
@@ -1321,7 +1311,7 @@ function DashboardContent() {
               {managingSubscription ? "Loading..." : "Manage Subscription"}
             </button>
           )}
-          <button onClick={() => signOut({ callbackUrl: `${window.location.origin}/` })} className="btn-danger">
+          <button onClick={() => signOut({ redirect: false }).then(() => { window.location.href = "/login"; })} className="btn-danger">
             Sign Out
           </button>
         </div>
@@ -1350,7 +1340,7 @@ function DashboardContent() {
             👋 Hi, {session?.user?.name}!
           </span>
           <button
-            onClick={() => signOut({ callbackUrl: `${window.location.origin}/` })}
+            onClick={() => signOut({ redirect: false }).then(() => { window.location.href = "/login"; })}
             className="text-gray-500 hover:text-red-500 font-bold text-sm transition-colors"
           >
             Sign Out

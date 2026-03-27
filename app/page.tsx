@@ -67,7 +67,7 @@ export default function HomePage() {
             animate={{ opacity: 1, x: 0 }}
             className="flex gap-2 sm:gap-3 flex-wrap justify-end"
           >
-            <Link href="/kids/login">
+            <Link href="/kids">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}

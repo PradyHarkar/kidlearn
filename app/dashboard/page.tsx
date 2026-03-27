@@ -15,6 +15,15 @@ import {
   getThemeJourneyTokens,
   resolveChildThemeKey,
 } from "@/lib/services/tile-themes";
+import {
+  buildDefaultTopicPreferenceRules,
+  buildLegacyTopicPreferences,
+  buildTopicPreferenceRuleSummary,
+  mergeTopicPreferenceRule,
+  normalizeTopicPreferenceRules,
+  PREFERENCE_SUBJECTS,
+  sortTopicsAlphabetically,
+} from "@/lib/services/topic-preferences";
 import toast from "react-hot-toast";
 import Link from "next/link";
 import type { Country } from "@/types";
@@ -42,6 +51,25 @@ const TILE_FAVORITE_TAGS = [
 ];
 
 const TOPIC_RING_COLORS = ["#8b5cf6", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#ec4899"];
+
+interface HistoryQuestionAnswer {
+  questionId: string;
+  questionText?: string;
+  chosenAnswer?: string;
+  correctAnswer?: string;
+  correct: boolean;
+  topic: string;
+  difficulty: number;
+  timeSpent: number;
+  answeredAt: string;
+}
+
+interface HistorySession {
+  sessionId: string;
+  subject: Subject;
+  date: string;
+  questions: HistoryQuestionAnswer[];
+}
 
 function renderRingGradient<T extends { attempts: number }>(segments: T[]) {
   const total = segments.reduce((sum, segment) => sum + segment.attempts, 0);
@@ -95,6 +123,8 @@ function DashboardContent() {
   const [showTopicsModal, setShowTopicsModal] = useState(false);
   const [topicsChild, setTopicsChild] = useState<Child | null>(null);
   const [topicPreferences, setTopicPreferences] = useState<string[]>([]);
+  const [topicPreferenceRules, setTopicPreferenceRules] = useState<Partial<Record<Subject, { include: string[]; exclude: string[] }>>>({});
+  const [topicPreferenceSubject, setTopicPreferenceSubject] = useState<Subject>("english");
   const [savingTopics, setSavingTopics] = useState(false);
   const [showAppearanceModal, setShowAppearanceModal] = useState(false);
   const [appearanceChild, setAppearanceChild] = useState<Child | null>(null);
@@ -110,7 +140,22 @@ function DashboardContent() {
   const [topicSummary, setTopicSummary] = useState<TopicPerformanceSummary | null>(null);
   const [progressAlerts, setProgressAlerts] = useState<ProgressAlertSummary | null>(null);
   const [weeklyDigest, setWeeklyDigest] = useState<WeeklyDigestSummary | null>(null);
+  const [historySessions, setHistorySessions] = useState<HistorySession[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [insightsLoading, setInsightsLoading] = useState(false);
+  const [aiInsight, setAiInsight] = useState<{
+    summary: string;
+    strengths: string[];
+    weaknesses: string[];
+    trend: "improving" | "steady" | "needs-attention";
+    trendDetail: string;
+    nextSteps: string[];
+    encouragement: string;
+    generatedAt: string;
+    dataPoints: number;
+  } | null>(null);
+  const [aiInsightLoading, setAiInsightLoading] = useState(false);
+  const [aiInsightRefreshing, setAiInsightRefreshing] = useState(false);
 
   // Determine the country-based grades for the child form
   const country = (session?.user?.country as Country) ?? "AU";
@@ -146,6 +191,7 @@ function DashboardContent() {
       setTopicSummary(null);
       setProgressAlerts(null);
       setWeeklyDigest(null);
+      setHistorySessions([]);
       return;
     }
 
@@ -157,6 +203,7 @@ function DashboardContent() {
   useEffect(() => {
     if (!selectedProgressChildId) return;
     fetchProgressInsights(selectedProgressChildId);
+    fetchAiInsight(selectedProgressChildId);
   }, [selectedProgressChildId]);
 
   useEffect(() => {
@@ -226,27 +273,65 @@ function DashboardContent() {
   const fetchProgressInsights = async (childId: string) => {
     try {
       setInsightsLoading(true);
-      const [topicsRes, alertsRes, digestRes] = await Promise.all([
+      setHistoryLoading(true);
+      const [topicsRes, alertsRes, digestRes, historyRes] = await Promise.all([
         fetch(`/api/progress/topics?childId=${childId}`),
         fetch(`/api/progress/alerts?childId=${childId}`),
         fetch(`/api/reports/weekly?childId=${childId}`),
+        fetch(`/api/history?childId=${childId}&limit=18`),
       ]);
 
-      const [topicsData, alertsData, digestData] = await Promise.all([
+      const [topicsData, alertsData, digestData, historyData] = await Promise.all([
         topicsRes.json(),
         alertsRes.json(),
         digestRes.json(),
+        historyRes.json(),
       ]);
 
       setTopicSummary(topicsRes.ok ? topicsData.summary ?? null : null);
       setProgressAlerts(alertsRes.ok ? alertsData.summary ?? null : null);
       setWeeklyDigest(digestRes.ok ? digestData.digest ?? null : null);
+      setHistorySessions(historyRes.ok ? historyData.sessions ?? [] : []);
     } catch {
       setTopicSummary(null);
       setProgressAlerts(null);
       setWeeklyDigest(null);
+      setHistorySessions([]);
     } finally {
       setInsightsLoading(false);
+      setHistoryLoading(false);
+    }
+  };
+
+  const fetchAiInsight = async (childId: string) => {
+    try {
+      setAiInsightLoading(true);
+      setAiInsight(null);
+      const res = await fetch(`/api/insights?childId=${childId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAiInsight(data.insight ?? null);
+      }
+    } catch {
+      setAiInsight(null);
+    } finally {
+      setAiInsightLoading(false);
+    }
+  };
+
+  const refreshAiInsight = async (childId: string) => {
+    try {
+      setAiInsightRefreshing(true);
+      const res = await fetch(`/api/insights?childId=${childId}`, { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        setAiInsight(data.insight ?? null);
+        toast.success("Insight refreshed!");
+      }
+    } catch {
+      toast.error("Could not refresh insight.");
+    } finally {
+      setAiInsightRefreshing(false);
     }
   };
 
@@ -327,15 +412,24 @@ function DashboardContent() {
   }, [children, selectedProgressChildId]);
   const featuredTheme = featuredChild ? resolveChildJourneyTheme(featuredChild) : dashboardTheme;
 
-  const topicOptionsForChild = (child: Child) => {
+  const getChildTopicRules = (child: Child) => {
     const ageGroup = (child.ageGroup || (child.yearLevel === "prep" ? "foundation" : child.yearLevel)) as Parameters<typeof getTopicsForGrade>[0];
-    return Array.from(
-      new Set(
-        (["maths", "english", "science"] as const).flatMap((subject) =>
-          getTopicsForGrade(ageGroup, subject, country).slice(0, 8)
-        )
-      )
-    );
+    const legacySeed = child.topicPreferences?.length
+      ? {
+          english: { include: child.topicPreferences, exclude: [] },
+          maths: { include: child.topicPreferences, exclude: [] },
+          science: { include: child.topicPreferences, exclude: [] },
+        }
+      : buildDefaultTopicPreferenceRules({
+          ageGroup,
+          yearLevel: child.yearLevel,
+          country: (child.country as Country) ?? country,
+        });
+    return normalizeTopicPreferenceRules(child.topicPreferenceRules || legacySeed, {
+      ageGroup,
+      yearLevel: child.yearLevel,
+      country: (child.country as Country) ?? country,
+    });
   };
 
   const openAppearanceModal = (child: Child) => {
@@ -423,14 +517,30 @@ function DashboardContent() {
 
   const openTopicsModal = (child: Child) => {
     setTopicsChild(child);
-    setTopicPreferences(child.topicPreferences || []);
+    const rules = getChildTopicRules(child);
+    setTopicPreferenceRules(rules);
+    setTopicPreferenceSubject("english");
+    setTopicPreferences(child.topicPreferences || buildLegacyTopicPreferences(rules, child));
     setShowTopicsModal(true);
   };
 
-  const toggleTopicPreference = (topic: string) => {
-    setTopicPreferences((current) =>
-      current.includes(topic) ? current.filter((item) => item !== topic) : [...current, topic]
-    );
+  const updateTopicPreference = (topic: string, mode: "include" | "exclude") => {
+    if (!topicsChild) return;
+    setTopicPreferenceRules((current) => {
+      const existing = current[topicPreferenceSubject] || { include: [], exclude: [] };
+      const next = {
+        include: existing.include.filter((item) => item !== topic),
+        exclude: existing.exclude.filter((item) => item !== topic),
+      };
+
+      if (mode === "include") {
+        next.include = sortTopicsAlphabetically([...next.include, topic]);
+      } else if (mode === "exclude") {
+        next.exclude = sortTopicsAlphabetically([...next.exclude, topic]);
+      }
+
+      return mergeTopicPreferenceRule(current, topicPreferenceSubject, next);
+    });
   };
 
   const saveTopicPreferences = async () => {
@@ -441,7 +551,9 @@ function DashboardContent() {
       const res = await fetch(`/api/children/${topicsChild.childId}/preferences`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topicPreferences }),
+        body: JSON.stringify({
+          topicPreferencesBySubject: topicPreferenceRules,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -770,6 +882,9 @@ function DashboardContent() {
           const theme = resolveChildJourneyTheme(child);
           const accentClass = theme.heroPanel;
           const favoriteTags = (child.tileFavoriteTags || []).slice(0, 3);
+          const hasStructuredTopicPreferences = Object.values(child.topicPreferenceRules || {}).some(
+            (item) => (item?.include?.length || 0) + (item?.exclude?.length || 0) > 0
+          );
 
           return (
             <motion.div
@@ -908,20 +1023,33 @@ function DashboardContent() {
                       Kid Login
                     </button>
                   </div>
-                  <button
-                    onClick={() => openTopicsModal(child)}
-                    className="w-full btn-secondary text-sm py-2"
-                  >
-                    Interests {child.topicPreferences?.length ? `(${child.topicPreferences.length})` : "Set topics"}
+                    <button
+                      onClick={() => openTopicsModal(child)}
+                      className="w-full btn-secondary text-sm py-2"
+                    >
+                    Interests {hasStructuredTopicPreferences
+                      ? `(${Object.values(child.topicPreferenceRules || {}).reduce((sum, item) => sum + (item?.include?.length || 0) + (item?.exclude?.length || 0), 0)})`
+                      : child.topicPreferences?.length
+                      ? `(${child.topicPreferences.length})`
+                      : "Set topics"}
                   </button>
                   <p className="text-xs font-semibold text-gray-600">
                     {child.hasChildPin
                       ? "PIN ready for kid login"
                       : "Add a PIN so this child can open their own learning screen"}
                   </p>
-                  {child.topicPreferences?.length ? (
+                  {hasStructuredTopicPreferences ? (
                     <p className="text-xs font-semibold text-purple-700">
-                      Prefers: {child.topicPreferences.slice(0, 3).join(", ")}
+                      Prefers: {Object.values(child.topicPreferenceRules || {})
+                        .flatMap((item) => item?.include || [])
+                        .slice(0, 3)
+                        .join(", ")}
+                      {Object.values(child.topicPreferenceRules || {})
+                        .flatMap((item) => item?.include || []).length > 3 ? "..." : ""}
+                    </p>
+                  ) : child.topicPreferences?.length ? (
+                    <p className="text-xs font-semibold text-purple-700">
+                      Prefers: {sortTopicsAlphabetically(child.topicPreferences).slice(0, 3).join(", ")}
                       {child.topicPreferences.length > 3 ? "..." : ""}
                     </p>
                   ) : (
@@ -997,6 +1125,138 @@ function DashboardContent() {
             );
           })}
         </div>
+      )}
+
+      {/* ── AI Parent Insight Card ── */}
+      {selectedProgressChild && (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-3xl overflow-hidden shadow-card bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500"
+        >
+          <div className="bg-black/15 p-5 sm:p-6">
+            {/* Header row */}
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">🤖</span>
+                  <span className="text-white font-black text-lg drop-shadow-sm">
+                    AI Insight — {selectedProgressChild.childName}
+                  </span>
+                </div>
+                {aiInsight && (
+                  <p className="text-white/70 text-xs font-semibold mt-0.5 ml-8">
+                    Based on {aiInsight.dataPoints} questions ·{" "}
+                    Updated {new Date(aiInsight.generatedAt).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => refreshAiInsight(selectedProgressChild.childId)}
+                disabled={aiInsightRefreshing || aiInsightLoading}
+                className="shrink-0 text-xs font-black text-white/80 hover:text-white border border-white/30 hover:border-white/60 rounded-full px-3 py-1.5 transition-all disabled:opacity-40"
+              >
+                {aiInsightRefreshing ? "Refreshing…" : "↺ Refresh"}
+              </button>
+            </div>
+
+            {/* Loading skeleton */}
+            {(aiInsightLoading || aiInsightRefreshing) && !aiInsight && (
+              <div className="space-y-2 animate-pulse">
+                <div className="h-4 bg-white/20 rounded-full w-3/4" />
+                <div className="h-4 bg-white/20 rounded-full w-full" />
+                <div className="h-4 bg-white/20 rounded-full w-5/6" />
+              </div>
+            )}
+
+            {/* No data yet */}
+            {!aiInsightLoading && !aiInsight && (
+              <p className="text-white/80 font-semibold text-sm">
+                {selectedProgressChild.stats?.totalQuestionsAttempted === 0
+                  ? `${selectedProgressChild.childName} hasn't started any sessions yet. Insights will appear after a few practice rounds!`
+                  : "Generating insight… this takes a few seconds on first load."}
+              </p>
+            )}
+
+            {/* Insight content */}
+            {aiInsight && (
+              <div className="space-y-4">
+                {/* Summary */}
+                <p className="text-white font-semibold text-sm leading-relaxed drop-shadow-sm">
+                  {aiInsight.summary}
+                </p>
+
+                {/* Trend badge */}
+                {aiInsight.trendDetail && (
+                  <div className="flex items-center gap-2">
+                    <span className={`rounded-full px-3 py-1 text-xs font-black shadow-sm ${
+                      aiInsight.trend === "improving"
+                        ? "bg-emerald-400 text-emerald-900"
+                        : aiInsight.trend === "needs-attention"
+                        ? "bg-red-400 text-red-900"
+                        : "bg-yellow-300 text-yellow-900"
+                    }`}>
+                      {aiInsight.trend === "improving" ? "📈 Improving" : aiInsight.trend === "needs-attention" ? "⚠️ Needs attention" : "➡️ Steady"}
+                    </span>
+                    <span className="text-white/80 text-xs font-semibold">{aiInsight.trendDetail}</span>
+                  </div>
+                )}
+
+                {/* Strengths + Weaknesses */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {aiInsight.strengths.length > 0 && (
+                    <div className="bg-white/10 rounded-2xl p-3">
+                      <p className="text-white font-black text-xs uppercase tracking-wider mb-2">💪 Strengths</p>
+                      <ul className="space-y-1">
+                        {aiInsight.strengths.map((s, i) => (
+                          <li key={i} className="text-white/90 text-sm font-semibold flex gap-1.5">
+                            <span className="text-emerald-300 shrink-0">✓</span>
+                            {s}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {aiInsight.weaknesses.length > 0 && (
+                    <div className="bg-white/10 rounded-2xl p-3">
+                      <p className="text-white font-black text-xs uppercase tracking-wider mb-2">🎯 Focus areas</p>
+                      <ul className="space-y-1">
+                        {aiInsight.weaknesses.map((w, i) => (
+                          <li key={i} className="text-white/90 text-sm font-semibold flex gap-1.5">
+                            <span className="text-amber-300 shrink-0">→</span>
+                            {w}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                {/* Next steps */}
+                {aiInsight.nextSteps.length > 0 && (
+                  <div className="bg-white/10 rounded-2xl p-3">
+                    <p className="text-white font-black text-xs uppercase tracking-wider mb-2">✅ What you can do</p>
+                    <ul className="space-y-1">
+                      {aiInsight.nextSteps.map((step, i) => (
+                        <li key={i} className="text-white/90 text-sm font-semibold flex gap-1.5">
+                          <span className="text-blue-200 shrink-0 font-black">{i + 1}.</span>
+                          {step}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Encouragement */}
+                {aiInsight.encouragement && (
+                  <p className="text-white/70 text-xs font-semibold italic border-t border-white/20 pt-3">
+                    {aiInsight.encouragement}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </motion.div>
       )}
 
       {selectedProgressChild ? (
@@ -1204,6 +1464,71 @@ function DashboardContent() {
                   </div>
                 )}
               </div>
+            </div>
+
+            <div className="bg-white rounded-3xl p-5 shadow-card xl:col-span-2">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div>
+                  <p className="text-sm font-bold text-gray-500">Question history</p>
+                  <h3 className="text-xl font-black text-gray-800">What the child answered, with dates</h3>
+                </div>
+                <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-black text-sky-700">
+                  {historyLoading ? "Loading..." : `${historySessions.length} sessions`}
+                </span>
+              </div>
+
+              {historySessions.length ? (
+                <div className="grid gap-3 md:grid-cols-2">
+                  {historySessions.slice(0, 4).map((session) => (
+                    <details key={session.sessionId} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <summary className="cursor-pointer list-none">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+                              {session.subject} · {session.date}
+                            </p>
+                            <p className="text-lg font-black text-slate-800">{session.questions.length} questions</p>
+                          </div>
+                          <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-700 shadow-sm">
+                            {Math.round((session.questions.filter((q) => q.correct).length / Math.max(1, session.questions.length)) * 100)}%
+                          </span>
+                        </div>
+                      </summary>
+                      <div className="mt-3 space-y-3">
+                        {session.questions.slice(0, 5).map((question, index) => (
+                          <div key={`${session.sessionId}-${question.questionId}-${index}`} className="rounded-2xl bg-white p-3 border border-slate-100">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">{question.topic}</p>
+                                <p className="font-semibold text-slate-800 leading-relaxed mt-1">
+                                  {question.questionText || `Question ${index + 1}`}
+                                </p>
+                              </div>
+                              <span className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-black ${question.correct ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
+                                {question.correct ? "Correct" : "Try again"}
+                              </span>
+                            </div>
+                            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                              <div className="rounded-xl bg-slate-50 p-2">
+                                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">Kid answer</p>
+                                <p className="text-sm font-semibold text-slate-700">{question.chosenAnswer || "Skipped"}</p>
+                              </div>
+                              <div className="rounded-xl bg-emerald-50 p-2">
+                                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-600">Correct answer</p>
+                                <p className="text-sm font-semibold text-emerald-800">{question.correctAnswer || "Available in question bank"}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl bg-slate-50 p-4 text-sm font-semibold text-gray-500">
+                  Session history will appear here after the child completes a set.
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1559,26 +1884,87 @@ function DashboardContent() {
                 Pick topics this child likes. Questions will lean toward these topics when available.
               </p>
 
-              <div className="max-h-96 overflow-y-auto pr-1">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {topicOptionsForChild(topicsChild).map((topic) => {
-                    const selected = topicPreferences.includes(topic);
-                    return (
-                      <button
-                        key={topic}
-                        type="button"
-                        onClick={() => toggleTopicPreference(topic)}
-                        className={`rounded-2xl border-2 px-3 py-2 text-left font-bold text-sm transition-all ${
-                          selected
-                            ? "border-purple-500 bg-purple-50 text-purple-700"
-                            : "border-gray-200 text-gray-600 hover:border-purple-300"
-                        }`}
-                      >
-                        {topic}
-                      </button>
-                    );
-                  })}
-                </div>
+              <div className="mb-4 flex flex-wrap gap-2 justify-center">
+                {PREFERENCE_SUBJECTS.map((subject) => (
+                  <button
+                    key={subject}
+                    type="button"
+                    onClick={() => setTopicPreferenceSubject(subject)}
+                    className={`rounded-full px-4 py-2 text-sm font-black transition-all capitalize ${
+                      topicPreferenceSubject === subject
+                        ? "bg-purple-600 text-white shadow-md"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    }`}
+                  >
+                    {subject}
+                  </button>
+                ))}
+              </div>
+
+              <div className="max-h-[26rem] overflow-y-auto pr-1">
+                {buildTopicPreferenceRuleSummary(topicPreferenceRules, {
+                  ageGroup: topicsChild.ageGroup || (topicsChild.yearLevel === "prep" ? "foundation" : (topicsChild.yearLevel as Child["ageGroup"])),
+                  yearLevel: topicsChild.yearLevel,
+                  country: (topicsChild.country as Country) ?? country,
+                }).map((summary) => {
+                  if (summary.subject !== topicPreferenceSubject) {
+                    return null;
+                  }
+
+                  return (
+                    <div key={summary.subject} className="space-y-3">
+                      <div className="flex items-center justify-between gap-3 text-sm font-semibold text-gray-500">
+                        <span>
+                          {summary.include.length} included · {summary.exclude.length} excluded
+                        </span>
+                        <span>Sorted alphabetically</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {summary.options.map((topic) => {
+                          const included = summary.include.includes(topic);
+                          const excluded = summary.exclude.includes(topic);
+                          return (
+                            <div
+                              key={`${summary.subject}-${topic}`}
+                              className={`rounded-2xl border-2 p-3 transition-all ${
+                                included
+                                  ? "border-emerald-400 bg-emerald-50"
+                                  : excluded
+                                  ? "border-rose-400 bg-rose-50"
+                                  : "border-gray-200 bg-white"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <p className="font-black text-sm text-gray-800">{topic}</p>
+                                <span className="text-xs font-black uppercase tracking-[0.18em] text-gray-500">{summary.subject}</span>
+                              </div>
+                              <div className="mt-3 flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => updateTopicPreference(topic, "include")}
+                                  className={`flex-1 rounded-full px-3 py-2 text-xs font-black ${
+                                    included ? "bg-emerald-500 text-white" : "bg-emerald-50 text-emerald-700"
+                                  }`}
+                                >
+                                  Include
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => updateTopicPreference(topic, "exclude")}
+                                  className={`flex-1 rounded-full px-3 py-2 text-xs font-black ${
+                                    excluded ? "bg-rose-500 text-white" : "bg-rose-50 text-rose-700"
+                                  }`}
+                                >
+                                  Exclude
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="flex gap-3 mt-6">

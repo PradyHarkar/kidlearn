@@ -655,15 +655,14 @@ function LearnContent() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className={`relative overflow-hidden rounded-[2.2rem] border shadow-2xl ${journeyTheme.surfaceBorder} ${journeyTheme.heroPanel}`}
-          style={{
-            backgroundImage: `linear-gradient(135deg, rgba(2,6,23,0.52), rgba(15,23,42,0.18)), url(${journeyTheme.backgroundImageUrl})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            backgroundBlendMode: "multiply",
-          }}
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-black/10 pointer-events-none" />
-          <div className="relative grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-5 p-5 sm:p-6 lg:p-8 items-center">
+          <div
+            className="absolute inset-0 bg-cover bg-center pointer-events-none"
+            style={{ backgroundImage: `url(${journeyTheme.backgroundImageUrl})` }}
+          />
+          <div className="absolute inset-0 bg-slate-950/68 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/25 via-transparent to-black/20 pointer-events-none" />
+          <div className="relative z-10 grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-5 p-5 sm:p-6 lg:p-8 items-center">
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 items-center sm:items-start rounded-[2rem] bg-slate-950/20 backdrop-blur-sm border border-white/10 shadow-2xl px-4 py-4 sm:px-5 sm:py-5">
               <div className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-[1.75rem] bg-white/20 border border-white/25 shadow-xl flex items-center justify-center text-4xl sm:text-5xl">
                 {journeyAvatar}

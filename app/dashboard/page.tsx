@@ -629,15 +629,14 @@ function DashboardContent() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         className={`relative overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-7 lg:p-8 border shadow-kid ${heroTheme.surfaceBorder} ${heroTheme.heroPanel}`}
-        style={{
-          backgroundImage: `linear-gradient(135deg, rgba(2,6,23,0.78), rgba(15,23,42,0.36)), url(${heroTheme.backgroundImageUrl})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundBlendMode: "multiply",
-        }}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/20 via-transparent to-slate-950/10 pointer-events-none" />
-        <div className="relative grid grid-cols-1 xl:grid-cols-[1.3fr_0.9fr] gap-5 items-center">
+        <div
+          className="absolute inset-0 bg-cover bg-center pointer-events-none"
+          style={{ backgroundImage: `url(${heroTheme.backgroundImageUrl})` }}
+        />
+        <div className="absolute inset-0 bg-slate-950/68 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/25 via-transparent to-black/20 pointer-events-none" />
+        <div className="relative z-10 grid grid-cols-1 xl:grid-cols-[1.3fr_0.9fr] gap-5 items-center">
           <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 items-center lg:items-start">
             <div className="hidden lg:block shrink-0">
               <Mascot mood="happy" size="lg" />

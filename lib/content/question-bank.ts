@@ -36,28 +36,20 @@ const COUNTABLE_OBJECTS = [
 ] as const;
 
 const NAMES = ["Mia", "Leo", "Noah", "Ava", "Liam", "Zara", "Aanya", "Ben", "Aria", "Riya", "Owen", "Ivy"];
-const PLACES = ["library", "garden", "museum", "school fair", "science room", "playground", "market", "beach", "classroom"];
-const LESSON_FRAMES = [
-  "during the warm-up task",
+const PLACES = ["library", "garden", "museum", "school fair", "science room", "playground", "beach", "classroom", "sports field", "art room"];
+const CLASSROOM_CONTEXTS = [
+  "during a guided lesson",
   "during partner practice",
-  "in the guided lesson",
-  "during independent work",
-  "in a review round",
-  "during the morning session",
-  "during the afternoon task",
+  "in a small-group activity",
+  "during a review round",
   "at the learning station",
+  "during independent work",
   "during a challenge card round",
-  "during small-group work",
   "during a revision check",
-  "as part of a quick quiz",
-];
-const CONTEXT_MODIFIERS = [
-  "morning", "partner", "guided", "quiet", "revision", "skills", "mini", "team", "practice", "focus",
-  "creative", "investigation", "number", "reading", "science", "challenge", "review", "checkpoint", "small-group", "learning",
-];
-const CONTEXT_NOUNS = [
-  "session", "station", "round", "task", "check", "lesson", "activity", "table", "workshop", "rotation",
-  "corner", "practice", "review", "challenge", "lab", "circle", "project", "routine", "group", "prompt",
+  "in a quick warm-up",
+  "during a hands-on activity",
+  "during a learning game",
+  "in a thinking task",
 ];
 const SOUND_SETS = [
   { prompt: "sh", correct: "ship", wrong: ["chip", "ring", "lamp"] },
@@ -130,9 +122,7 @@ function mixSeed(seed: number, factor: number, offset = 0): number {
 }
 
 function classroomContext(seed: number, offset = 0): string {
-  const modifier = pick(CONTEXT_MODIFIERS, seed, offset);
-  const noun = pick(CONTEXT_NOUNS, Math.floor(seed / CONTEXT_MODIFIERS.length), offset);
-  return `during the ${modifier} ${noun}`;
+  return pick(CLASSROOM_CONTEXTS, seed, offset);
 }
 
 function pick<T>(values: readonly T[], seed: number, offset = 0): T {
@@ -250,14 +240,24 @@ function metadata(context: GeneratorContext, templateId: string, variant: string
   };
 }
 
+function capitalizeLeadingLetter(text: string): string {
+  const leadingWhitespace = text.match(/^\s*/)?.[0] ?? "";
+  const body = text.slice(leadingWhitespace.length);
+  const index = body.search(/[A-Za-z]/);
+  if (index < 0) {
+    return text;
+  }
+
+  return `${leadingWhitespace}${body.slice(0, index)}${body[index].toUpperCase()}${body.slice(index + 1)}`;
+}
+
 function createQuestion(context: GeneratorContext, draft: DraftQuestion): Question {
   const acceptedIndex = context.acceptedCount + 1;
+  const questionText = capitalizeLeadingLetter(draft.questionText);
   return {
     pk: buildPk(context.subject, context.ageGroup, context.country),
     questionId: `generated-${context.country}-${context.subject}-${context.ageGroup}-${String(acceptedIndex).padStart(5, "0")}`,
-    questionText: draft.questionText.length > 0
-      ? draft.questionText[0].toUpperCase() + draft.questionText.slice(1)
-      : draft.questionText,
+    questionText,
     answerOptions: draft.answerOptions,
     difficulty: draft.difficulty,
     topics: draft.topics,
@@ -268,7 +268,7 @@ function createQuestion(context: GeneratorContext, draft: DraftQuestion): Questi
     country: context.country,
     grade: getRepresentativeGrade(context.country, context.ageGroup),
     hint: draft.hint,
-    ttsText: draft.ttsText ?? draft.questionText,
+    ttsText: draft.ttsText ?? questionText,
     interactionType: draft.interactionType,
     interactionData: draft.interactionData,
     generationMetadata: draft.generationMetadata,

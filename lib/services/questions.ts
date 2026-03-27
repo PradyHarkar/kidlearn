@@ -3,7 +3,7 @@ import { getGradeConfig, getTopicsForGrade } from "@/lib/curriculum";
 import { createDdb, getItem, scanItems, TABLES } from "@/lib/dynamodb";
 import { resolveChildAgeGroup, toLegacyYearLevel } from "@/lib/learner";
 import { getDefaultChildPreferences, getLegacyTileThemeIdFromChildTheme, resolveChildThemeKey } from "@/lib/services/tile-themes";
-import type { AgeGroup, Child, ChildJourneyTheme, Country, Question, QuestionIssue, Subject, YearLevel } from "@/types";
+import type { AgeGroup, Child, ChildJourneyTheme, Country, Question, QuestionIssue, Subject, TopicPreferenceState, YearLevel } from "@/types";
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 
 interface CurriculumContext {
@@ -52,6 +52,15 @@ function getCurrentDifficulty(child: Child, subject: Subject): number {
 }
 
 export const DEFAULT_QUESTION_SET_SIZE = 20;
+const GENERIC_TOPICS = new Set([
+  "test",
+  "test-topic",
+  "general",
+  "maths",
+  "english",
+  "science",
+  "benchmark family",
+]);
 
 function normalizeQuestionSignature(question: Question) {
   const questionText = question.questionText.trim().toLowerCase().replace(/\s+/g, " ");
@@ -90,7 +99,39 @@ function normalizeTopic(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-function filterByTopicPreferences(questions: Question[], preferences: string[] | undefined) {
+function primaryQuestionTopic(question: Question): string {
+  const topics = question.topics ?? [];
+  const preferred = topics.find((topic) => {
+    const normalized = normalizeTopic(topic);
+    return !!normalized && !GENERIC_TOPICS.has(normalized);
+  });
+
+  return normalizeTopic(preferred ?? topics[0] ?? question.subject ?? "general");
+}
+
+function filterByTopicPreferences(
+  questions: Question[],
+  subject: Subject,
+  preferences: string[] | undefined,
+  rules?: Partial<Record<Subject, TopicPreferenceState>>
+) {
+  const subjectRules = rules?.[subject];
+  if (subjectRules) {
+    const matching = questions.filter((question) => {
+      const normalizedTopics = (question.topics || []).map(normalizeTopic);
+      const hasExclude = normalizedTopics.some((topic) => (subjectRules.exclude || []).some((item) => normalizeTopic(item) === topic));
+      if (hasExclude) return false;
+
+      if (!(subjectRules.include || []).length) {
+        return true;
+      }
+
+      return normalizedTopics.some((topic) => (subjectRules.include || []).some((item) => normalizeTopic(item) === topic));
+    });
+
+    return matching.length >= DEFAULT_QUESTION_SET_SIZE / 2 ? matching : questions;
+  }
+
   if (!preferences?.length) return questions;
 
   const preferenceSet = new Set(preferences.map(normalizeTopic));
@@ -101,7 +142,7 @@ function filterByTopicPreferences(questions: Question[], preferences: string[] |
   return matching.length >= DEFAULT_QUESTION_SET_SIZE / 2 ? matching : questions;
 }
 
-function selectQuestionsByDifficulty(
+export function orderQuestionsForSession(
   questions: Question[],
   targetDifficulty: number,
   blockedQuestionIds: Set<string>
@@ -117,12 +158,64 @@ function selectQuestionsByDifficulty(
     filtered = deduped;
   }
 
-  // Fisher-Yates shuffle — unbiased, unlike sort(() => Math.random() - 0.5)
-  for (let i = filtered.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [filtered[i], filtered[j]] = [filtered[j], filtered[i]];
+  const source = filtered.length >= DEFAULT_QUESTION_SET_SIZE ? filtered : deduped;
+  const selected: Question[] = [];
+  const difficultyBuckets = new Map<number, Map<string, Question[]>>();
+
+  for (const question of source) {
+    const byDifficulty = difficultyBuckets.get(question.difficulty) ?? new Map<string, Question[]>();
+    const topic = primaryQuestionTopic(question);
+    const byTopic = byDifficulty.get(topic) ?? [];
+    byTopic.push(question);
+    byDifficulty.set(topic, byTopic);
+    difficultyBuckets.set(question.difficulty, byDifficulty);
   }
-  return filtered.slice(0, DEFAULT_QUESTION_SET_SIZE);
+
+  for (const difficulty of Array.from(difficultyBuckets.keys()).sort((a, b) => a - b)) {
+    const topicBuckets = difficultyBuckets.get(difficulty);
+    if (!topicBuckets) continue;
+
+    const topicOrder = Array.from(topicBuckets.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]) || a[1].length - b[1].length)
+      .map(([topic]) => topic);
+
+    let progress = true;
+    while (progress && selected.length < DEFAULT_QUESTION_SET_SIZE) {
+      progress = false;
+      for (const topic of topicOrder) {
+        const bucket = topicBuckets.get(topic);
+        const next = bucket?.shift();
+        if (!next) continue;
+
+        selected.push(next);
+        progress = true;
+        if (selected.length >= DEFAULT_QUESTION_SET_SIZE) {
+          break;
+        }
+      }
+    }
+  }
+
+  if (selected.length < DEFAULT_QUESTION_SET_SIZE) {
+    for (const question of source) {
+      if (selected.length >= DEFAULT_QUESTION_SET_SIZE) {
+        break;
+      }
+      if (!selected.includes(question)) {
+        selected.push(question);
+      }
+    }
+  }
+
+  return selected.slice(0, DEFAULT_QUESTION_SET_SIZE);
+}
+
+function selectQuestionsByDifficulty(
+  questions: Question[],
+  targetDifficulty: number,
+  blockedQuestionIds: Set<string>
+): Question[] {
+  return orderQuestionsForSession(questions, targetDifficulty, blockedQuestionIds);
 }
 
 async function loadQuestionsForPartition(pk: string): Promise<Question[]> {
@@ -218,7 +311,12 @@ export async function getQuestionsForChild(userId: string, childId: string, subj
     : mergeQuestionSets(genericQuestions);
   const blockedQuestionIds = await loadReportedQuestionIds();
   const availableQuestions = buildAvailableQuestionPool(typedQuestions, blockedQuestionIds);
-  const topicFilteredQuestions = filterByTopicPreferences(availableQuestions, typedChild.topicPreferences);
+  const topicFilteredQuestions = filterByTopicPreferences(
+    availableQuestions,
+    subject,
+    typedChild.topicPreferences,
+    typedChild.topicPreferenceRules
+  );
 
   return {
     questions: selectQuestionsByDifficulty(topicFilteredQuestions, currentDifficulty, blockedQuestionIds),

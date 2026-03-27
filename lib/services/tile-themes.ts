@@ -43,6 +43,13 @@ export interface ThemeJourneyTokens {
   progressFill: string;
   badge: string;
   mascotGlow: string;
+  bannerShell: string;
+  bannerAccent: string;
+  bannerTitle: string;
+  bannerText: string;
+  bannerPill: string;
+  bannerSecondaryButton: string;
+  bannerStatCard: string;
   buttonStyle: ChildButtonStyle;
   cardStyle: ChildCardStyle;
   rewardStyle: ChildRewardStyle;
@@ -101,6 +108,13 @@ type JourneyVisualTokens = {
   progressFill: string;
   badge: string;
   mascotGlow: string;
+  bannerShell: string;
+  bannerAccent: string;
+  bannerTitle: string;
+  bannerText: string;
+  bannerPill: string;
+  bannerSecondaryButton: string;
+  bannerStatCard: string;
 };
 
 export const TILE_THEME_PRESETS: TileThemePreset[] = [
@@ -383,7 +397,32 @@ export function getTileThemeGroups() {
   return ["sports", "places", "themes", "games"] as const;
 }
 
+function buildBannerContrastTokens(themeKey: ChildThemeKey) {
+  if (themeKey === "space") {
+    return {
+      bannerShell: "bg-slate-950/35 backdrop-blur-md border border-white/15 shadow-2xl",
+      bannerAccent: "bg-amber-300/15 text-amber-100 border border-amber-200/20",
+      bannerTitle: "text-white",
+      bannerText: "text-white/90",
+      bannerPill: "bg-slate-950/28 text-white border border-white/15",
+      bannerSecondaryButton: "bg-slate-950/28 text-white border border-white/15 hover:bg-slate-900/40",
+      bannerStatCard: "bg-slate-950/25 text-white border border-white/10",
+    };
+  }
+
+  return {
+    bannerShell: "bg-white/75 backdrop-blur-md border border-white/70 shadow-2xl",
+    bannerAccent: "bg-amber-100 text-amber-900 border border-amber-200/70",
+    bannerTitle: "text-slate-900",
+    bannerText: "text-slate-700",
+    bannerPill: "bg-white/75 text-slate-900 border border-slate-200/80",
+    bannerSecondaryButton: "bg-white text-slate-900 border border-slate-200 hover:bg-slate-50",
+    bannerStatCard: "bg-white/80 text-slate-900 border border-slate-100",
+  };
+}
+
 function buildJourneyTokens(themeKey: ChildThemeKey): JourneyVisualTokens {
+  const banner = buildBannerContrastTokens(themeKey);
   switch (themeKey) {
     case "unicorn":
       return {
@@ -405,6 +444,7 @@ function buildJourneyTokens(themeKey: ChildThemeKey): JourneyVisualTokens {
         progressFill: "bg-gradient-to-r from-pink-500 to-fuchsia-500",
         badge: "bg-pink-100 text-pink-800",
         mascotGlow: "shadow-pink-100",
+        ...banner,
       };
     case "space":
       return {
@@ -426,6 +466,7 @@ function buildJourneyTokens(themeKey: ChildThemeKey): JourneyVisualTokens {
         progressFill: "bg-gradient-to-r from-cyan-400 to-fuchsia-500",
         badge: "bg-slate-800 text-indigo-100",
         mascotGlow: "shadow-cyan-500/20",
+        ...banner,
       };
     case "soccer":
       return {
@@ -447,6 +488,7 @@ function buildJourneyTokens(themeKey: ChildThemeKey): JourneyVisualTokens {
         progressFill: "bg-gradient-to-r from-green-500 to-emerald-500",
         badge: "bg-green-100 text-green-800",
         mascotGlow: "shadow-green-100",
+        ...banner,
       };
     case "jungle":
       return {
@@ -468,6 +510,7 @@ function buildJourneyTokens(themeKey: ChildThemeKey): JourneyVisualTokens {
         progressFill: "bg-gradient-to-r from-emerald-500 to-lime-500",
         badge: "bg-emerald-100 text-emerald-800",
         mascotGlow: "shadow-emerald-100",
+        ...banner,
       };
     case "ocean":
       return {
@@ -489,6 +532,7 @@ function buildJourneyTokens(themeKey: ChildThemeKey): JourneyVisualTokens {
         progressFill: "bg-gradient-to-r from-cyan-500 to-blue-500",
         badge: "bg-cyan-100 text-cyan-800",
         mascotGlow: "shadow-cyan-100",
+        ...banner,
       };
     case "fantasy":
     default:
@@ -511,6 +555,7 @@ function buildJourneyTokens(themeKey: ChildThemeKey): JourneyVisualTokens {
         progressFill: "bg-gradient-to-r from-purple-600 to-pink-500",
         badge: "bg-purple-100 text-purple-800",
         mascotGlow: "shadow-purple-100",
+        ...banner,
       };
   }
 }

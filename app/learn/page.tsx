@@ -663,38 +663,38 @@ function LearnContent() {
           <div className="absolute inset-0 bg-slate-950/68 pointer-events-none" />
           <div className="absolute inset-0 bg-gradient-to-r from-slate-950/25 via-transparent to-black/20 pointer-events-none" />
           <div className="relative z-10 grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-5 p-5 sm:p-6 lg:p-8 items-center">
-            <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 items-center sm:items-start rounded-[2rem] bg-slate-950/20 backdrop-blur-sm border border-white/10 shadow-2xl px-4 py-4 sm:px-5 sm:py-5">
+            <div className={`flex flex-col sm:flex-row gap-4 sm:gap-5 items-center sm:items-start rounded-[2rem] ${journeyTheme.bannerShell} px-4 py-4 sm:px-5 sm:py-5`}>
               <div className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-[1.75rem] bg-white/20 border border-white/25 shadow-xl flex items-center justify-center text-4xl sm:text-5xl">
                 {journeyAvatar}
               </div>
               <div className="flex-1 text-center sm:text-left">
-                <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-[11px] sm:text-xs font-black uppercase tracking-[0.22em] text-white/90 shadow-sm">
+                <div className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[11px] sm:text-xs font-black uppercase tracking-[0.22em] shadow-sm ${journeyTheme.bannerAccent}`}>
                   {journeyTheme.themeEmoji} {journeyTheme.themeLabel} world
                 </div>
-                <h1 className="mt-4 text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.85)]">
+                <h1 className={`mt-4 text-3xl sm:text-4xl lg:text-5xl font-black leading-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.45)] ${journeyTheme.bannerTitle}`}>
                   {subjectLabel} Adventure
                 </h1>
-                <p className="mt-2 text-white text-base sm:text-lg font-semibold max-w-2xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.75)]">
+                <p className={`mt-2 text-base sm:text-lg font-semibold max-w-2xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)] ${journeyTheme.bannerText}`}>
                   {journeyTheme.preset.subtitle}. Answer {SESSION_SIZE} questions, collect rewards, and keep the streak alive.
                 </p>
                 <div className="mt-5 flex flex-wrap gap-2 justify-center sm:justify-start">
-                  <span className="rounded-full bg-white/20 px-3 py-1.5 text-sm font-black text-white">🎯 {currentQuestionNumber}/{questions.length}</span>
-                  <span className="rounded-full bg-white/20 px-3 py-1.5 text-sm font-black text-white">📘 {subjectLabel}</span>
-                  <span className="rounded-full bg-white/20 px-3 py-1.5 text-sm font-black text-white">🔥 {streak} streak</span>
-                  <span className="rounded-full bg-white/20 px-3 py-1.5 text-sm font-black text-white">{rewardGlyph} {coins}</span>
+                  <span className={`rounded-full px-3 py-1.5 text-sm font-black ${journeyTheme.bannerPill}`}>🎯 {currentQuestionNumber}/{questions.length}</span>
+                  <span className={`rounded-full px-3 py-1.5 text-sm font-black ${journeyTheme.bannerPill}`}>📘 {subjectLabel}</span>
+                  <span className={`rounded-full px-3 py-1.5 text-sm font-black ${journeyTheme.bannerPill}`}>🔥 {streak} streak</span>
+                  <span className={`rounded-full px-3 py-1.5 text-sm font-black ${journeyTheme.bannerPill}`}>{rewardGlyph} {coins}</span>
                 </div>
                 <div className="mt-6 flex flex-wrap gap-3 justify-center sm:justify-start">
                   <motion.button
                     onClick={() => router.push("/dashboard")}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="rounded-full px-6 py-3.5 text-sm sm:text-base font-black bg-white/20 text-white border border-white/25 hover:bg-white/30 transition-colors"
+                    className={`rounded-full px-6 py-3.5 text-sm sm:text-base font-black transition-colors ${journeyTheme.bannerPill}`}
                   >
                     ← Exit Adventure
                   </motion.button>
                   <button
                     onClick={() => setShowHint(true)}
-                    className="rounded-full px-6 py-3.5 text-sm sm:text-base font-black bg-white text-slate-800 shadow-lg hover:scale-[1.01] transition-transform"
+                    className={`rounded-full px-6 py-3.5 text-sm sm:text-base font-black shadow-lg hover:scale-[1.01] transition-transform ${journeyTheme.bannerSecondaryButton}`}
                   >
                     💡 Get a Hint
                   </button>

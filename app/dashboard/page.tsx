@@ -630,33 +630,33 @@ function DashboardContent() {
         animate={{ opacity: 1, y: 0 }}
         className={`relative overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-7 lg:p-8 border shadow-kid ${heroTheme.surfaceBorder} ${heroTheme.heroPanel}`}
         style={{
-          backgroundImage: `linear-gradient(135deg, rgba(2,6,23,0.52), rgba(15,23,42,0.16)), url(${heroTheme.backgroundImageUrl})`,
+          backgroundImage: `linear-gradient(135deg, rgba(2,6,23,0.78), rgba(15,23,42,0.36)), url(${heroTheme.backgroundImageUrl})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundBlendMode: "multiply",
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-white/10 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/20 via-transparent to-slate-950/10 pointer-events-none" />
         <div className="relative grid grid-cols-1 xl:grid-cols-[1.3fr_0.9fr] gap-5 items-center">
           <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 items-center lg:items-start">
             <div className="hidden lg:block shrink-0">
               <Mascot mood="happy" size="lg" />
             </div>
-            <div className="flex-1 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-white/90 shadow-sm">
+            <div className="flex-1 text-center lg:text-left rounded-[2rem] bg-slate-950/20 backdrop-blur-sm border border-white/10 shadow-2xl px-4 py-4 sm:px-5 sm:py-5">
+              <div className="inline-flex items-center gap-2 rounded-full bg-slate-950/28 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-white shadow-sm">
                 {heroTheme.themeEmoji} {heroTheme.themeLabel} world
               </div>
-              <h1 className="mt-4 text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight drop-shadow-sm">
+              <h1 className="mt-4 text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.85)]">
                 Welcome back, {session?.user?.name}! 👋
               </h1>
-              <p className="mt-2 text-white/90 text-base sm:text-lg font-semibold max-w-2xl">
+              <p className="mt-2 text-white text-base sm:text-lg font-semibold max-w-2xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.75)]">
                 Ready for a new adventure today? Pick a child, jump into a themed world, and keep the streak going.
               </p>
               <div className="mt-5 flex flex-wrap gap-2 justify-center lg:justify-start">
-                <span className="rounded-full bg-white/20 px-3 py-1.5 text-sm font-black text-white">🎯 {heroQuestions} This Week</span>
-                <span className="rounded-full bg-white/20 px-3 py-1.5 text-sm font-black text-white">📘 {heroAccuracy}% Accuracy</span>
-                <span className="rounded-full bg-white/20 px-3 py-1.5 text-sm font-black text-white">🔥 {heroStreak} Day Streak</span>
-                <span className="rounded-full bg-white/20 px-3 py-1.5 text-sm font-black text-white">🏆 {heroBadges} Badges</span>
+                <span className="rounded-full bg-slate-950/28 px-3 py-1.5 text-sm font-black text-white shadow-sm">🎯 {heroQuestions} This Week</span>
+                <span className="rounded-full bg-slate-950/28 px-3 py-1.5 text-sm font-black text-white shadow-sm">📘 {heroAccuracy}% Accuracy</span>
+                <span className="rounded-full bg-slate-950/28 px-3 py-1.5 text-sm font-black text-white shadow-sm">🔥 {heroStreak} Day Streak</span>
+                <span className="rounded-full bg-slate-950/28 px-3 py-1.5 text-sm font-black text-white shadow-sm">🏆 {heroBadges} Badges</span>
               </div>
               <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
                 <motion.button
@@ -673,12 +673,12 @@ function DashboardContent() {
                 </motion.button>
                 <button
                   onClick={() => setTab("progress")}
-                  className="rounded-full px-6 py-4 text-sm sm:text-base font-black bg-white/20 text-white border border-white/25 hover:bg-white/28 transition-colors"
+                  className="rounded-full px-6 py-4 text-sm sm:text-base font-black bg-slate-950/28 text-white border border-white/20 hover:bg-slate-950/40 transition-colors"
                 >
                   📊 View progress
                 </button>
               </div>
-              <p className="mt-4 text-white/90 text-sm font-semibold">
+              <p className="mt-4 text-white text-sm font-semibold drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
                 Last played: {heroSubjectLabel} · Level {heroLevel || 1}
               </p>
             </div>

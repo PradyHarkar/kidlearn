@@ -19,9 +19,10 @@ import {
 } from "./fixtures";
 
 const TABLES = {
-  USERS:     process.env.DYNAMODB_USERS_TABLE     || "kidlearn-users",
-  CHILDREN:  process.env.DYNAMODB_CHILDREN_TABLE  || "kidlearn-children",
-  QUESTIONS: process.env.DYNAMODB_QUESTIONS_TABLE || "kidlearn-questions",
+  USERS:         process.env.DYNAMODB_USERS_TABLE         || "kidlearn-users",
+  CHILDREN:      process.env.DYNAMODB_CHILDREN_TABLE      || "kidlearn-children",
+  QUESTIONS:     process.env.DYNAMODB_QUESTIONS_TABLE     || "kidlearn-questions",
+  SUBSCRIPTIONS: process.env.DYNAMODB_SUBSCRIPTIONS_TABLE || "kidlearn-subscriptions",
 };
 
 function createDdb() {
@@ -134,6 +135,42 @@ async function seedChildren(ddb: DynamoDBDocumentClient) {
   }
 }
 
+async function seedActiveSubscription(ddb: DynamoDBDocumentClient) {
+  console.log("  Seeding active subscription fixture...");
+  const { ACTIVE_SUB_PARENT } = TEST_USERS;
+  const now = new Date().toISOString();
+  const periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  // Update the user record to have stripeCustomerId (needed for portal endpoint)
+  const { UpdateCommand } = await import("@aws-sdk/lib-dynamodb");
+  await ddb.send(new UpdateCommand({
+    TableName: TABLES.USERS,
+    Key: { userId: ACTIVE_SUB_PARENT.userId },
+    UpdateExpression: "SET stripeCustomerId = :cid",
+    ExpressionAttributeValues: { ":cid": ACTIVE_SUB_PARENT.stripeCustomerId },
+  }));
+
+  // Seed a live active subscription record so the status API reads it from DynamoDB
+  // (the user's JWT still says "trial" — this is the stale-JWT regression fixture)
+  await ddb.send(new PutCommand({
+    TableName: TABLES.SUBSCRIPTIONS,
+    Item: {
+      userId:               ACTIVE_SUB_PARENT.userId,
+      subscriptionId:       ACTIVE_SUB_PARENT.subscriptionId,
+      stripeSubscriptionId: "sub_test_tsunami_active",
+      stripeCustomerId:     ACTIVE_SUB_PARENT.stripeCustomerId,
+      status:               "active",
+      plan:                 "weekly",
+      currentPeriodEnd:     periodEnd,
+      cancelAtPeriodEnd:    false,
+      createdAt:            now,
+      updatedAt:            now,
+      _testFixture:         true,
+    },
+  }));
+  console.log(`    ✓ subscription ${ACTIVE_SUB_PARENT.subscriptionId} (active) for ${ACTIVE_SUB_PARENT.email}`);
+}
+
 async function seedQuestions(ddb: DynamoDBDocumentClient) {
   console.log("  Seeding test questions...");
 
@@ -168,6 +205,7 @@ async function main() {
     await seedUsers(ddb);
     await seedChildren(ddb);
     await seedQuestions(ddb);
+    await seedActiveSubscription(ddb);
     console.log("\n✅ Test data seeded successfully.\n");
   } catch (err) {
     console.error("\n❌ Setup failed:", err);

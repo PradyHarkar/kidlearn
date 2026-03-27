@@ -109,6 +109,14 @@ export function assertEqual<T>(actual: T, expected: T, label = "") {
   }
 }
 
+export function assertNotEqual<T>(actual: T, notExpected: T, label = "") {
+  if (actual === notExpected) {
+    throw new AssertionError(
+      `${label ? label + ": " : ""}expected value to NOT equal ${JSON.stringify(notExpected)}, but it did`
+    );
+  }
+}
+
 export function assertMatch(actual: string, pattern: RegExp, label = "") {
   if (!pattern.test(actual)) {
     throw new AssertionError(

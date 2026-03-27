@@ -1,52 +1,54 @@
 {
   "protocolVersion": 1,
-  "updatedAt": "2026-03-26T13:05:00.000Z",
-  "currentObjective": "Deliver the next Codex workstream batch: U1 progress charts, U2 topic preferences, and U5 reward shop. U4 diagnostic UI is complete and awaiting Claude test pass.",
+  "updatedAt": "2026-03-27T02:30:00+11:00",
+  "currentObjective": "Fix pin/biometric kid login (P1 defect), complete U2 topic preferences, and U5 reward shop.",
   "dispatchAgent": "codex",
   "activeTask": {
-    "id": "U1-U2-U5-BATCH",
+    "id": "REQ-001-P1-TRACKING",
     "product": {
-      "problemStatement": "Parents need a dashboard that shows learning progress, lets them set topic interests, and lets kids spend points on in-app rewards. The diagnostic page already exists and the dashboard badge now links into it, but the rest of the product stack still needs the richer parent/kid flows.",
+      "problemStatement": "Parents need a dashboard that clearly shows topic-level strengths and weaknesses, warns when a child is struggling, keeps motivation high with a visible streak, and surfaces a weekly digest in-app instead of relying on email.",
       "user": "Parent managing multiple children, plus the child using the learning and reward flows.",
       "useCases": [
-        "Parent opens Progress tab and sees recent accuracy by subject",
-        "Parent sets topic preferences so questions lean toward subjects the child likes",
-        "Parent or child buys avatar/theme rewards with earned points",
-        "Diagnostic badge sends the parent into the new diagnostic flow"
+        "Parent opens Progress tab and sees topic-level performance pie charts",
+        "Parent gets a smart alert when the child is struggling on a topic",
+        "Child maintains a streak and sees it on the dashboard",
+        "Parent reads an in-app weekly digest without waiting for email"
       ],
       "nfrs": [
-        "Reuse the existing progress and reward data model where possible",
-        "Keep topic preference filtering safe and reversible if no matching pool exists",
-        "Do not break the current reward gift-card flow",
-        "Keep the UI compact and mobile friendly"
+        "Reuse the existing progress model and streak fields where possible",
+        "Keep the alert logic conservative so it does not spam parents",
+        "Keep the UI compact and responsive on laptop, tablet, and mobile",
+        "Do not break existing progress, reward, or diagnostic flows"
       ],
       "acceptanceCriteria": [
-        "Progress tab shows progress summary charts / session history",
-        "Topic preferences can be saved per child and affect question selection",
-        "Reward shop route exists and items can be redeemed from the rewards page",
-        "Existing diagnostic and reward gift-card flows still work",
+        "Progress tab shows a subject pie chart and topic drill-down for the selected child",
+        "Needs-help alert appears for topics where recent accuracy falls below 50%",
+        "Child streak is visible and continues to update from sessions",
+        "Weekly in-app digest shows questions, accuracy, streak, points, and recent sessions",
         "Typecheck passes"
       ],
       "antiScope": [
         "Do NOT change the diagnostic API contract",
-        "Do NOT rewrite the weekly email flow unless needed for correctness",
-        "Do NOT remove the existing gift card reward flow"
+        "Do NOT remove the existing reward or question-report flows",
+        "Do NOT break the existing weekly email cron route"
       ]
     },
     "codexTasks": [
-      "Add GET /api/progress/summary and dashboard progress charts",
-      "Add child topic preferences API and topic-interest picker UI",
-      "Add reward shop API and wire the rewards page to it",
-      "Keep the existing diagnostic link and gift card flows intact"
+      "Add GET /api/progress/topics, /api/progress/alerts, and /api/reports/weekly",
+      "Render a focused progress dashboard with subject pie charts and topic drill-down",
+      "Show needs-help alerts and weekly digest summary in-app",
+      "Keep streak and existing progress/reward/diagnostic flows intact"
     ],
     "claudeTasks": [
-      "Test the new progress summary and dashboard charts",
-      "Test topic preference persistence and question filtering",
-      "Test reward shop browsing and redemption",
-      "Verify the diagnostic page still passes the existing contract tests"
+      "Test the new progress topics API and subject pie chart UI",
+      "Test the needs-help alert logic and weekly digest endpoint",
+      "Verify streak badges and existing dashboard sections still work",
+      "Check responsiveness on laptop and tablet layouts",
+      "Add regression coverage for subscription checkout and portal flows",
+      "Prove progress scores remain per-subject and untouched subjects stay at zero"
     ]
   },
-  "dispatchedAt": "2026-03-26T13:05:00.000Z",
+  "dispatchedAt": "2026-03-27T00:00:00+11:00",
   "cadenceSeconds": 5,
   "statusCadenceSeconds": 60,
   "mergePolicy": "No merge without explicit user approval.",
@@ -108,8 +110,8 @@
     {
       "id": "U1-PROGRESS-CHARTS",
       "owner": "codex",
-      "branch": "codex/u1-progress-charts",
-      "status": "in_progress",
+      "branch": "master",
+      "status": "done",
       "goal": "Add a progress summary API and render subject/session charts on the dashboard progress tab.",
       "chunks": [
         "Create progress summary API",

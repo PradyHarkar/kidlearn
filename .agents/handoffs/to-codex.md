@@ -1,69 +1,74 @@
-# LangGraph coordination run
-- source of truth: .agents/task.json
-- cadence: poll every 5s, update every 30-60s
+# Handoff → Codex
+**From:** Claude
+**Updated:** 2026-03-27T02:30:00+11:00
 
-## Product
-- objective: Deliver the next Codex workstream batch: U1 progress charts, U2 topic preferences, and U5 reward shop. U4 diagnostic UI is complete and awaiting Claude test pass.
-- problem: Parents need a dashboard that shows learning progress, lets them set topic interests, and lets kids spend points on in-app rewards. The diagnostic page already exists and the dashboard badge now links into it, but the rest of the product stack still needs the richer parent/kid flows.
-- user: Parent managing multiple children, plus the child using the learning and reward flows.
-- use cases:
-- Parent opens Progress tab and sees recent accuracy by subject
-- Parent sets topic preferences so questions lean toward subjects the child likes
-- Parent or child buys avatar/theme rewards with earned points
-- Diagnostic badge sends the parent into the new diagnostic flow
-- nfrs:
-- Reuse the existing progress and reward data model where possible
-- Keep topic preference filtering safe and reversible if no matching pool exists
-- Do not break the current reward gift-card flow
-- Keep the UI compact and mobile friendly
-- acceptance:
-- Progress tab shows progress summary charts / session history
-- Topic preferences can be saved per child and affect question selection
-- Reward shop route exists and items can be redeemed from the rewards page
-- Existing diagnostic and reward gift-card flows still work
-- Typecheck passes
-- anti-scope:
-- Do NOT change the diagnostic API contract
-- Do NOT rewrite the weekly email flow unless needed for correctness
-- Do NOT remove the existing gift card reward flow
+## Completed by Claude (merged to master)
+- REQ-001 P1: progress/topics API, progress/alerts API, reports/weekly GET digest — all tested and merged
+- Fixed cumulative accuracy tracking (was last-session only, now running total per subject)
+- Fixed per-subject attempt counters — dashboard shows "Not started" for unplayed subjects instead of misleading "Lv 4"
+- Fixed Stripe checkout dynamic price lookup fallback (no longer crashes when STRIPE_PRICE_* env vars absent)
+- Fixed weekly cron route achievements query bug (filter values were misplaced as `limit` param)
+- Suite 20 (req001-progress-tracking) and Suite 21 (theme-engine) committed
 
-## Architect
-- split work into disjoint lanes with explicit ownership
-- dispatch agent: codex
-- workstreams:
-- AGENT-FOUNDATION | owner=codex | branch=codex/agents-foundation | status=done | eta=35m
-- U4-DIAGNOSTIC-UI | owner=codex | branch=codex/diagnostic-ui | status=done | eta=35m
-- U1-PROGRESS-CHARTS | owner=codex | branch=codex/u1-progress-charts | status=in_progress | eta=40m
-- U2-TOPIC-PREFERENCES | owner=codex | branch=codex/u2-topic-preferences | status=in_progress | eta=50m
-- U5-REWARD-SHOP | owner=codex | branch=codex/u5-reward-shop | status=in_progress | eta=60m
-- U3-WEEKLY-EMAIL | owner=shared | branch= | status=pending | eta=60m
+## Priority 1 — PIN / biometric login defect (user-reported, blocking)
 
-## Coder
-- implement only the owner lane for the current workstream
-- keep runtime code, APIs, and UI changes inside the ownership map
-- suggested Codex tasks:
-- Add GET /api/progress/summary and dashboard progress charts
-- Add child topic preferences API and topic-interest picker UI
-- Add reward shop API and wire the rewards page to it
-- Keep the existing diagnostic link and gift card flows intact
+**Defect:** Pin feature is not working properly. User story:
+- Parents login on iPad, then set a PIN for each child (or set up facial/voice recognition)
+- Kids open their tile with PIN OR facial login — no parent credentials needed
+- Initial facial/voice setup happens with the parent present
+- Kids self-login on a shared device (iPad scenario)
 
-## Tester
-- run the targeted suite after each dev change
-- cover happy path, edge cases, and NFRs
-- suggested Claude tasks:
-- Test the new progress summary and dashboard charts
-- Test topic preference persistence and question filtering
-- Test reward shop browsing and redemption
-- Verify the diagnostic page still passes the existing contract tests
+**What exists today:**
+- `app/api/children/[childId]/pin/route.ts` — sets PIN hash
+- `app/kids/page.tsx` — kid login page
+- `app/api/kids/login/route.ts` — kid authentication
+- `child.hasChildPin`, `child.childPinHash`, `child.allowedKidLoginMethods`
 
-## Security
-- check secrets, public exposure, dangerous env usage, and unsafe workflow changes
-- keep API keys out of git, handoffs, and generated reports
+**What needs building:**
+1. PIN login: verify that `/api/kids/login` correctly checks the PIN hash and returns a kid session
+2. Kids page: show the child tiles, prompt for PIN when tapped, grant access on correct PIN
+3. Facial/voice login: add `allowedKidLoginMethods` support for `facial` and `voice` — use browser WebAuthn (`navigator.credentials.create/get`) for biometric; voice login can be a future placeholder ("coming soon") with the API groundwork in place
+4. PIN setup flow in parent dashboard: parent taps "Set PIN" on a child tile → enters a 4-digit PIN → confirm → save via PATCH `/api/children/[childId]/pin`
+5. Remove PIN flow: parent can remove PIN from the same modal
+6. Kid session: once a child authenticates with PIN/biometric, set a short-lived kid session cookie so they can navigate `/learn` without re-entering PIN
 
-## Housekeeper
-- verify repo cleanliness and launch readiness
-- confirm typecheck + tests + security gates are green before merge
+**Files to create/modify:**
+- `app/api/kids/login/route.ts` — verify PIN against bcrypt hash
+- `app/kids/page.tsx` — PIN entry UI for each child tile, biometric trigger
+- `app/api/children/[childId]/pin/route.ts` — check existing implementation
+- `lib/auth.ts` or new `lib/kid-session.ts` — kid session token management
+- Dashboard pin modal — already in `app/dashboard/page.tsx` (search for `openPinModal`)
 
-## Next target
-- codex
+**Acceptance criteria:**
+- Parent sets a 4-digit PIN for a child via the dashboard
+- On `/kids` page, child tile shows a PIN prompt when tapped
+- Correct PIN grants access → kid session created → redirect to `/learn`
+- Wrong PIN shows error after 3 attempts (optional lockout)
+- `GET /api/kids/session` returns the authenticated kid's childId and subject
+- Biometric: WebAuthn registration + assertion wired to `allowedKidLoginMethods: ['facial']`
 
+## Priority 2 — U2 Topic Preferences (in_progress)
+
+- `GET/PATCH /api/children/[childId]/preferences` already exists
+- Make sure `topicPreferences` on the child record is used in `getQuestionsForChild` to bias the question pool
+- Add a simple topic picker UI in the parent dashboard (per child)
+- **Do not break existing question selection when preferences are empty**
+
+## Priority 3 — U5 Reward Shop (in_progress)
+
+- `GET /api/rewards/catalog` + `POST /api/rewards/redeem` already exist
+- Wire the `/rewards` page to show shop items (avatar frames, tile themes) from the catalog
+- Show child's balance and allow redemption
+- Keep the existing gift-card flow untouched
+
+## Files to avoid
+- `.secops/`
+- `.github/workflows/`
+- `lib/services/progress.ts` (just fixed — coordinate if you need changes)
+- `app/api/progress/*` (just merged)
+
+## Notes
+- Build is green (npm run build passes locally)
+- CI is running on master — check GitHub Actions before pushing breaking changes
+- `mathsAttempted / englishAttempted / scienceAttempted` are new fields on `child.stats` — use them if you need per-subject attempt counts
+- All 21 test suites are in `scripts/test/suites/` — Suite 22+ for new features

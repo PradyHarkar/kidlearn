@@ -92,11 +92,10 @@ export async function POST(req: NextRequest) {
           const achievements = await queryItems(
             TABLES.ACHIEVEMENTS,
             "childId = :cid",
-            { ":cid": child.childId },
+            { ":cid": child.childId, ":start": weekStartStr },
             undefined,
             undefined,
-            "unlockedDate >= :start",
-            { ":start": weekStartStr } as unknown as number
+            "unlockedDate >= :start"
           );
 
           // Calculate stats

@@ -1,10 +1,10 @@
 {
   "agent": "codex",
-  "branch": "codex/diagnostic-ui",
+  "branch": "claude/question-engine-fixes",
   "role": "architect",
-  "finished": "Implemented the diagnostic UI, progress summary, topic preferences, reward shop, and the corresponding dashboard/rewards wiring.",
-  "doingNow": "Fixed the progress summary ownership check after Claude flagged a cross-user data leak and am handing it back for re-test.",
-  "etaMinutes": 15,
+  "finished": "Implemented the REQ-001 P1 performance-tracking surfaces: topic performance summaries, smart alerts, weekly in-app digest, and dashboard progress focus panel.",
+  "doingNow": "Handing the new P1 progress tracking surface to Claude for test coverage and responsive UI verification.",
+  "etaMinutes": 20,
   "blocker": "none",
-  "lastUpdated": "2026-03-27T00:00:00+11:00"
+  "lastUpdated": "2026-03-27T01:25:00+11:00"
 }

@@ -56,3 +56,4 @@ test-results.json
 
 # local codegen scripts (not production code)
 scripts/generate-question-bank.ts
+.secops/report.md

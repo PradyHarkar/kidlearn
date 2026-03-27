@@ -26,8 +26,12 @@ jobs:
       - name: Run secops reporting suite
         run: npx tsx scripts/test/suites/11-secops-reporting.ts
 
-      - name: Scan repository for AWS exposure signals
-        run: node scripts/secops/scan-aws.mjs --root . --write --json
+      - name: Scan repository for all exposure signals
+        run: |
+          node scripts/secops/scan-repo.mjs --root . --write --json
+          node scripts/secops/scan-git-history.mjs --root . --write --json
+          node scripts/secops/scan-config.mjs --root . --write --json
+          node scripts/secops/scan-aws.mjs --root . --write --json
 
       - name: Export SecOps report
         run: node scripts/secops/export-report.mjs --fail-on-critical --output .secops/report.md

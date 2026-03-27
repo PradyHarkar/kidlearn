@@ -55,6 +55,8 @@ export interface Child {
   rewardPoints?: number;
   rewardPointsRedeemed?: number;
   topicPreferences?: string[];
+  tileThemeId?: string;
+  tileFavoriteTags?: string[];
   hasChildPin?: boolean;
   childPinHash?: string;
   pinConfiguredAt?: string;

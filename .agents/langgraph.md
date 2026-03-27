@@ -1,6 +1,7 @@
 # LangGraph Coordination Plan
 
-This repo uses LangGraph as the conceptual orchestrator for a repo-native multi-agent workflow.
+This repo now has a real LangGraph runner in `scripts/agents/langgraph-orchestrator.ts`.
+It reads the shared task file and walks the role graph product -> architect -> coder -> tester -> security -> housekeeper.
 
 ## Role Graph
 
@@ -38,12 +39,21 @@ This repo uses LangGraph as the conceptual orchestrator for a repo-native multi-
 - handoff files are the transition notes
 - message files are the short conversation channel
 - product should be consulted before implementation whenever the request is ambiguous or missing business detail
+- the LangGraph runner can also emit a markdown report and a handoff file for Codex or Claude
 
 ## Cadence
 
 - poll every 5 seconds
 - update status every 30-60 seconds
 - write a new handoff whenever the task changes materially
+
+## How To Run
+
+- `npm run agents:graph -- --explain`
+- `npm run agents:graph -- --to claude`
+- `npm run agents:graph:write`
+
+The `--write` mode saves a report to `.agents/reports/langgraph-latest.md` and refreshes the target handoff file.
 
 ## Confluence Intake
 

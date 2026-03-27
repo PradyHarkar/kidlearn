@@ -24,6 +24,7 @@ Use this when you want one shared place for:
 5. Handoffs live in `.agents/handoffs/`.
 6. Use `scripts/agents/set-task.mjs` to update the task file and `scripts/agents/post-handoff.mjs` to write a human-readable handoff.
 7. Use `.agents/nodes.md` as the LangGraph node contract and `.agents/prompts/claude-product.md` when Claude should act as the product owner.
+8. Run `npm run agents:graph` when you want the real LangGraph coordinator to generate a product/architect/coder/tester/security/housekeeper report from the shared task file.
 
 ## Cadence
 
@@ -37,7 +38,7 @@ Use this when you want one shared place for:
 
 ## LangGraph Fit
 
-LangGraph should orchestrate the roles and transitions, but this folder stays the source of truth.
+LangGraph now orchestrates the roles and transitions through `scripts/agents/langgraph-orchestrator.ts`, but this folder stays the source of truth.
 
 Recommended roles:
 

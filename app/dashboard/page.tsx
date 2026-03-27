@@ -1353,20 +1353,25 @@ function DashboardContent() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`rounded-3xl p-5 sm:p-6 text-white mb-5 sm:mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between ${dashboardTheme.heroPanel} shadow-kid`}
+          className={`rounded-3xl overflow-hidden mb-5 sm:mb-6 shadow-kid ${dashboardTheme.heroPanel}`}
         >
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-black">Welcome back, {session?.user?.name}! 🎉</h1>
-            <p className="text-white/80 font-semibold mt-1">
-              Who's learning today? Select a child profile below!
-            </p>
-            <p className="text-white/90 text-sm font-black mt-2 flex items-center gap-2">
-              <span className="text-2xl">{dashboardTheme.themeEmoji}</span>
-              {dashboardTheme.themeLabel} dashboard
-            </p>
-          </div>
-          <div className="hidden sm:block">
-            <Mascot mood="happy" size="sm" />
+          {/* Dark scrim ensures text stays readable even on bright gradient ends (yellow/lime) */}
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between p-5 sm:p-6 bg-black/20">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-black text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
+                Welcome back, {session?.user?.name}! 🎉
+              </h1>
+              <p className="text-white font-semibold mt-1 drop-shadow-[0_1px_6px_rgba(0,0,0,0.5)]">
+                Who&apos;s learning today? Select a child profile below!
+              </p>
+              <p className="text-white text-sm font-black mt-2 flex items-center gap-2 drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
+                <span className="text-2xl">{dashboardTheme.themeEmoji}</span>
+                {dashboardTheme.themeLabel} dashboard
+              </p>
+            </div>
+            <div className="hidden sm:block">
+              <Mascot mood="happy" size="sm" />
+            </div>
           </div>
         </motion.div>
 
@@ -1420,7 +1425,7 @@ function DashboardContent() {
               <div className="grid grid-cols-3 gap-3">
                 {[
                   { subject: "maths", icon: "🔢", label: "Maths", diffKey: "currentDifficultyMaths", className: "maths-gradient" },
-                  { subject: "english", icon: "📖", label: "English", diffKey: "currentDifficultyEnglish", className: "english-gradient" },
+                  { subject: "english", icon: "📖", label: "Writing", diffKey: "currentDifficultyEnglish", className: "english-gradient" },
                   { subject: "science", icon: "🔬", label: "Science", diffKey: "currentDifficultyScience", className: "science-gradient" },
                 ].map(({ subject, icon, label, diffKey, className }) => (
                   <motion.button

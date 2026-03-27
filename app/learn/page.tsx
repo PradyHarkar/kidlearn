@@ -820,13 +820,14 @@ function LearnContent() {
             className="flex flex-col gap-4"
           >
             {/* Question Card */}
-            <div className={`${questionCardClass} overflow-hidden`} style={questionCardBackground}>
+            <div className={`rounded-[2.9rem] p-1.5 sm:p-2 ${journeyTheme.questionStageShell}`}>
+              <div className={`${questionCardClass} overflow-hidden`} style={questionCardBackground}>
               {/* Question header with topic pills */}
               <div className={`${journeyTheme.heroPanelSoft} px-6 pt-5 pb-3`}>
                 <div className="flex flex-wrap gap-1.5 mb-3 items-center justify-between">
                   <div className="flex flex-wrap gap-1.5">
                     {(q.topics || []).map(topic => (
-                      <span key={topic} className={`topic-pill capitalize ${journeyTheme.chip}`}>{topic.replace(/-/g, " ")}</span>
+                      <span key={topic} className={`topic-pill capitalize ${journeyTheme.questionStageChip}`}>{topic.replace(/-/g, " ")}</span>
                     ))}
                   </div>
                   {/* Report button */}
@@ -834,7 +835,7 @@ function LearnContent() {
                     onClick={() => openReport(q)}
                     whileHover={{ scale: 1.08 }}
                     whileTap={{ scale: 0.92 }}
-                    className="flex-shrink-0 text-xs text-gray-400 hover:text-red-400 font-semibold flex items-center gap-1 transition-colors"
+                    className={`flex-shrink-0 text-xs font-semibold flex items-center gap-1 transition-colors ${journeyTheme.questionStageText} hover:text-red-400`}
                     title="Report this question"
                     aria-label="Report question"
                   >
@@ -844,12 +845,12 @@ function LearnContent() {
 
                 {/* Question text + TTS */}
                 <div className="flex items-start gap-3">
-                  <p className="question-text flex-1 text-slate-900">{q.questionText}</p>
+                  <p className={`question-text flex-1 ${journeyTheme.questionStageTitle}`}>{q.questionText}</p>
                   <motion.button
                     onClick={() => speak(q.ttsText || q.questionText)}
                     whileHover={{ scale: 1.1, rotate: 5 }}
                     whileTap={{ scale: 0.9 }}
-                    className="flex-shrink-0 w-12 h-12 bg-blue-100 hover:bg-blue-200 rounded-2xl flex items-center justify-center text-2xl transition-colors shadow-sm"
+                    className={`flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center text-2xl transition-colors shadow-sm ${journeyTheme.questionStageButton}`}
                     title="Read aloud"
                     aria-label="Read question aloud"
                   >
@@ -867,8 +868,8 @@ function LearnContent() {
                     exit={{ opacity: 0, height: 0 }}
                     className="mx-4 mb-0"
                   >
-                    <div className={`${journeyTheme.heroPanelSoft} border-l-4 border-amber-400 rounded-xl p-3 my-2`}>
-                      <p className="text-yellow-800 font-bold text-sm">💡 Hint: {q.hint}</p>
+                    <div className={`${journeyTheme.questionStageShell} border-l-4 border-amber-400 rounded-xl p-3 my-2`}>
+                      <p className={`${journeyTheme.questionStageText} font-bold text-sm`}>💡 Hint: {q.hint}</p>
                     </div>
                   </motion.div>
                 )}
@@ -920,7 +921,7 @@ function LearnContent() {
                           </span>
                         )}
 
-                        <p className="font-black text-slate-900 text-lg flex-1 leading-snug">{option.text}</p>
+                        <p className={`font-black text-lg flex-1 leading-snug ${journeyTheme.questionStageOptionText}`}>{option.text}</p>
 
                         {isAnswered && option.isCorrect && (
                           <motion.span
@@ -1005,6 +1006,7 @@ function LearnContent() {
                   </motion.div>
                 )}
               </AnimatePresence>
+              </div>
             </div>
 
             {/* Action buttons */}

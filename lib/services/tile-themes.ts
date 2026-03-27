@@ -50,6 +50,12 @@ export interface ThemeJourneyTokens {
   bannerPill: string;
   bannerSecondaryButton: string;
   bannerStatCard: string;
+  questionStageShell: string;
+  questionStageTitle: string;
+  questionStageText: string;
+  questionStageChip: string;
+  questionStageButton: string;
+  questionStageOptionText: string;
   buttonStyle: ChildButtonStyle;
   cardStyle: ChildCardStyle;
   rewardStyle: ChildRewardStyle;
@@ -115,6 +121,12 @@ type JourneyVisualTokens = {
   bannerPill: string;
   bannerSecondaryButton: string;
   bannerStatCard: string;
+  questionStageShell: string;
+  questionStageTitle: string;
+  questionStageText: string;
+  questionStageChip: string;
+  questionStageButton: string;
+  questionStageOptionText: string;
 };
 
 export const TILE_THEME_PRESETS: TileThemePreset[] = [
@@ -421,8 +433,31 @@ function buildBannerContrastTokens(themeKey: ChildThemeKey) {
   };
 }
 
+function buildQuestionStageTokens(themeKey: ChildThemeKey) {
+  if (themeKey === "space") {
+    return {
+      questionStageShell: "bg-slate-950/82 backdrop-blur-2xl border border-cyan-200/15 shadow-[0_28px_90px_rgba(2,6,23,0.5)]",
+      questionStageTitle: "text-white",
+      questionStageText: "text-white/90",
+      questionStageChip: "bg-slate-950/55 text-cyan-100 border border-cyan-200/20",
+      questionStageButton: "bg-slate-950/70 text-white border border-white/15 hover:bg-slate-900/85",
+      questionStageOptionText: "text-white",
+    };
+  }
+
+  return {
+    questionStageShell: "bg-white/92 backdrop-blur-2xl border border-white/85 shadow-[0_28px_100px_rgba(15,23,42,0.16)]",
+    questionStageTitle: "text-slate-900",
+    questionStageText: "text-slate-700",
+    questionStageChip: "bg-white/80 text-slate-900 border border-slate-200/80",
+    questionStageButton: "bg-white text-slate-900 border border-slate-200 hover:bg-slate-50",
+    questionStageOptionText: "text-slate-900",
+  };
+}
+
 function buildJourneyTokens(themeKey: ChildThemeKey): JourneyVisualTokens {
   const banner = buildBannerContrastTokens(themeKey);
+  const questionStage = buildQuestionStageTokens(themeKey);
   switch (themeKey) {
     case "unicorn":
       return {
@@ -445,6 +480,7 @@ function buildJourneyTokens(themeKey: ChildThemeKey): JourneyVisualTokens {
         badge: "bg-pink-100 text-pink-800",
         mascotGlow: "shadow-pink-100",
         ...banner,
+        ...questionStage,
       };
     case "space":
       return {
@@ -467,6 +503,7 @@ function buildJourneyTokens(themeKey: ChildThemeKey): JourneyVisualTokens {
         badge: "bg-slate-800 text-indigo-100",
         mascotGlow: "shadow-cyan-500/20",
         ...banner,
+        ...questionStage,
       };
     case "soccer":
       return {
@@ -489,6 +526,7 @@ function buildJourneyTokens(themeKey: ChildThemeKey): JourneyVisualTokens {
         badge: "bg-green-100 text-green-800",
         mascotGlow: "shadow-green-100",
         ...banner,
+        ...questionStage,
       };
     case "jungle":
       return {
@@ -511,6 +549,7 @@ function buildJourneyTokens(themeKey: ChildThemeKey): JourneyVisualTokens {
         badge: "bg-emerald-100 text-emerald-800",
         mascotGlow: "shadow-emerald-100",
         ...banner,
+        ...questionStage,
       };
     case "ocean":
       return {
@@ -533,6 +572,7 @@ function buildJourneyTokens(themeKey: ChildThemeKey): JourneyVisualTokens {
         badge: "bg-cyan-100 text-cyan-800",
         mascotGlow: "shadow-cyan-100",
         ...banner,
+        ...questionStage,
       };
     case "fantasy":
     default:
@@ -556,6 +596,7 @@ function buildJourneyTokens(themeKey: ChildThemeKey): JourneyVisualTokens {
         badge: "bg-purple-100 text-purple-800",
         mascotGlow: "shadow-purple-100",
         ...banner,
+        ...questionStage,
       };
   }
 }

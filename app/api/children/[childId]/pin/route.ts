@@ -31,11 +31,12 @@ export async function POST(
     await updateItem(
       TABLES.CHILDREN,
       { userId: session.user.id, childId: params.childId },
-      "SET childPinHash = :pinHash, pinConfiguredAt = :configuredAt, allowedKidLoginMethods = :methods",
+      "SET childPinHash = :pinHash, pinConfiguredAt = :configuredAt, allowedKidLoginMethods = :methods, hasChildPin = :hasPin",
       {
         ":pinHash": pinHash,
         ":configuredAt": new Date().toISOString(),
         ":methods": methods,
+        ":hasPin": true,
       }
     );
 
@@ -62,8 +63,8 @@ export async function DELETE(
     await updateItem(
       TABLES.CHILDREN,
       { userId: session.user.id, childId: params.childId },
-      "REMOVE childPinHash, pinConfiguredAt, allowedKidLoginMethods",
-      {}
+      "SET hasChildPin = :hasPin REMOVE childPinHash, pinConfiguredAt, allowedKidLoginMethods",
+      { ":hasPin": false }
     );
 
     return NextResponse.json({ success: true });

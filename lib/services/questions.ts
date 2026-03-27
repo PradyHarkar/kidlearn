@@ -152,7 +152,7 @@ async function loadQuestionsForPartition(pk: string): Promise<Question[]> {
 }
 
 async function loadReportedQuestionIds(): Promise<Set<string>> {
-  const issues = (await scanItems(TABLES.QUESTION_ISSUES)) as QuestionIssue[];
+  const issues = (await scanItems(TABLES.QUESTION_ISSUES)) as unknown as QuestionIssue[];
   const blocked = new Set<string>();
 
   for (const issue of issues) {

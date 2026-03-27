@@ -28,6 +28,7 @@ export default function RewardsPage() {
   const [totalAvailable, setTotalAvailable] = useState(0);
   const [working, setWorking] = useState(false);
   const [shopWorking, setShopWorking] = useState(false);
+  const [shopTargetChildId, setShopTargetChildId] = useState("");
   const [transferForm, setTransferForm] = useState({
     sourceChildId: "",
     targetChildId: "",
@@ -92,6 +93,7 @@ export default function RewardsPage() {
         rewardId: current.rewardId || nextCatalog[0]?.rewardId || "",
         sourceChildIds: current.sourceChildIds.length ? current.sourceChildIds : nextChildren[0]?.childId ? [nextChildren[0].childId] : [],
       }));
+      setShopTargetChildId((current) => current || nextChildren[0]?.childId || "");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to load rewards";
       toast.error(message);
@@ -407,35 +409,66 @@ export default function RewardsPage() {
         </section>
 
         <section className="bg-white rounded-4xl shadow-card p-5 sm:p-6">
-          <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div>
               <h2 className="text-2xl font-black text-gray-800">Reward shop</h2>
               <p className="text-sm font-semibold text-gray-500">Spend points on avatars, themes, and sticker packs.</p>
             </div>
-            <span className="text-sm font-black text-purple-700 bg-purple-50 rounded-full px-3 py-1">
-              {shopItems.length} items
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-black text-purple-700 bg-purple-50 rounded-full px-3 py-1">
+                {shopItems.length} items
+              </span>
+              {children.length > 0 && (
+                <select
+                  value={shopTargetChildId}
+                  onChange={(e) => setShopTargetChildId(e.target.value)}
+                  className="input-field text-sm py-2 max-w-[180px]"
+                >
+                  {children.map((child) => {
+                    const bal = balances.find((b) => b.childId === child.childId);
+                    return (
+                      <option key={child.childId} value={child.childId}>
+                        {child.childName} ({bal?.balance ?? 0} pts)
+                      </option>
+                    );
+                  })}
+                </select>
+              )}
+            </div>
           </div>
 
+          {!shopTargetChildId && (
+            <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4 text-sm font-semibold text-amber-700 mb-4">
+              Select a child above to buy shop items for them.
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            {shopItems.map((item) => (
-              <div key={item.itemId} className="rounded-3xl border-2 border-purple-100 p-4 bg-gradient-to-br from-white to-purple-50">
-                <div className="text-4xl mb-2">{item.icon}</div>
-                <p className="text-sm font-black text-purple-600 uppercase tracking-[0.2em]">{item.category}</p>
-                <h3 className="text-xl font-black text-slate-800 mt-2">{item.title}</h3>
-                <p className="text-sm font-semibold text-slate-500 mt-1">{item.description}</p>
-                <div className="mt-4 flex items-center justify-between gap-2">
-                  <span className="text-sm font-black text-slate-700">{item.pointsCost} pts</span>
-                  <button
-                    onClick={() => handleShopRedeem(redeemForm.targetChildId || children[0]?.childId || "", item.itemId)}
-                    disabled={shopWorking || !children.length}
-                    className="btn-primary text-sm py-2 px-4 disabled:opacity-60"
-                  >
-                    {shopWorking ? "Working..." : "Buy for child"}
-                  </button>
+            {shopItems.map((item) => {
+              const childBal = balances.find((b) => b.childId === shopTargetChildId);
+              const canAfford = (childBal?.balance ?? 0) >= item.pointsCost;
+              return (
+                <div key={item.itemId} className="rounded-3xl border-2 border-purple-100 p-4 bg-gradient-to-br from-white to-purple-50">
+                  <div className="text-4xl mb-2">{item.icon}</div>
+                  <p className="text-sm font-black text-purple-600 uppercase tracking-[0.2em]">{item.category}</p>
+                  <h3 className="text-xl font-black text-slate-800 mt-2">{item.title}</h3>
+                  <p className="text-sm font-semibold text-slate-500 mt-1">{item.description}</p>
+                  <div className="mt-4 flex items-center justify-between gap-2">
+                    <span className={`text-sm font-black ${canAfford ? "text-emerald-700" : "text-slate-400"}`}>
+                      {item.pointsCost} pts
+                    </span>
+                    <button
+                      onClick={() => handleShopRedeem(shopTargetChildId, item.itemId)}
+                      disabled={shopWorking || !shopTargetChildId || !canAfford}
+                      className="btn-primary text-sm py-2 px-4 disabled:opacity-60"
+                      title={!canAfford ? "Not enough points" : undefined}
+                    >
+                      {shopWorking ? "..." : canAfford ? "Buy" : "Need pts"}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       </main>

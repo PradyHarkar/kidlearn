@@ -8,6 +8,7 @@ import { Mascot } from "@/components/mascot/Mascot";
 import { Child, ProgressAlertSummary, ProgressSummary, Subscription, SubscriptionStatus, Subject, TopicPerformanceSummary, WeeklyDigestSummary } from "@/types";
 import { COUNTRY_CONFIGS } from "@/lib/curriculum";
 import { getLearnerDisplayLabel } from "@/lib/learner";
+import { getSubjectProgressDisplay } from "@/lib/services/child-progress-display";
 import { getDefaultTileThemeId, getTileThemeGroups, getTileThemePreset, TILE_THEME_PRESETS } from "@/lib/services/tile-themes";
 import toast from "react-hot-toast";
 import Link from "next/link";
@@ -677,23 +678,19 @@ function DashboardContent() {
 
                 <div className="space-y-2 mb-4">
                   {(["maths", "english", "science"] as const).map((subj) => {
-                    const diffKey = `currentDifficulty${subj.charAt(0).toUpperCase() + subj.slice(1)}` as keyof Child;
-                    const attKey = `${subj}Attempted` as keyof typeof child.stats;
-                    const attempted = (child.stats?.[attKey] as number) || 0;
-                    const val = (child[diffKey] as number) || 1;
-                    const notStarted = attempted === 0;
+                    const progress = getSubjectProgressDisplay(child, subj);
                     const colors: Record<string, string> = { maths: "from-pink-400 to-rose-500", english: "from-cyan-400 to-blue-500", science: "from-emerald-400 to-teal-500" };
                     const icons: Record<string, string> = { maths: "🔢", english: "📖", science: "🔬" };
                     return (
                       <div key={subj} className="bg-white/60 rounded-2xl p-2.5 border border-white/60">
                         <div className="flex items-center justify-between text-xs mb-1">
                           <span className="font-bold text-gray-600 capitalize">{icons[subj]} {subj.charAt(0).toUpperCase() + subj.slice(1)}</span>
-                          <span className={`font-black ${notStarted ? "text-gray-400" : "text-gray-700"}`}>
-                            {notStarted ? "Not started" : `Lv ${val}`}
+                          <span className={`font-black ${progress.attempted === 0 ? "text-gray-400" : "text-gray-700"}`}>
+                            {progress.label}
                           </span>
                         </div>
                         <div className="bg-gray-100/90 rounded-full h-2">
-                          <div className={`h-full rounded-full bg-gradient-to-r ${colors[subj]}`} style={{ width: notStarted ? "0%" : `${(val / 10) * 100}%` }} />
+                          <div className={`h-full rounded-full bg-gradient-to-r ${colors[subj]}`} style={{ width: `${progress.progressPercent}%` }} />
                         </div>
                       </div>
                     );
@@ -1053,9 +1050,9 @@ function DashboardContent() {
               {children.map((child) => (
                 <tr key={child.childId} className="border-t border-gray-100">
                   <td className="py-3 pr-3 font-bold text-gray-800">{child.childName}</td>
-                  <td className="py-3 pr-3">{(child.stats?.mathsAttempted || 0) > 0 ? `Lv ${child.currentDifficultyMaths || 1}` : "—"}</td>
-                  <td className="py-3 pr-3">{(child.stats?.englishAttempted || 0) > 0 ? `Lv ${child.currentDifficultyEnglish || 1}` : "—"}</td>
-                  <td className="py-3 pr-3">{(child.stats?.scienceAttempted || 0) > 0 ? `Lv ${child.currentDifficultyScience || 1}` : "—"}</td>
+                  <td className="py-3 pr-3">{getSubjectProgressDisplay(child, "maths").label}</td>
+                  <td className="py-3 pr-3">{getSubjectProgressDisplay(child, "english").label}</td>
+                  <td className="py-3 pr-3">{getSubjectProgressDisplay(child, "science").label}</td>
                   <td className="py-3 pr-3">{child.lastSubject || "—"}</td>
                 </tr>
               ))}

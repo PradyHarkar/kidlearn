@@ -98,15 +98,23 @@ export async function deleteItem(table: string, key: Record<string, unknown>) {
 }
 
 export async function scanItems(table: string, filterExpression?: string, expressionValues?: Record<string, unknown>, expressionNames?: Record<string, string>) {
-  const result = await createDdb().send(
-    new ScanCommand({
+  const ddb = createDdb();
+  const items: Record<string, unknown>[] = [];
+  let lastEvaluatedKey: Record<string, unknown> | undefined;
+
+  do {
+    const result = await ddb.send(new ScanCommand({
       TableName: table,
       FilterExpression: filterExpression,
       ExpressionAttributeValues: expressionValues,
       ExpressionAttributeNames: expressionNames,
-    })
-  );
-  return result.Items || [];
+      ExclusiveStartKey: lastEvaluatedKey,
+    }));
+    items.push(...((result.Items || []) as Record<string, unknown>[]));
+    lastEvaluatedKey = result.LastEvaluatedKey;
+  } while (lastEvaluatedKey);
+
+  return items;
 }
 
 // ---------------------------------------------------------------------------

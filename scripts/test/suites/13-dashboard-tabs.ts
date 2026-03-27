@@ -88,17 +88,39 @@ export async function runDashboardTabsSuite(baseUrl: string) {
     );
   });
 
-  await test(SUITE, "/api/children: US grade5 child has diagnosticComplete = true (ran in Suite 10)", async () => {
+  await test(SUITE, "/api/children: US grade5 child can reach diagnosticComplete = true", async () => {
     const client = new TestClient(baseUrl);
     await client.login(TEST_USERS.US_PARENT.email, TEST_USERS.US_PARENT.password);
-    const res = await client.get<{ children?: ChildRecord[] }>("/api/children");
-    assertStatus(res.status, 200, res.raw);
-    const children = res.body.children ?? [];
-    const usChild = children.find(c => c.childId === TEST_CHILDREN.US_GRADE5.childId);
+
+    const current = await client.get<{ children?: ChildRecord[] }>("/api/children");
+    assertStatus(current.status, 200, current.raw);
+    const usChild = (current.body.children ?? []).find(c => c.childId === TEST_CHILDREN.US_GRADE5.childId);
     assertDefined(usChild, "US grade5 child must be present");
+
+    if (!usChild?.diagnosticComplete) {
+      const diagRes = await client.get<{
+        diagnosticComplete?: boolean;
+        questions?: Array<{ questionId?: string; answerOptions?: Array<{ id?: string }> }>;
+      }>(`/api/diagnostic?childId=${TEST_CHILDREN.US_GRADE5.childId}`);
+      assertStatus(diagRes.status, 200, diagRes.raw);
+      const answers = (diagRes.body.questions ?? []).map((question) => ({
+        questionId: question.questionId!,
+        answerId: question.answerOptions?.[0]?.id || "a",
+      }));
+      const submitRes = await client.post("/api/diagnostic/submit", {
+        childId: TEST_CHILDREN.US_GRADE5.childId,
+        answers,
+      });
+      assertTrue([200, 409].includes(submitRes.status), `diagnostic submit should succeed or already be complete, got ${submitRes.status}`);
+    }
+
+    const refreshed = await client.get<{ children?: ChildRecord[] }>("/api/children");
+    assertStatus(refreshed.status, 200, refreshed.raw);
+    const updatedChild = (refreshed.body.children ?? []).find(c => c.childId === TEST_CHILDREN.US_GRADE5.childId);
+    assertDefined(updatedChild, "US grade5 child must be present after diagnostic");
     assertEqual(
-      usChild?.diagnosticComplete, true,
-      "US grade5 child completed diagnostic in Suite 10 — must be true"
+      updatedChild?.diagnosticComplete, true,
+      "US grade5 child should be diagnostic complete after setup"
     );
   });
 

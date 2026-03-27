@@ -255,7 +255,9 @@ function createQuestion(context: GeneratorContext, draft: DraftQuestion): Questi
   return {
     pk: buildPk(context.subject, context.ageGroup, context.country),
     questionId: `generated-${context.country}-${context.subject}-${context.ageGroup}-${String(acceptedIndex).padStart(5, "0")}`,
-    questionText: draft.questionText,
+    questionText: draft.questionText.length > 0
+      ? draft.questionText[0].toUpperCase() + draft.questionText.slice(1)
+      : draft.questionText,
     answerOptions: draft.answerOptions,
     difficulty: draft.difficulty,
     topics: draft.topics,

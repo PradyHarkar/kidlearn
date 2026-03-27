@@ -21,6 +21,8 @@
     "test:tsunami": "npx tsx scripts/test/runner.ts --url http://localhost:3000",
     "test:tsunami:prod": "npx tsx scripts/test/runner.ts",
     "test:unit": "npx tsx scripts/test/runner.ts --suite adaptive --no-setup --no-teardown",
+    "audit:questions": "npx tsx scripts/audit-questions.ts",
+    "audit:questions:verbose": "npx tsx scripts/audit-questions.ts --verbose",
     "process:issues": "npx tsx scripts/process-question-issues.ts",
     "process:issues:dry": "npx tsx scripts/process-question-issues.ts --dry-run",
     "secops:scan": "node scripts/secops/scan-repo.mjs && node scripts/secops/scan-git-history.mjs && node scripts/secops/scan-config.mjs",

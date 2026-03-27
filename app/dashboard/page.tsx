@@ -8,6 +8,7 @@ import { Mascot } from "@/components/mascot/Mascot";
 import { Child, ProgressSummary, Subscription, SubscriptionStatus } from "@/types";
 import { COUNTRY_CONFIGS } from "@/lib/curriculum";
 import { getLearnerDisplayLabel } from "@/lib/learner";
+import { getDefaultTileThemeId, getTileThemeGroups, getTileThemePreset, TILE_THEME_PRESETS } from "@/lib/services/tile-themes";
 import toast from "react-hot-toast";
 import Link from "next/link";
 import type { Country } from "@/types";
@@ -21,6 +22,17 @@ const DASHBOARD_TABS: Array<{ key: DashboardTab; label: string; emoji: string }>
   { key: "progress", label: "Progress", emoji: "📈" },
   { key: "rewards", label: "Rewards", emoji: "🎁" },
   { key: "account", label: "Account", emoji: "👤" },
+];
+
+const TILE_FAVORITE_TAGS = [
+  { id: "sports", label: "Sports", emoji: "🏀" },
+  { id: "places", label: "Places", emoji: "🏰" },
+  { id: "themes", label: "Themes", emoji: "🌈" },
+  { id: "games", label: "Games", emoji: "🕹️" },
+  { id: "rainbow", label: "Rainbow", emoji: "✨" },
+  { id: "ocean", label: "Ocean", emoji: "🌊" },
+  { id: "arcade", label: "Arcade", emoji: "🎮" },
+  { id: "space", label: "Space", emoji: "🚀" },
 ];
 
 export default function DashboardPage() {
@@ -59,12 +71,18 @@ function DashboardContent() {
   const [topicsChild, setTopicsChild] = useState<Child | null>(null);
   const [topicPreferences, setTopicPreferences] = useState<string[]>([]);
   const [savingTopics, setSavingTopics] = useState(false);
+  const [showAppearanceModal, setShowAppearanceModal] = useState(false);
+  const [appearanceChild, setAppearanceChild] = useState<Child | null>(null);
+  const [appearanceThemeId, setAppearanceThemeId] = useState("");
+  const [appearanceFavoriteTags, setAppearanceFavoriteTags] = useState<string[]>([]);
+  const [savingAppearance, setSavingAppearance] = useState(false);
   const [progressSummaries, setProgressSummaries] = useState<Record<string, ProgressSummary>>({});
 
   // Determine the country-based grades for the child form
   const country = (session?.user?.country as Country) ?? "AU";
   const grades = COUNTRY_CONFIGS[country]?.grades ?? COUNTRY_CONFIGS.AU.grades;
   const activeTab = (searchParams.get("tab") as DashboardTab) || "students";
+  const activeAppearanceGroup = TILE_THEME_PRESETS.find((preset) => preset.id === appearanceThemeId)?.group;
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -210,6 +228,21 @@ function DashboardContent() {
     );
   };
 
+  const childTileTheme = (child: Child) => getTileThemePreset(child.tileThemeId || getDefaultTileThemeId(child), child);
+
+  const openAppearanceModal = (child: Child) => {
+    setAppearanceChild(child);
+    setAppearanceThemeId(child.tileThemeId || getDefaultTileThemeId(child));
+    setAppearanceFavoriteTags(child.tileFavoriteTags || []);
+    setShowAppearanceModal(true);
+  };
+
+  const toggleFavoriteTag = (tag: string) => {
+    setAppearanceFavoriteTags((current) =>
+      current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]
+    );
+  };
+
   const openPinModal = (child: Child) => {
     setPinChild(child);
     setPinForm({ pin: "" });
@@ -307,6 +340,36 @@ function DashboardContent() {
       toast.error("Failed to save topic preferences");
     } finally {
       setSavingTopics(false);
+    }
+  };
+
+  const saveAppearance = async () => {
+    if (!appearanceChild) return;
+
+    setSavingAppearance(true);
+    try {
+      const res = await fetch(`/api/children/${appearanceChild.childId}/appearance`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tileThemeId: appearanceThemeId,
+          tileFavoriteTags: appearanceFavoriteTags,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Failed to save tile appearance");
+        return;
+      }
+
+      await fetchChildren();
+      toast.success(`${appearanceChild.childName}'s tile look was updated`);
+      setShowAppearanceModal(false);
+      setAppearanceChild(null);
+    } catch {
+      toast.error("Failed to save tile appearance");
+    } finally {
+      setSavingAppearance(false);
     }
   };
 
@@ -445,143 +508,177 @@ function DashboardContent() {
         </motion.div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {children.map((child, i) => (
-          <motion.div
-            key={child.childId}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: i * 0.1 }}
-            className="bg-white rounded-3xl p-6 shadow-card hover:shadow-kid transition-all cursor-pointer group"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center text-4xl">
-                  {child.avatar}
-                </div>
-                <div>
-                  <h3 className="font-black text-gray-800 text-lg">{child.childName}</h3>
-                  <p className="text-gray-500 text-sm font-semibold">{gradeLabel(child)}</p>
-                </div>
-              </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  deleteChild(child.childId, child.childName);
-                }}
-                className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all text-xl"
-                title="Remove profile"
-              >
-                ✕
-              </button>
-            </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        {children.map((child, i) => {
+          const theme = childTileTheme(child);
+          const accentClass = `bg-gradient-to-r ${theme.accentFrom} ${theme.accentTo}`;
+          const favoriteTags = (child.tileFavoriteTags || []).slice(0, 3);
 
-            <div className="flex items-center gap-2 mb-4">
-              {child.diagnosticComplete ? (
-                <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-700">
-                  ✅ Diagnostic complete
-                </span>
-              ) : (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    router.push(`/diagnostic?childId=${child.childId}`);
-                  }}
-                  className="px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors"
-                  title="Start diagnostic"
-                >
-                  🧪 Diagnostic pending
-                </button>
-              )}
-              {!child.diagnosticComplete && (
-                <span className="text-xs font-bold text-gray-400">Run diagnostic before first learning set</span>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-              <div className="bg-yellow-50 rounded-xl p-2 text-center">
-                <p className="text-xl font-black text-yellow-600">🔥 {child.streakDays || 0}</p>
-                <p className="text-xs font-bold text-yellow-600">Streak</p>
-              </div>
-              <div className="bg-blue-50 rounded-xl p-2 text-center">
-                <p className="text-xl font-black text-blue-600">⭐ {child.totalStars || 0}</p>
-                <p className="text-xs font-bold text-blue-600">Stars</p>
-              </div>
-              <div className="bg-purple-50 rounded-xl p-2 text-center">
-                <p className="text-xl font-black text-purple-600">🪙 {child.totalCoins || 0}</p>
-                <p className="text-xs font-bold text-purple-600">Coins</p>
-              </div>
-              <div className="bg-emerald-50 rounded-xl p-2 text-center">
-                <p className="text-xl font-black text-emerald-600">+ {rewardBalance(child)}</p>
-                <p className="text-xs font-bold text-emerald-600">Points</p>
-              </div>
-            </div>
-
-            <div className="space-y-2 mb-4">
-              {["maths", "english", "science"].map((subj) => {
-                const diffKey = `currentDifficulty${subj.charAt(0).toUpperCase() + subj.slice(1)}` as keyof Child;
-                const val = (child[diffKey] as number) || 1;
-                const colors: Record<string, string> = { maths: "from-pink-400 to-rose-500", english: "from-cyan-400 to-blue-500", science: "from-emerald-400 to-teal-500" };
-                const icons: Record<string, string> = { maths: "🔢", english: "📖", science: "🔬" };
-                return (
-                  <div key={subj}>
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-bold text-gray-600 capitalize">{icons[subj]} {subj.charAt(0).toUpperCase() + subj.slice(1)}</span>
-                      <span className="font-black text-gray-700">{val}/10</span>
+          return (
+            <motion.div
+              key={child.childId}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: i * 0.1 }}
+              className={`relative overflow-hidden rounded-3xl p-5 md:p-6 shadow-card hover:shadow-kid transition-all cursor-pointer group border border-white/80 bg-gradient-to-br ${theme.surface}`}
+            >
+              <div className="absolute inset-0 bg-white/15 backdrop-blur-2xl pointer-events-none" />
+              <div className="relative">
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-4xl shadow-md ${accentClass}`}>
+                      <span className="drop-shadow-sm">{child.avatar}</span>
                     </div>
-                    <div className="bg-gray-100 rounded-full h-2">
-                      <div className={`h-full rounded-full bg-gradient-to-r ${colors[subj]}`} style={{ width: `${(val / 10) * 100}%` }} />
+                    <div className="min-w-0">
+                      <h3 className="font-black text-gray-900 text-lg leading-tight truncate">{child.childName}</h3>
+                      <p className="text-gray-600 text-sm font-semibold truncate">{gradeLabel(child)}</p>
+                      <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${theme.text} mt-1`}>
+                        {theme.emoji} {theme.label}
+                      </p>
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openAppearanceModal(child);
+                      }}
+                      className={`rounded-full px-3 py-1 text-[11px] font-black text-white shadow-md ${accentClass}`}
+                      title="Customize tile appearance"
+                    >
+                      Customize tile
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteChild(child.childId, child.childName);
+                      }}
+                      className="text-red-400 hover:text-red-600 transition-all text-xl opacity-80 hover:opacity-100"
+                      title="Remove profile"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
 
-            <div className="space-y-2">
-              <motion.button
-                onClick={() => { setSelectedChild(child); setShowSubjectSelect(true); }}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                className="w-full btn-primary text-center py-3"
-              >
-                🚀 Start Learning!
-              </motion.button>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => openPinModal(child)}
-                  className="flex-1 btn-secondary text-sm py-2"
-                >
-                  {child.hasChildPin ? "Update PIN" : "Set PIN"}
-                </button>
-                <button
-                  onClick={() => router.push(`/kids?child=${child.childId}`)}
-                  className="flex-1 btn-secondary text-sm py-2"
-                >
-                  Kid Login
-                </button>
+                <div className="flex items-center gap-2 flex-wrap mb-4">
+                  {child.diagnosticComplete ? (
+                    <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-700">
+                      ✅ Diagnostic complete
+                    </span>
+                  ) : (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/diagnostic?childId=${child.childId}`);
+                      }}
+                      className="px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors"
+                      title="Start diagnostic"
+                    >
+                      🧪 Diagnostic pending
+                    </button>
+                  )}
+                  <span className="px-3 py-1 rounded-full text-xs font-black bg-white/75 text-gray-700">
+                    {favoriteTags.length ? `Favorites: ${favoriteTags.join(", ")}` : "No favourites saved"}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <div className="bg-white/75 backdrop-blur rounded-2xl p-3 text-center border border-white/70">
+                    <p className="text-xl font-black text-yellow-700">🔥 {child.streakDays || 0}</p>
+                    <p className="text-xs font-bold text-yellow-700">Streak</p>
+                  </div>
+                  <div className="bg-white/75 backdrop-blur rounded-2xl p-3 text-center border border-white/70">
+                    <p className="text-xl font-black text-emerald-700">+ {rewardBalance(child)}</p>
+                    <p className="text-xs font-bold text-emerald-700">Points</p>
+                  </div>
+                  <div className="bg-white/75 backdrop-blur rounded-2xl p-3 text-center border border-white/70">
+                    <p className="text-xl font-black text-blue-700">⭐ {child.totalStars || 0}</p>
+                    <p className="text-xs font-bold text-blue-700">Stars</p>
+                  </div>
+                  <div className="bg-white/75 backdrop-blur rounded-2xl p-3 text-center border border-white/70">
+                    <p className="text-xl font-black text-purple-700">🪙 {child.totalCoins || 0}</p>
+                    <p className="text-xs font-bold text-purple-700">Coins</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2 mb-4">
+                  {(["maths", "english", "science"] as const).map((subj) => {
+                    const diffKey = `currentDifficulty${subj.charAt(0).toUpperCase() + subj.slice(1)}` as keyof Child;
+                    const val = (child[diffKey] as number) || 1;
+                    const colors: Record<string, string> = { maths: "from-pink-400 to-rose-500", english: "from-cyan-400 to-blue-500", science: "from-emerald-400 to-teal-500" };
+                    const icons: Record<string, string> = { maths: "🔢", english: "📖", science: "🔬" };
+                    return (
+                      <div key={subj} className="bg-white/60 rounded-2xl p-2.5 border border-white/60">
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className="font-bold text-gray-600 capitalize">{icons[subj]} {subj.charAt(0).toUpperCase() + subj.slice(1)}</span>
+                          <span className="font-black text-gray-700">{val}/10</span>
+                        </div>
+                        <div className="bg-gray-100/90 rounded-full h-2">
+                          <div className={`h-full rounded-full bg-gradient-to-r ${colors[subj]}`} style={{ width: `${(val / 10) * 100}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <motion.button
+                      onClick={() => { setSelectedChild(child); setShowSubjectSelect(true); }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="w-full btn-primary text-center py-3"
+                    >
+                      🚀 Start Learning!
+                    </motion.button>
+                    <motion.button
+                      onClick={() => openAppearanceModal(child)}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="w-full btn-secondary text-sm py-2.5"
+                    >
+                      ✨ Tile style
+                    </motion.button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => openPinModal(child)}
+                      className="btn-secondary text-sm py-2"
+                    >
+                      {child.hasChildPin ? "Update PIN" : "Set PIN"}
+                    </button>
+                    <button
+                      onClick={() => router.push(`/kids?child=${child.childId}`)}
+                      className="btn-secondary text-sm py-2"
+                    >
+                      Kid Login
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => openTopicsModal(child)}
+                    className="w-full btn-secondary text-sm py-2"
+                  >
+                    Interests {child.topicPreferences?.length ? `(${child.topicPreferences.length})` : "Set topics"}
+                  </button>
+                  <p className="text-xs font-semibold text-gray-600">
+                    {child.hasChildPin
+                      ? "PIN ready for kid login"
+                      : "Add a PIN so this child can open their own learning screen"}
+                  </p>
+                  {child.topicPreferences?.length ? (
+                    <p className="text-xs font-semibold text-purple-700">
+                      Prefers: {child.topicPreferences.slice(0, 3).join(", ")}
+                      {child.topicPreferences.length > 3 ? "..." : ""}
+                    </p>
+                  ) : (
+                    <p className="text-xs font-semibold text-gray-500">No topic preferences saved yet</p>
+                  )}
+                </div>
               </div>
-              <button
-                onClick={() => openTopicsModal(child)}
-                className="w-full btn-secondary text-sm py-2"
-              >
-                Interests {child.topicPreferences?.length ? `(${child.topicPreferences.length})` : "Set topics"}
-              </button>
-              <p className="text-xs font-semibold text-gray-500">
-                {child.hasChildPin
-                  ? "PIN ready for kid login"
-                  : "Add a PIN so this child can open their own learning screen"}
-              </p>
-              {child.topicPreferences?.length ? (
-                <p className="text-xs font-semibold text-purple-600">
-                  Prefers: {child.topicPreferences.slice(0, 3).join(", ")}
-                  {child.topicPreferences.length > 3 ? "..." : ""}
-                </p>
-              ) : (
-                <p className="text-xs font-semibold text-gray-400">No topic preferences saved yet</p>
-              )}
-            </div>
-          </motion.div>
-        ))}
+            </motion.div>
+          );
+        })}
 
         {children.length < 3 && (
           <motion.div
@@ -745,12 +842,17 @@ function DashboardContent() {
           <p className="text-sm text-gray-500">Manage subscription, PINs, and sign out from here.</p>
         </div>
         <div className="flex gap-3">
+          {(subscriptionStatus === "trial" || !subscriptionStatus) && (
+            <Link href="/pricing" className="btn-primary">
+              Subscribe Now
+            </Link>
+          )}
           {(subscriptionStatus === "active" || subscriptionStatus === "past_due" || subscriptionStatus === "cancelled") && (
             <button onClick={handleManageSubscription} disabled={managingSubscription} className="btn-secondary">
               {managingSubscription ? "Loading..." : "Manage Subscription"}
             </button>
           )}
-          <button onClick={() => signOut({ callbackUrl: "/" })} className="btn-danger">
+          <button onClick={() => signOut({ callbackUrl: `${window.location.origin}/` })} className="btn-danger">
             Sign Out
           </button>
         </div>
@@ -761,7 +863,7 @@ function DashboardContent() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
       {/* Header */}
-      <header className="bg-white shadow-card px-6 py-4 flex justify-between items-center">
+      <header className="bg-white shadow-card px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex justify-between items-center">
         <div className="flex items-center gap-3">
           <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
             🌟 KidLearn
@@ -778,7 +880,7 @@ function DashboardContent() {
             👋 Hi, {session?.user?.name}!
           </span>
           <button
-            onClick={() => signOut({ callbackUrl: "/" })}
+            onClick={() => signOut({ callbackUrl: `${window.location.origin}/` })}
             className="text-gray-500 hover:text-red-500 font-bold text-sm transition-colors"
           >
             Sign Out
@@ -786,12 +888,12 @@ function DashboardContent() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Welcome Banner */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl p-6 text-white mb-6 flex items-center justify-between"
+          className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl p-5 sm:p-6 text-white mb-5 sm:mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between"
         >
           <div>
             <h1 className="text-2xl sm:text-3xl font-black">Welcome back, {session?.user?.name}! 🎉</h1>
@@ -1023,6 +1125,129 @@ function DashboardContent() {
                   className="flex-1 btn-primary disabled:opacity-50"
                 >
                   {savingTopics ? "Saving..." : "Save Interests"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showAppearanceModal && appearanceChild && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowAppearanceModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-4xl p-8 max-w-4xl w-full shadow-kid"
+            >
+              <h2 className="text-2xl font-black text-gray-800 mb-2 text-center">
+                {appearanceChild.childName}&apos;s tile style
+              </h2>
+              <p className="text-sm font-semibold text-gray-500 text-center mb-6">
+                Pick a theme for this child&apos;s dashboard tile and save their favourite vibes for a more personal look.
+              </p>
+
+              <div className="flex flex-wrap gap-2 justify-center mb-6">
+                {getTileThemeGroups().map((group) => (
+                  <button
+                    key={group}
+                    type="button"
+                    onClick={() => {
+                      const firstPreset = TILE_THEME_PRESETS.find((preset) => preset.group === group);
+                      if (firstPreset) {
+                        setAppearanceThemeId(firstPreset.id);
+                      }
+                    }}
+                    className={`rounded-full px-4 py-2 text-sm font-black capitalize transition-all ${
+                      activeAppearanceGroup === group
+                        ? "bg-purple-600 text-white shadow-md"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    }`}
+                  >
+                    {group}
+                  </button>
+                ))}
+              </div>
+
+              <div className="max-h-[32rem] overflow-y-auto pr-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {TILE_THEME_PRESETS.map((preset) => {
+                    const selected = appearanceThemeId === preset.id;
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => setAppearanceThemeId(preset.id)}
+                        className={`text-left rounded-3xl border-2 p-4 transition-all ${
+                          selected
+                            ? "border-purple-500 ring-2 ring-purple-200"
+                            : "border-slate-100 hover:border-purple-200"
+                        } bg-gradient-to-br ${preset.surface}`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className={`text-xs font-black uppercase tracking-[0.18em] ${preset.text}`}>
+                              {preset.group}
+                            </p>
+                            <h3 className="text-lg font-black text-slate-900 mt-1">
+                              {preset.emoji} {preset.label}
+                            </h3>
+                            <p className="text-sm font-semibold text-slate-700 mt-1">{preset.subtitle}</p>
+                          </div>
+                          <span className={`rounded-full px-3 py-1 text-xs font-black text-white ${preset.accentFrom} ${preset.accentTo}`}>
+                            {selected ? "Selected" : "Pick me"}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <p className="text-sm font-black text-gray-700 mb-3 text-center">Favourite tags</p>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {TILE_FAVORITE_TAGS.map((tag) => {
+                    const selected = appearanceFavoriteTags.includes(tag.id);
+                    return (
+                      <button
+                        key={tag.id}
+                        type="button"
+                        onClick={() => toggleFavoriteTag(tag.id)}
+                        className={`rounded-full px-4 py-2 text-sm font-bold transition-all ${
+                          selected
+                            ? "bg-purple-600 text-white shadow-md"
+                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        }`}
+                      >
+                        {tag.emoji} {tag.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => setShowAppearanceModal(false)}
+                  className="flex-1 btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveAppearance}
+                  disabled={savingAppearance}
+                  className="flex-1 btn-primary disabled:opacity-50"
+                >
+                  {savingAppearance ? "Saving..." : "Save Tile Style"}
                 </button>
               </div>
             </motion.div>

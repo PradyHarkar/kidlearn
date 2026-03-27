@@ -17,9 +17,10 @@ import {
 } from "./fixtures";
 
 const TABLES = {
-  USERS:     process.env.DYNAMODB_USERS_TABLE     || "kidlearn-users",
-  CHILDREN:  process.env.DYNAMODB_CHILDREN_TABLE  || "kidlearn-children",
-  QUESTIONS: process.env.DYNAMODB_QUESTIONS_TABLE || "kidlearn-questions",
+  USERS:         process.env.DYNAMODB_USERS_TABLE         || "kidlearn-users",
+  CHILDREN:      process.env.DYNAMODB_CHILDREN_TABLE      || "kidlearn-children",
+  QUESTIONS:     process.env.DYNAMODB_QUESTIONS_TABLE     || "kidlearn-questions",
+  SUBSCRIPTIONS: process.env.DYNAMODB_SUBSCRIPTIONS_TABLE || "kidlearn-subscriptions",
 };
 
 function createDdb() {
@@ -139,6 +140,16 @@ async function scanAndDeleteByPrefix(
   return deleted;
 }
 
+async function deleteSubscriptions(ddb: DynamoDBDocumentClient) {
+  console.log("  Deleting test subscriptions...");
+  const { ACTIVE_SUB_PARENT } = TEST_USERS;
+  await ddb.send(new DeleteCommand({
+    TableName: TABLES.SUBSCRIPTIONS,
+    Key: { userId: ACTIVE_SUB_PARENT.userId, subscriptionId: ACTIVE_SUB_PARENT.subscriptionId },
+  }));
+  console.log(`    ✓ deleted subscription ${ACTIVE_SUB_PARENT.subscriptionId}`);
+}
+
 async function main() {
   console.log("\n🌊 KidLearn Test Data Teardown\n");
   const ddb = createDdb();
@@ -147,6 +158,7 @@ async function main() {
     await deleteUsers(ddb);
     await deleteChildren(ddb);
     await deleteQuestions(ddb);
+    await deleteSubscriptions(ddb);
     console.log("\n✅ Test data cleaned up.\n");
   } catch (err) {
     console.error("\n❌ Teardown failed:", err);

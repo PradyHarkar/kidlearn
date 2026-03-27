@@ -12,7 +12,7 @@
  *
  * Options:
  *   --url <url>     Base URL of the app (default: http://localhost:3000)
- *   --suite <name>  Run only one suite: auth|children|questions|progress|subscription|adaptive|report|session-shape|tutor|diagnostic|kid-flow
+ *   --suite <name>  Run only one suite: auth|children|questions|progress|subscription|adaptive|report|session-shape|tutor|diagnostic|kid-flow|agents|dashboard-tabs|u1u2u4u5|tile-customization|subscription-robustness
  *   --no-setup      Skip DynamoDB seed step (if already seeded)
  *   --no-teardown   Keep test data after run (for debugging)
  *   --json          Write results to test-results.json
@@ -41,6 +41,8 @@ import { runKidFlowSuite }           from "./suites/11-kid-flow";
 import { runAgentsCoordinationSuite } from "./suites/12-agents-coordination";
 import { runDashboardTabsSuite }      from "./suites/13-dashboard-tabs";
 import { runU1U2U4U5Suite }           from "./suites/14-u1u2u4u5";
+import { runTileCustomizationSuite }        from "./suites/15-tile-customization";
+import { runSubscriptionRobustnessSuite }  from "./suites/16-subscription-robustness";
 
 // ── Parse CLI args ────────────────────────────────────────────────────────────
 
@@ -114,6 +116,8 @@ async function main() {
     "agents":         runAgentsCoordinationSuite,
     "dashboard-tabs": runDashboardTabsSuite,
     "u1u2u4u5":       runU1U2U4U5Suite,
+    "tile-customization":         runTileCustomizationSuite,
+    "subscription-robustness":    runSubscriptionRobustnessSuite,
   };
 
   const toRun = opts.suite

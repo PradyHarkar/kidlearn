@@ -47,6 +47,16 @@ export const TEST_USERS = {
     parentName: "Tsunami Dupe Parent",
     country:    "AU" as Country,
   },
+  // For subscription status tests: user has stale JWT (trial) but live active subscription in DynamoDB
+  ACTIVE_SUB_PARENT: {
+    userId:           "tt-user-active-sub-001",
+    email:            "test.tsunami.activesub@kidlearn.test",
+    password:         "TestTsunami123!",
+    parentName:       "Tsunami Active Sub Parent",
+    country:          "AU" as Country,
+    subscriptionId:   "tt-sub-active-001",
+    stripeCustomerId: "cus_test_tsunami_active",
+  },
 } as const;
 
 // ── Children ─────────────────────────────────────────────────────────────────

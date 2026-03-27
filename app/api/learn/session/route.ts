@@ -29,6 +29,13 @@ const sessionSchema = z.object({
   journeyTheme: z.object({
     tileThemeId: z.string(),
     tileFavoriteTags: z.array(z.string()),
+    preferences: z.object({
+      theme: z.enum(["fantasy", "unicorn", "space", "soccer", "jungle", "ocean"]),
+      avatar: z.string(),
+      buttonStyle: z.enum(["gradient", "cartoon"]),
+      cardStyle: z.enum(["soft", "bold"]),
+      rewardStyle: z.enum(["coins", "stars", "gems"]).optional(),
+    }).optional(),
   }).optional(),
   timer: z.number(),
   coins: z.number(),

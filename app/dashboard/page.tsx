@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useMemo } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,7 +9,12 @@ import { Child, ProgressAlertSummary, ProgressSummary, Subscription, Subscriptio
 import { COUNTRY_CONFIGS } from "@/lib/curriculum";
 import { getLearnerDisplayLabel } from "@/lib/learner";
 import { getSubjectProgressDisplay } from "@/lib/services/child-progress-display";
-import { getDefaultTileThemeId, getTileThemeGroups, getTileThemePreset, TILE_THEME_PRESETS } from "@/lib/services/tile-themes";
+import {
+  CHILD_THEME_PRESETS,
+  getDefaultChildPreferences,
+  getThemeJourneyTokens,
+  resolveChildThemeKey,
+} from "@/lib/services/tile-themes";
 import toast from "react-hot-toast";
 import Link from "next/link";
 import type { Country } from "@/types";
@@ -95,6 +100,10 @@ function DashboardContent() {
   const [appearanceChild, setAppearanceChild] = useState<Child | null>(null);
   const [appearanceThemeId, setAppearanceThemeId] = useState("");
   const [appearanceFavoriteTags, setAppearanceFavoriteTags] = useState<string[]>([]);
+  const [appearanceAvatar, setAppearanceAvatar] = useState("🐼");
+  const [appearanceButtonStyle, setAppearanceButtonStyle] = useState<"gradient" | "cartoon">("gradient");
+  const [appearanceCardStyle, setAppearanceCardStyle] = useState<"soft" | "bold">("soft");
+  const [appearanceRewardStyle, setAppearanceRewardStyle] = useState<"coins" | "stars" | "gems">("coins");
   const [savingAppearance, setSavingAppearance] = useState(false);
   const [progressSummaries, setProgressSummaries] = useState<Record<string, ProgressSummary>>({});
   const [selectedProgressChildId, setSelectedProgressChildId] = useState("");
@@ -107,7 +116,18 @@ function DashboardContent() {
   const country = (session?.user?.country as Country) ?? "AU";
   const grades = COUNTRY_CONFIGS[country]?.grades ?? COUNTRY_CONFIGS.AU.grades;
   const activeTab = (searchParams.get("tab") as DashboardTab) || "students";
-  const activeAppearanceGroup = TILE_THEME_PRESETS.find((preset) => preset.id === appearanceThemeId)?.group;
+  const dashboardTheme = useMemo(
+    () =>
+      getThemeJourneyTokens(
+        children[0]?.preferences?.theme || children[0]?.tileThemeId || undefined,
+        children[0] ?? {
+          ageGroup: "year3" as const,
+          yearLevel: "year3" as const,
+          country,
+        }
+      ),
+    [children, country]
+  );
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -291,6 +311,16 @@ function DashboardContent() {
     return Math.max(0, (child.rewardPoints || 0) - (child.rewardPointsRedeemed || 0));
   };
 
+  const resolveChildJourneyTheme = (child: Child) =>
+    getThemeJourneyTokens(
+      child.preferences?.theme || child.tileThemeId || undefined,
+      {
+        ageGroup: child.ageGroup || (child.yearLevel === "prep" ? "foundation" : (child.yearLevel as Child["ageGroup"])),
+        yearLevel: child.yearLevel,
+        country: (child.country as Country) ?? country,
+      }
+    );
+
   const topicOptionsForChild = (child: Child) => {
     const ageGroup = (child.ageGroup || (child.yearLevel === "prep" ? "foundation" : child.yearLevel)) as Parameters<typeof getTopicsForGrade>[0];
     return Array.from(
@@ -302,12 +332,19 @@ function DashboardContent() {
     );
   };
 
-  const childTileTheme = (child: Child) => getTileThemePreset(child.tileThemeId || getDefaultTileThemeId(child), child);
-
   const openAppearanceModal = (child: Child) => {
     setAppearanceChild(child);
-    setAppearanceThemeId(child.tileThemeId || getDefaultTileThemeId(child));
+    const preferences = child.preferences || getDefaultChildPreferences({
+      ageGroup: child.ageGroup || (child.yearLevel === "prep" ? "foundation" : (child.yearLevel as Child["ageGroup"])),
+      yearLevel: child.yearLevel,
+      country: (child.country as Country) ?? country,
+    });
+    setAppearanceThemeId(resolveChildThemeKey(preferences.theme || child.tileThemeId, child));
     setAppearanceFavoriteTags(child.tileFavoriteTags || []);
+    setAppearanceAvatar(preferences.avatar || child.avatar || "🐼");
+    setAppearanceButtonStyle(preferences.buttonStyle || "gradient");
+    setAppearanceCardStyle(preferences.cardStyle || "soft");
+    setAppearanceRewardStyle(preferences.rewardStyle || "coins");
     setShowAppearanceModal(true);
   };
 
@@ -426,7 +463,11 @@ function DashboardContent() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          tileThemeId: appearanceThemeId,
+          theme: appearanceThemeId,
+          avatar: appearanceAvatar,
+          buttonStyle: appearanceButtonStyle,
+          cardStyle: appearanceCardStyle,
+          rewardStyle: appearanceRewardStyle,
           tileFavoriteTags: appearanceFavoriteTags,
         }),
       });
@@ -584,8 +625,8 @@ function DashboardContent() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {children.map((child, i) => {
-          const theme = childTileTheme(child);
-          const accentClass = `bg-gradient-to-r ${theme.accentFrom} ${theme.accentTo}`;
+          const theme = resolveChildJourneyTheme(child);
+          const accentClass = theme.heroPanel;
           const favoriteTags = (child.tileFavoriteTags || []).slice(0, 3);
 
           return (
@@ -594,9 +635,9 @@ function DashboardContent() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.1 }}
-              className={`relative overflow-hidden rounded-3xl p-5 md:p-6 shadow-card hover:shadow-kid transition-all cursor-pointer group border border-white/80 bg-gradient-to-br ${theme.surface}`}
+              className={`relative overflow-hidden rounded-3xl p-5 md:p-6 shadow-card hover:shadow-kid transition-all cursor-pointer group border ${theme.surfaceBorder} ${theme.surfaceCard}`}
             >
-              <div className="absolute inset-0 bg-white/15 backdrop-blur-2xl pointer-events-none" />
+              <div className={`absolute inset-0 bg-gradient-to-br ${theme.pageGlow} opacity-70 pointer-events-none`} />
               <div className="relative">
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="flex items-center gap-3 min-w-0">
@@ -606,8 +647,8 @@ function DashboardContent() {
                     <div className="min-w-0">
                       <h3 className="font-black text-gray-900 text-lg leading-tight truncate">{child.childName}</h3>
                       <p className="text-gray-600 text-sm font-semibold truncate">{gradeLabel(child)}</p>
-                      <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${theme.text} mt-1`}>
-                        {theme.emoji} {theme.label}
+                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-700 mt-1">
+                        {theme.themeEmoji} {theme.themeLabel}
                       </p>
                     </div>
                   </div>
@@ -658,19 +699,19 @@ function DashboardContent() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 mb-4">
-                  <div className="bg-white/75 backdrop-blur rounded-2xl p-3 text-center border border-white/70">
+                  <div className={`backdrop-blur rounded-2xl p-3 text-center border ${theme.surfaceBorder} bg-white/75`}>
                     <p className="text-xl font-black text-yellow-700">🔥 {child.streakDays || 0}</p>
                     <p className="text-xs font-bold text-yellow-700">Streak</p>
                   </div>
-                  <div className="bg-white/75 backdrop-blur rounded-2xl p-3 text-center border border-white/70">
+                  <div className={`backdrop-blur rounded-2xl p-3 text-center border ${theme.surfaceBorder} bg-white/75`}>
                     <p className="text-xl font-black text-emerald-700">+ {rewardBalance(child)}</p>
                     <p className="text-xs font-bold text-emerald-700">Points</p>
                   </div>
-                  <div className="bg-white/75 backdrop-blur rounded-2xl p-3 text-center border border-white/70">
+                  <div className={`backdrop-blur rounded-2xl p-3 text-center border ${theme.surfaceBorder} bg-white/75`}>
                     <p className="text-xl font-black text-blue-700">⭐ {child.totalStars || 0}</p>
                     <p className="text-xs font-bold text-blue-700">Stars</p>
                   </div>
-                  <div className="bg-white/75 backdrop-blur rounded-2xl p-3 text-center border border-white/70">
+                  <div className={`backdrop-blur rounded-2xl p-3 text-center border ${theme.surfaceBorder} bg-white/75`}>
                     <p className="text-xl font-black text-purple-700">🪙 {child.totalCoins || 0}</p>
                     <p className="text-xs font-bold text-purple-700">Coins</p>
                   </div>
@@ -682,7 +723,7 @@ function DashboardContent() {
                     const colors: Record<string, string> = { maths: "from-pink-400 to-rose-500", english: "from-cyan-400 to-blue-500", science: "from-emerald-400 to-teal-500" };
                     const icons: Record<string, string> = { maths: "🔢", english: "📖", science: "🔬" };
                     return (
-                      <div key={subj} className="bg-white/60 rounded-2xl p-2.5 border border-white/60">
+                      <div key={subj} className={`rounded-2xl p-2.5 border ${theme.surfaceBorder} bg-white/70`}>
                         <div className="flex items-center justify-between text-xs mb-1">
                           <span className="font-bold text-gray-600 capitalize">{icons[subj]} {subj.charAt(0).toUpperCase() + subj.slice(1)}</span>
                           <span className={`font-black ${progress.attempted === 0 ? "text-gray-400" : "text-gray-700"}`}>
@@ -1073,8 +1114,10 @@ function DashboardContent() {
         </Link>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {children.map((child) => (
-          <div key={child.childId} className="bg-white rounded-3xl p-5 shadow-card">
+        {children.map((child) => {
+          const theme = resolveChildJourneyTheme(child);
+          return (
+          <div key={child.childId} className={`rounded-3xl p-5 shadow-card border ${theme.surfaceBorder} ${theme.surfaceCard}`}>
             <p className="font-black text-gray-800 text-lg">{child.childName}</p>
             <p className="text-gray-500 text-sm font-semibold">{gradeLabel(child)}</p>
             <div className="mt-4 grid grid-cols-2 gap-2">
@@ -1088,7 +1131,8 @@ function DashboardContent() {
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
       <div className="bg-white rounded-3xl p-6 shadow-card">
         <p className="font-bold text-gray-700">
@@ -1138,11 +1182,11 @@ function DashboardContent() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+    <div className={`min-h-screen ${dashboardTheme.pageGradient}`}>
       {/* Header */}
-      <header className="bg-white shadow-card px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex justify-between items-center">
+      <header className={`shadow-card px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex justify-between items-center border-b ${dashboardTheme.surfaceBorder} ${dashboardTheme.heroPanelSoft}`}>
         <div className="flex items-center gap-3">
-          <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+          <span className={`text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r ${dashboardTheme.themeKey === "space" ? "from-cyan-300 to-fuchsia-300" : "from-blue-600 to-purple-600"}`}>
             🌟 KidLearn
           </span>
         </div>
@@ -1170,12 +1214,16 @@ function DashboardContent() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl p-5 sm:p-6 text-white mb-5 sm:mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between"
+          className={`rounded-3xl p-5 sm:p-6 text-white mb-5 sm:mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between ${dashboardTheme.heroPanel} shadow-kid`}
         >
           <div>
             <h1 className="text-2xl sm:text-3xl font-black">Welcome back, {session?.user?.name}! 🎉</h1>
             <p className="text-white/80 font-semibold mt-1">
               Who's learning today? Select a child profile below!
+            </p>
+            <p className="text-white/90 text-sm font-black mt-2 flex items-center gap-2">
+              <span className="text-2xl">{dashboardTheme.themeEmoji}</span>
+              {dashboardTheme.themeLabel} dashboard
             </p>
           </div>
           <div className="hidden sm:block">
@@ -1190,7 +1238,7 @@ function DashboardContent() {
               onClick={() => setTab(tab.key)}
               className={`px-4 py-2 rounded-full font-black text-sm transition-all border-2 ${
                 activeTab === tab.key
-                  ? "bg-purple-600 text-white border-purple-600"
+                  ? `${dashboardTheme.primaryButton} border-transparent`
                   : "bg-white text-gray-700 border-gray-200 hover:border-purple-300"
               }`}
             >
@@ -1429,67 +1477,125 @@ function DashboardContent() {
                 {appearanceChild.childName}&apos;s tile style
               </h2>
               <p className="text-sm font-semibold text-gray-500 text-center mb-6">
-                Pick a theme for this child&apos;s dashboard tile and save their favourite vibes for a more personal look.
+                Pick a theme, avatar, and look-and-feel so every tile feels like their own world.
               </p>
 
-              <div className="flex flex-wrap gap-2 justify-center mb-6">
-                {getTileThemeGroups().map((group) => (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+                {CHILD_THEME_PRESETS.map((preset) => (
                   <button
-                    key={group}
+                    key={preset.id}
                     type="button"
-                    onClick={() => {
-                      const firstPreset = TILE_THEME_PRESETS.find((preset) => preset.group === group);
-                      if (firstPreset) {
-                        setAppearanceThemeId(firstPreset.id);
-                      }
-                    }}
-                    className={`rounded-full px-4 py-2 text-sm font-black capitalize transition-all ${
-                      activeAppearanceGroup === group
-                        ? "bg-purple-600 text-white shadow-md"
-                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    onClick={() => setAppearanceThemeId(preset.id)}
+                    className={`rounded-3xl px-4 py-3 text-left font-black transition-all border-2 ${
+                      appearanceThemeId === preset.id
+                        ? "border-purple-500 ring-2 ring-purple-200 bg-purple-50"
+                        : "border-slate-100 bg-white hover:border-purple-200"
                     }`}
                   >
-                    {group}
+                    <div className="text-2xl mb-1">{preset.emoji}</div>
+                    <div className="text-sm uppercase tracking-[0.2em] text-slate-400">{preset.id}</div>
+                    <div className="text-base text-slate-900">{preset.label}</div>
+                    <div className="text-xs font-semibold text-slate-500 mt-1">{preset.subtitle}</div>
                   </button>
                 ))}
               </div>
 
-              <div className="max-h-[32rem] overflow-y-auto pr-1">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {TILE_THEME_PRESETS.map((preset) => {
-                    const selected = appearanceThemeId === preset.id;
-                    return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <div>
+                  <p className="text-sm font-black text-gray-700 mb-3 text-center">Choose Avatar</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {AVATARS.map((avatar) => (
                       <button
-                        key={preset.id}
+                        key={avatar}
                         type="button"
-                        onClick={() => setAppearanceThemeId(preset.id)}
-                        className={`text-left rounded-3xl border-2 p-4 transition-all ${
-                          selected
-                            ? "border-purple-500 ring-2 ring-purple-200"
-                            : "border-slate-100 hover:border-purple-200"
-                        } bg-gradient-to-br ${preset.surface}`}
+                        onClick={() => setAppearanceAvatar(avatar)}
+                        className={`h-14 rounded-2xl text-3xl transition-all border-2 ${
+                          appearanceAvatar === avatar
+                            ? "bg-purple-100 border-purple-500 scale-105"
+                            : "bg-slate-50 border-transparent hover:bg-purple-50"
+                        }`}
                       >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className={`text-xs font-black uppercase tracking-[0.18em] ${preset.text}`}>
-                              {preset.group}
-                            </p>
-                            <h3 className="text-lg font-black text-slate-900 mt-1">
-                              {preset.emoji} {preset.label}
-                            </h3>
-                            <p className="text-sm font-semibold text-slate-700 mt-1">{preset.subtitle}</p>
-                          </div>
-                          <span className={`rounded-full px-3 py-1 text-xs font-black text-white ${preset.accentFrom} ${preset.accentTo}`}>
-                            {selected ? "Selected" : "Pick me"}
-                          </span>
-                        </div>
+                        {avatar}
                       </button>
-                    );
-                  })}
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-black text-gray-700 mb-3 text-center">Reward Style</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      { id: "coins", label: "Coins", emoji: "🪙" },
+                      { id: "stars", label: "Stars", emoji: "⭐" },
+                      { id: "gems", label: "Gems", emoji: "💎" },
+                    ] as const).map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setAppearanceRewardStyle(option.id)}
+                        className={`rounded-2xl px-3 py-3 text-sm font-black transition-all border-2 ${
+                          appearanceRewardStyle === option.id
+                            ? "bg-purple-600 text-white border-purple-600"
+                            : "bg-slate-50 text-slate-700 border-transparent hover:bg-purple-50"
+                        }`}
+                      >
+                        <div className="text-lg">{option.emoji}</div>
+                        <div>{option.label}</div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <div>
+                  <p className="text-sm font-black text-gray-700 mb-3 text-center">Button Style</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {([
+                      { id: "gradient", label: "Gradient", emoji: "🌈" },
+                      { id: "cartoon", label: "Cartoon", emoji: "✨" },
+                    ] as const).map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setAppearanceButtonStyle(option.id)}
+                        className={`rounded-2xl px-3 py-3 text-sm font-black transition-all border-2 ${
+                          appearanceButtonStyle === option.id
+                            ? "bg-purple-600 text-white border-purple-600"
+                            : "bg-slate-50 text-slate-700 border-transparent hover:bg-purple-50"
+                        }`}
+                      >
+                        <div className="text-lg">{option.emoji}</div>
+                        <div>{option.label}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-black text-gray-700 mb-3 text-center">Card Style</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {([
+                      { id: "soft", label: "Soft", emoji: "💨" },
+                      { id: "bold", label: "Bold", emoji: "💥" },
+                    ] as const).map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setAppearanceCardStyle(option.id)}
+                        className={`rounded-2xl px-3 py-3 text-sm font-black transition-all border-2 ${
+                          appearanceCardStyle === option.id
+                            ? "bg-purple-600 text-white border-purple-600"
+                            : "bg-slate-50 text-slate-700 border-transparent hover:bg-purple-50"
+                        }`}
+                      >
+                        <div className="text-lg">{option.emoji}</div>
+                        <div>{option.label}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-2">
                 <p className="text-sm font-black text-gray-700 mb-3 text-center">Favourite tags</p>
                 <div className="flex flex-wrap gap-2 justify-center">
                   {TILE_FAVORITE_TAGS.map((tag) => {

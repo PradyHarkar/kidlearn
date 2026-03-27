@@ -25,6 +25,18 @@ export type QuestionIssueStatus = "reported" | "triaged" | "resolved" | "dismiss
 export type RewardTransactionType = "earned" | "redeemed" | "merged_in" | "merged_out" | "adjusted";
 export type RewardRedemptionStatus = "pending" | "approved" | "fulfilled" | "rejected";
 export type KidLoginMethod = "pin" | "face" | "voice";
+export type ChildThemeKey = "fantasy" | "unicorn" | "space" | "soccer" | "jungle" | "ocean";
+export type ChildButtonStyle = "gradient" | "cartoon";
+export type ChildCardStyle = "soft" | "bold";
+export type ChildRewardStyle = "coins" | "stars" | "gems";
+
+export interface ChildPreferences {
+  theme: ChildThemeKey;
+  avatar: string;
+  buttonStyle: ChildButtonStyle;
+  cardStyle: ChildCardStyle;
+  rewardStyle?: ChildRewardStyle;
+}
 
 export interface User {
   userId: string;
@@ -48,6 +60,7 @@ export interface Child {
   grade?: string;         // country-specific grade label (e.g. "year3", "grade3", "class3")
   country?: Country;      // denormalised from parent for report queries
   avatar: string;
+  preferences?: ChildPreferences;
   diagnosticComplete?: boolean;
   currentDifficultyMaths: number;
   currentDifficultyEnglish: number;
@@ -180,6 +193,7 @@ export interface ProgressSummary {
 export interface ChildJourneyTheme {
   tileThemeId: string;
   tileFavoriteTags: string[];
+  preferences?: ChildPreferences;
 }
 
 export interface TopicPerformanceTopic {

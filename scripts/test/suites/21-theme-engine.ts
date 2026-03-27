@@ -24,13 +24,13 @@ const SUITE = "theme-engine";
 export async function runThemeEngineSuite(baseUrl: string) {
   startSuite("21  CHILD THEME ENGINE");
 
-  await test(SUITE, "theme resolver: year3 maps to games-arcade", async () => {
+  await test(SUITE, "theme resolver: year3 defaults to fantasy", async () => {
     const tokens = getThemeJourneyTokens(undefined, {
       ageGroup: "year3",
       yearLevel: "year3",
       country: "AU",
     });
-    assertEqual(tokens.preset.id, "games-arcade", "year3 should default to games-arcade");
+    assertEqual(tokens.preset.id, "fantasy", "year3 should default to fantasy");
     assertTrue(tokens.pageGradient.length > 0, "theme tokens must include a page gradient");
   });
 
@@ -40,7 +40,7 @@ export async function runThemeEngineSuite(baseUrl: string) {
       yearLevel: "year5",
       country: "AU",
     });
-    assertEqual(tokens.preset.id, "sports-stadium", "sports theme should resolve directly");
+    assertEqual(tokens.themeKey, "soccer", "sports theme should resolve to the soccer child theme");
     assertTrue(tokens.primaryButton.length > 0, "primaryButton class should be populated");
   });
 
@@ -48,7 +48,17 @@ export async function runThemeEngineSuite(baseUrl: string) {
     const client = new TestClient(baseUrl);
     await client.login(TEST_USERS.AU_PARENT.email, TEST_USERS.AU_PARENT.password);
     const res = await client.get<{
-      appearance?: { tileThemeId?: string; tileFavoriteTags?: string[] };
+      appearance?: {
+        tileThemeId?: string;
+        tileFavoriteTags?: string[];
+        preferences?: {
+          theme?: string;
+          avatar?: string;
+          buttonStyle?: string;
+          cardStyle?: string;
+          rewardStyle?: string;
+        };
+      };
       country?: string;
     }>(`/api/questions?childId=${TEST_CHILDREN.AU_YEAR3.childId}&subject=english`);
     assertStatus(res.status, 200, res.raw);
@@ -57,6 +67,7 @@ export async function runThemeEngineSuite(baseUrl: string) {
       "theme id should be derived for the selected child"
     );
     assertTrue(Array.isArray(res.body.appearance?.tileFavoriteTags), "favorite tags should be returned");
+    assertTrue(!!res.body.appearance?.preferences?.theme, "theme preference should be returned");
     assertTrue(typeof res.body.country === "string", "country should be returned");
   });
 
@@ -64,7 +75,22 @@ export async function runThemeEngineSuite(baseUrl: string) {
     const client = new TestClient(baseUrl);
     await client.login(TEST_USERS.AU_PARENT.email, TEST_USERS.AU_PARENT.password);
 
-    const saveRes = await client.post<{ success?: boolean; session?: { journeyTheme?: { tileThemeId?: string; tileFavoriteTags?: string[] } } }>(
+    const saveRes = await client.post<{
+      success?: boolean;
+      session?: {
+        journeyTheme?: {
+          tileThemeId?: string;
+          tileFavoriteTags?: string[];
+          preferences?: {
+            theme?: string;
+            avatar?: string;
+            buttonStyle?: string;
+            cardStyle?: string;
+            rewardStyle?: string;
+          };
+        };
+      };
+    }>(
       "/api/learn/session",
       {
         childId: TEST_CHILDREN.AU_YEAR3.childId,
@@ -77,8 +103,15 @@ export async function runThemeEngineSuite(baseUrl: string) {
         currentDifficulty: 4,
         ageGroup: "year3",
         journeyTheme: {
-          tileThemeId: "games-arcade",
+          tileThemeId: "games-space",
           tileFavoriteTags: ["games", "arcade"],
+          preferences: {
+            theme: "space",
+            avatar: "🚀",
+            buttonStyle: "cartoon",
+            cardStyle: "bold",
+            rewardStyle: "gems",
+          },
         },
         timer: 0,
         coins: 0,
@@ -92,14 +125,30 @@ export async function runThemeEngineSuite(baseUrl: string) {
     );
     assertStatus(saveRes.status, 200, saveRes.raw);
     assertEqual(saveRes.body.success, true, "save should succeed");
-    assertEqual(saveRes.body.session?.journeyTheme?.tileThemeId, "games-arcade", "theme should be saved");
+    assertEqual(saveRes.body.session?.journeyTheme?.tileThemeId, "games-space", "theme should be saved");
+    assertEqual(saveRes.body.session?.journeyTheme?.preferences?.theme, "space", "theme preference should be saved");
 
-    const loadRes = await client.get<{ session?: { journeyTheme?: { tileThemeId?: string; tileFavoriteTags?: string[] } } }>(
+    const loadRes = await client.get<{
+      session?: {
+        journeyTheme?: {
+          tileThemeId?: string;
+          tileFavoriteTags?: string[];
+          preferences?: {
+            theme?: string;
+            avatar?: string;
+            buttonStyle?: string;
+            cardStyle?: string;
+            rewardStyle?: string;
+          };
+        };
+      };
+    }>(
       `/api/learn/session?childId=${TEST_CHILDREN.AU_YEAR3.childId}&subject=maths`
     );
     assertStatus(loadRes.status, 200, loadRes.raw);
     assertDefined(loadRes.body.session, "session should be readable");
-    assertEqual(loadRes.body.session?.journeyTheme?.tileThemeId, "games-arcade", "theme should round-trip");
+    assertEqual(loadRes.body.session?.journeyTheme?.tileThemeId, "games-space", "theme should round-trip");
+    assertEqual(loadRes.body.session?.journeyTheme?.preferences?.theme, "space", "theme preference should round-trip");
     assertTrue(
       (loadRes.body.session?.journeyTheme?.tileFavoriteTags ?? []).includes("games"),
       "favorite tags should round-trip"

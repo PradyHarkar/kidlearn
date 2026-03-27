@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mascot } from "@/components/mascot/Mascot";
-import { AgeGroup, Country, Question, Subject, YearLevel } from "@/types";
+import { AgeGroup, ChildPreferences, Country, Question, Subject, YearLevel } from "@/types";
 import { getThemeJourneyTokens } from "@/lib/services/tile-themes";
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
@@ -40,6 +40,7 @@ interface SavedLearnSessionState {
   journeyTheme?: {
     tileThemeId: string;
     tileFavoriteTags: string[];
+    preferences?: ChildPreferences;
   };
   timer: number;
   coins: number;
@@ -75,6 +76,10 @@ function LearnContent() {
   const [ageGroup, setAgeGroup] = useState<string | undefined>();
   const [journeyThemeId, setJourneyThemeId] = useState("");
   const [journeyThemeTags, setJourneyThemeTags] = useState<string[]>([]);
+  const [journeyAvatar, setJourneyAvatar] = useState("🧒");
+  const [journeyButtonStyle, setJourneyButtonStyle] = useState<"gradient" | "cartoon">("gradient");
+  const [journeyCardStyle, setJourneyCardStyle] = useState<"soft" | "bold">("soft");
+  const [journeyRewardStyle, setJourneyRewardStyle] = useState<"coins" | "stars" | "gems">("coins");
   const [journeyCountry, setJourneyCountry] = useState<"AU" | "US" | "IN" | "UK">("AU");
   const [timer, setTimer] = useState(0);
   const [coins, setCoins] = useState(0);
@@ -107,6 +112,16 @@ function LearnContent() {
       country: journeyCountry as Country,
     });
   }, [ageGroup, journeyCountry, journeyThemeId]);
+
+  const rewardGlyph = journeyRewardStyle === "stars" ? "⭐" : journeyRewardStyle === "gems" ? "💎" : "🪙";
+  const isCartoonStyle = journeyButtonStyle === "cartoon";
+  const isBoldCard = journeyCardStyle === "bold";
+  const questionCardClass = isBoldCard
+    ? `rounded-[2.35rem] border-4 shadow-2xl ${journeyTheme.surfaceCard} ${journeyTheme.surfaceBorder}`
+    : `rounded-4xl border shadow-kid ${journeyTheme.surfaceCard} ${journeyTheme.surfaceBorder}`;
+  const actionButtonClass = isCartoonStyle
+    ? "rounded-full shadow-lg border-2 border-white/50 uppercase tracking-wide"
+    : "rounded-2xl shadow-md";
 
   // Resolve media pointer to renderable content
   const resolveMedia = (imageUrl: string | undefined, emoji: string | undefined): string | null => {
@@ -176,8 +191,12 @@ function LearnContent() {
         setShowExplanation(saved.showExplanation || false);
         setMascotMood(saved.mascotMood || "happy");
         setMascotMessage(saved.mascotMessage);
-        setJourneyThemeId(saved.journeyTheme?.tileThemeId || "");
+        setJourneyThemeId(saved.journeyTheme?.preferences?.theme || saved.journeyTheme?.tileThemeId || "");
         setJourneyThemeTags(saved.journeyTheme?.tileFavoriteTags || []);
+        setJourneyAvatar(saved.journeyTheme?.preferences?.avatar || "🧒");
+        setJourneyButtonStyle(saved.journeyTheme?.preferences?.buttonStyle || "gradient");
+        setJourneyCardStyle(saved.journeyTheme?.preferences?.cardStyle || "soft");
+        setJourneyRewardStyle(saved.journeyTheme?.preferences?.rewardStyle || "coins");
         restoredTimerRef.current = saved.timer || 0;
         return;
         }
@@ -189,8 +208,12 @@ function LearnContent() {
       setCurrentDifficulty(questionsData.difficulty || 1);
       setAgeGroup(questionsData.ageGroup);
       setJourneyCountry((questionsData.country || "AU") as Country);
-      setJourneyThemeId(questionsData.appearance?.tileThemeId || "");
+      setJourneyThemeId(questionsData.appearance?.preferences?.theme || questionsData.appearance?.tileThemeId || "");
       setJourneyThemeTags(questionsData.appearance?.tileFavoriteTags || []);
+      setJourneyAvatar(questionsData.appearance?.preferences?.avatar || "🧒");
+      setJourneyButtonStyle(questionsData.appearance?.preferences?.buttonStyle || "gradient");
+      setJourneyCardStyle(questionsData.appearance?.preferences?.cardStyle || "soft");
+      setJourneyRewardStyle(questionsData.appearance?.preferences?.rewardStyle || "coins");
       setQuestions(fetchedQuestions);
       restoredTimerRef.current = 0;
 
@@ -219,6 +242,13 @@ function LearnContent() {
             journeyTheme: {
               tileThemeId: questionsData.appearance?.tileThemeId || "",
               tileFavoriteTags: questionsData.appearance?.tileFavoriteTags || [],
+              preferences: questionsData.appearance?.preferences || {
+                theme: questionsData.appearance?.preferences?.theme || "fantasy",
+                avatar: questionsData.appearance?.preferences?.avatar || "🧒",
+                buttonStyle: questionsData.appearance?.preferences?.buttonStyle || "gradient",
+                cardStyle: questionsData.appearance?.preferences?.cardStyle || "soft",
+                rewardStyle: questionsData.appearance?.preferences?.rewardStyle || "coins",
+              },
             },
           }),
         });
@@ -242,17 +272,24 @@ function LearnContent() {
       const res = await fetch("/api/learn/session", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...snapshot,
-          sessionId: activeSessionId,
-          childId,
-          subject,
-          journeyTheme: {
-            tileThemeId: journeyThemeId,
-            tileFavoriteTags: journeyThemeTags,
-          },
-        }),
-      });
+          body: JSON.stringify({
+            ...snapshot,
+            sessionId: activeSessionId,
+            childId,
+            subject,
+            journeyTheme: {
+              tileThemeId: journeyThemeId,
+              tileFavoriteTags: journeyThemeTags,
+              preferences: {
+                theme: (journeyThemeId || "fantasy") as "fantasy" | "unicorn" | "space" | "soccer" | "jungle" | "ocean",
+                avatar: journeyAvatar,
+                buttonStyle: journeyButtonStyle,
+                cardStyle: journeyCardStyle,
+                rewardStyle: journeyRewardStyle,
+              },
+            },
+          }),
+        });
       const data = await res.json();
       if (res.ok && data.session?.sessionId) {
         setActiveSessionId(data.session.sessionId);
@@ -595,12 +632,13 @@ function LearnContent() {
   const difficultyStars = Array.from({ length: 10 }, (_, i) => i < currentDifficulty ? "⭐" : "☆");
 
   return (
-    <div className={`min-h-screen ${journeyTheme.pageGradient} flex flex-col`}>
+    <div className={`min-h-screen ${journeyTheme.pageGradient} flex flex-col relative overflow-hidden`}>
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.55),transparent_35%),radial-gradient(circle_at_top_right,rgba(255,255,255,0.35),transparent_28%)]" />
       {/* ===== TOP BAR ===== */}
       <div className="sticky top-0 z-20 bg-white/35 backdrop-blur-md px-4 py-3 border-b border-white/30">
         <div className="max-w-2xl mx-auto">
           {/* Row 1: back + subject + stats */}
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-2 gap-2">
             <motion.button
               onClick={() => router.push("/dashboard")}
               whileHover={{ scale: 1.05 }}
@@ -610,7 +648,11 @@ function LearnContent() {
               ← Exit
             </motion.button>
 
-            <div className="flex items-center gap-2 flex-wrap justify-center">
+            <div className="flex items-center gap-2 flex-wrap justify-center px-2">
+              <span className="flex items-center gap-2 rounded-full bg-white/75 px-3 py-1 text-xs font-black text-slate-800 shadow-sm border border-white/70">
+                <span className="text-lg">{journeyAvatar}</span>
+                {journeyTheme.themeLabel}
+              </span>
               <span className="text-slate-900 font-black text-lg drop-shadow-sm">
                 {subject === "maths" ? "🔢 Maths" : subject === "science" ? "🔬 Science" : "📖 English"}
               </span>
@@ -622,7 +664,7 @@ function LearnContent() {
             <div className="flex items-center gap-2">
               {/* Reward points */}
               <div className="rounded-xl px-2.5 py-1 text-slate-900 font-bold text-sm flex items-center gap-1 bg-white/70">
-                🏅 {pointsEarned}pts
+                {rewardGlyph} {pointsEarned}pts
               </div>
               {streak > 1 && (
                 <div className="streak-badge">
@@ -630,7 +672,7 @@ function LearnContent() {
                 </div>
               )}
               <div className={`${journeyTheme.badge} reward-counter`}>
-                🪙 {coins}
+                {rewardGlyph} {coins}
               </div>
             </div>
           </div>
@@ -681,7 +723,7 @@ function LearnContent() {
             className="flex flex-col gap-4"
           >
             {/* Question Card */}
-            <div className={`${journeyTheme.surfaceCard} rounded-4xl shadow-kid overflow-hidden border ${journeyTheme.surfaceBorder}`}>
+            <div className={`${questionCardClass} overflow-hidden`}>
               {/* Question header with topic pills */}
               <div className={`${journeyTheme.heroPanelSoft} px-6 pt-5 pb-3`}>
                 <div className="flex flex-wrap gap-1.5 mb-3 items-center justify-between">
@@ -739,7 +781,7 @@ function LearnContent() {
               <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {(q.answerOptions || []).map((option, idx) => {
                   const isSelected = selectedAnswer === option.id;
-                  let cardClass = `answer-card ${journeyTheme.answerOption}`;
+                  let cardClass = `answer-card ${journeyTheme.answerOption} ${actionButtonClass}`;
                   let bgClass = "";
 
                   if (isAnswered) {
@@ -876,7 +918,7 @@ function LearnContent() {
                     onClick={() => setShowHint(!showHint)}
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.95 }}
-                    className={`${journeyTheme.primaryButton} flex-1 font-black py-3.5 px-4 rounded-2xl transition-all text-base`}
+                    className={`${journeyTheme.primaryButton} ${actionButtonClass} flex-1 font-black py-3.5 px-4 transition-all text-base`}
                     aria-label="Show hint"
                   >
                     💡 {showHint ? "Hide Hint" : "Get Hint"}
@@ -885,7 +927,7 @@ function LearnContent() {
                     onClick={handleSkip}
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.95 }}
-                    className={`${journeyTheme.secondaryButton} flex-1 font-bold py-3.5 px-4 rounded-2xl transition-all text-base border`}
+                    className={`${journeyTheme.secondaryButton} ${actionButtonClass} flex-1 font-bold py-3.5 px-4 transition-all text-base border`}
                     aria-label="Skip question"
                   >
                     ⏭️ Skip
@@ -899,7 +941,7 @@ function LearnContent() {
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
-                  className={`${journeyTheme.primaryButton} w-full font-black text-xl py-4 rounded-3xl transition-all flex items-center justify-center gap-2`}
+                  className={`${journeyTheme.primaryButton} ${actionButtonClass} w-full font-black text-xl py-4 transition-all flex items-center justify-center gap-2`}
                 >
                   {submitting ? (
                     <div className="w-6 h-6 border-3 border-purple-600 border-t-transparent rounded-full animate-spin" />

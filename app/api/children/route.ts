@@ -5,7 +5,7 @@ import { queryItems, putItem, TABLES } from "@/lib/dynamodb";
 import { getSession } from "@/lib/auth";
 import { gradeToAgeGroup } from "@/lib/curriculum";
 import { getInitialDifficultyForAgeGroup } from "@/lib/adaptive";
-import { getDefaultTileThemeId } from "@/lib/services/tile-themes";
+import { getDefaultChildPreferences, getLegacyTileThemeIdFromChildTheme } from "@/lib/services/tile-themes";
 import { toLegacyYearLevel } from "@/lib/learner";
 import type { Country } from "@/types";
 
@@ -63,6 +63,7 @@ export async function POST(req: NextRequest) {
     const country: Country = (session.user.country as Country) ?? "AU";
     const ageGroup = gradeToAgeGroup(country, grade);
     const initialDifficulty = getInitialDifficultyForAgeGroup(ageGroup);
+    const defaultPreferences = getDefaultChildPreferences({ ageGroup, yearLevel: toLegacyYearLevel(ageGroup), country });
 
     const childId = uuidv4();
     const child = {
@@ -79,7 +80,8 @@ export async function POST(req: NextRequest) {
       currentDifficultyEnglish: initialDifficulty,
       currentDifficultyScience: initialDifficulty,
       hasChildPin: false,
-      tileThemeId: getDefaultTileThemeId({ ageGroup, yearLevel: toLegacyYearLevel(ageGroup), country }),
+      preferences: defaultPreferences,
+      tileThemeId: getLegacyTileThemeIdFromChildTheme(defaultPreferences.theme),
       tileFavoriteTags: [],
       rewardPoints: 0,
       rewardPointsRedeemed: 0,

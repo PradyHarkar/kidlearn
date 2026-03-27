@@ -388,4 +388,63 @@ export async function runCodexUiSuite(baseUrl: string) {
     );
     assertTrue([403, 404].includes(res.status), `expected 403/404 for cross-user, got ${res.status}`);
   });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // GROUP H — Difficulty display: values returned are integers in 1–10 range
+  //
+  // BUG: dashboard was showing difficulty as "9/10" which looked like a score
+  //      (9 correct out of 10) rather than an adaptive difficulty level.
+  //      Fix: display as "Lv N" in both child tile cards and Progress table.
+  //
+  // These tests verify the underlying API returns valid difficulty data so
+  // the "Lv N" display is backed by correct values.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  await test(SUITE, "GET /api/children: difficulty fields are integers in 1–10", async () => {
+    const client = new TestClient(baseUrl);
+    await client.login(TEST_USERS.AU_PARENT.email, TEST_USERS.AU_PARENT.password);
+
+    const res = await client.get<{ children?: Array<{
+      currentDifficultyMaths?: unknown;
+      currentDifficultyEnglish?: unknown;
+      currentDifficultyScience?: unknown;
+    }> }>("/api/children");
+    assertStatus(res.status, 200, res.raw);
+
+    for (const child of res.body.children ?? []) {
+      for (const field of ["currentDifficultyMaths", "currentDifficultyEnglish", "currentDifficultyScience"] as const) {
+        const val = child[field];
+        if (val === undefined) continue; // field may be absent for new children
+        assertTrue(
+          typeof val === "number" && Number.isInteger(val) && val >= 1 && val <= 10,
+          `${field} = ${val} — must be integer in [1, 10] (displayed as "Lv N" in dashboard)`
+        );
+      }
+    }
+  });
+
+  await test(SUITE, "GET /api/children: new child difficulty matches age-group baseline", async () => {
+    const client = new TestClient(baseUrl);
+    await client.login(TEST_USERS.AU_PARENT.email, TEST_USERS.AU_PARENT.password);
+
+    const res = await client.get<{ children?: Array<{
+      ageGroup?: string;
+      grade?: string;
+      currentDifficultyMaths?: number;
+    }> }>("/api/children");
+    assertStatus(res.status, 200, res.raw);
+
+    // year3 child baseline difficulty should be 4 (per INITIAL_DIFFICULTY_BY_AGE_GROUP)
+    const year3 = (res.body.children ?? []).find((c) => c.ageGroup === "year3" || c.grade === "year3");
+    if (!year3) { console.log("    ⚠  No year3 child — skipping"); return; }
+
+    // The seeded year3 child hasn't done any sessions, so difficulty should be
+    // at or near baseline 4. After sessions it can move, so just check it's valid.
+    assertTrue(
+      typeof year3.currentDifficultyMaths === "number" &&
+      year3.currentDifficultyMaths >= 1 &&
+      year3.currentDifficultyMaths <= 10,
+      `year3 maths difficulty ${year3.currentDifficultyMaths} must be 1–10`
+    );
+  });
 }

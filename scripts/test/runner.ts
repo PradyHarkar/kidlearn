@@ -12,7 +12,7 @@
  *
  * Options:
  *   --url <url>     Base URL of the app (default: http://localhost:3000)
- *   --suite <name>  Run only one suite: auth|children|questions|progress|subscription|adaptive|report|session-shape|tutor|diagnostic|kid-flow|agents|dashboard-tabs|u1u2u4u5|tile-customization|subscription-robustness
+ *   --suite <name>  Run only one suite: auth|children|questions|progress|subscription|adaptive|report|session-shape|tutor|diagnostic|kid-flow|agents|dashboard-tabs|u1u2u4u5|tile-customization|subscription-robustness|langgraph-runner|question-engine|codex-ui
  *   --no-setup      Skip DynamoDB seed step (if already seeded)
  *   --no-teardown   Keep test data after run (for debugging)
  *   --json          Write results to test-results.json
@@ -43,6 +43,9 @@ import { runDashboardTabsSuite }      from "./suites/13-dashboard-tabs";
 import { runU1U2U4U5Suite }           from "./suites/14-u1u2u4u5";
 import { runTileCustomizationSuite }        from "./suites/15-tile-customization";
 import { runSubscriptionRobustnessSuite }  from "./suites/16-subscription-robustness";
+import { runLangGraphRunnerSuite }         from "./suites/17-langgraph-runner";
+import { runQuestionEngineSuite }          from "./suites/18-question-engine";
+import { runCodexUiSuite }                 from "./suites/19-codex-ui";
 
 // ── Parse CLI args ────────────────────────────────────────────────────────────
 
@@ -118,6 +121,9 @@ async function main() {
     "u1u2u4u5":       runU1U2U4U5Suite,
     "tile-customization":         runTileCustomizationSuite,
     "subscription-robustness":    runSubscriptionRobustnessSuite,
+    "langgraph-runner":           runLangGraphRunnerSuite,
+    "question-engine":            runQuestionEngineSuite,
+    "codex-ui":                   runCodexUiSuite,
   };
 
   const toRun = opts.suite

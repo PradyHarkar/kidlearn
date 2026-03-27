@@ -197,25 +197,25 @@ export default function RewardsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-cyan-50 to-blue-100">
-      <header className="bg-white shadow-card px-6 py-4 flex justify-between items-center">
+      <header className="bg-white shadow-card px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-between sm:items-center">
         <div>
           <p className="text-sm font-bold text-emerald-600 uppercase tracking-[0.2em]">Family Rewards</p>
-          <h1 className="text-2xl font-black text-gray-800">Gift cards powered by learning points</h1>
+          <h1 className="text-xl sm:text-2xl font-black text-gray-800">Gift cards and shop items powered by learning points</h1>
         </div>
         <div className="flex items-center gap-3">
           <Link href="/dashboard" className="btn-secondary text-sm py-2 px-4">Back</Link>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8 space-y-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-5 sm:space-y-6">
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-emerald-500 to-cyan-600 rounded-4xl p-6 text-white flex flex-col lg:flex-row gap-6 justify-between"
+          className="bg-gradient-to-r from-emerald-500 to-cyan-600 rounded-4xl p-5 sm:p-6 text-white flex flex-col xl:flex-row gap-5 xl:gap-6 justify-between"
         >
           <div>
             <p className="text-sm font-black uppercase tracking-[0.25em] text-white/80">Available Now</p>
-            <h2 className="text-4xl font-black mt-2">{totalAvailable} family points</h2>
+            <h2 className="text-3xl sm:text-4xl font-black mt-2">{totalAvailable} family points</h2>
             <p className="font-semibold text-white/85 mt-2 max-w-2xl">
               Each completed 20-question set earns 20 points for that child. Parents can combine siblings&apos; points and
               redeem gift cards from one place.
@@ -226,7 +226,7 @@ export default function RewardsPage() {
           </div>
         </motion.section>
 
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {balances.map((balance) => (
             <div key={balance.childId} className="bg-white rounded-3xl shadow-card p-5">
               <div className="flex items-center justify-between mb-3">
@@ -249,8 +249,8 @@ export default function RewardsPage() {
           ))}
         </section>
 
-        <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <div className="bg-white rounded-4xl shadow-card p-6">
+        <section className="grid grid-cols-1 xl:grid-cols-2 gap-5 sm:gap-6">
+          <div className="bg-white rounded-4xl shadow-card p-5 sm:p-6">
             <h2 className="text-2xl font-black text-gray-800 mb-2">Combine sibling points</h2>
             <p className="text-sm font-semibold text-gray-500 mb-5">
               Move points from one child to another before redeeming a shared family reward.
@@ -314,7 +314,7 @@ export default function RewardsPage() {
             </form>
           </div>
 
-          <div className="bg-white rounded-4xl shadow-card p-6">
+          <div className="bg-white rounded-4xl shadow-card p-5 sm:p-6">
             <h2 className="text-2xl font-black text-gray-800 mb-2">Redeem gift cards</h2>
             <p className="text-sm font-semibold text-gray-500 mb-5">
               Pick the child who will receive the reward and choose which siblings&apos; points should contribute.
@@ -393,9 +393,9 @@ export default function RewardsPage() {
           </div>
         </section>
 
-        <section className="bg-white rounded-4xl shadow-card p-6">
+        <section className="bg-white rounded-4xl shadow-card p-5 sm:p-6">
           <h2 className="text-2xl font-black text-gray-800 mb-4">Gift card catalog</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             {catalog.map((reward) => (
               <div key={reward.rewardId} className="rounded-3xl border-2 border-slate-100 p-4 bg-gradient-to-br from-white to-slate-50">
                 <p className="text-sm font-black text-cyan-600 uppercase tracking-[0.2em]">{reward.provider}</p>
@@ -406,7 +406,7 @@ export default function RewardsPage() {
           </div>
         </section>
 
-        <section className="bg-white rounded-4xl shadow-card p-6">
+        <section className="bg-white rounded-4xl shadow-card p-5 sm:p-6">
           <div className="flex items-center justify-between gap-3 mb-4">
             <div>
               <h2 className="text-2xl font-black text-gray-800">Reward shop</h2>
@@ -417,7 +417,7 @@ export default function RewardsPage() {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             {shopItems.map((item) => (
               <div key={item.itemId} className="rounded-3xl border-2 border-purple-100 p-4 bg-gradient-to-br from-white to-purple-50">
                 <div className="text-4xl mb-2">{item.icon}</div>

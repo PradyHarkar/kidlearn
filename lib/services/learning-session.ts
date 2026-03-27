@@ -1,7 +1,7 @@
 import { DescribeTableCommand, DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { v4 as uuidv4 } from "uuid";
 import { deleteItem, getItem, putItem, TABLES } from "@/lib/dynamodb";
-import type { Question, Subject } from "@/types";
+import type { ChildJourneyTheme, Question, Subject } from "@/types";
 
 const ACTIVE_SESSION_TTL_SECONDS = 60 * 60 * 24 * 14;
 
@@ -25,6 +25,7 @@ export interface LearnSessionState {
   results: LearnSessionQuestionResult[];
   currentDifficulty: number;
   ageGroup?: string;
+  journeyTheme?: ChildJourneyTheme;
   timer: number;
   coins: number;
   streak: number;

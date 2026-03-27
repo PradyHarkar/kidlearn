@@ -70,6 +70,14 @@ export interface Child {
   stats: {
     totalQuestionsAttempted: number;
     totalCorrect: number;
+    // Per-subject attempt counts (0 = subject not yet practiced)
+    mathsAttempted: number;
+    englishAttempted: number;
+    scienceAttempted: number;
+    mathsCorrect: number;
+    englishCorrect: number;
+    scienceCorrect: number;
+    // Cumulative accuracy per subject (0–100); only meaningful if *Attempted > 0
     mathsAccuracy: number;
     englishAccuracy: number;
     scienceAccuracy: number;
@@ -167,6 +175,81 @@ export interface ProgressSummary {
   totalSessions: number;
   sessionsBySubject: Record<Subject, ProgressSessionSummary[]>;
   accuracyBySubject: Record<Subject, number>;
+}
+
+export interface ChildJourneyTheme {
+  tileThemeId: string;
+  tileFavoriteTags: string[];
+}
+
+export interface TopicPerformanceTopic {
+  topic: string;
+  attempts: number;
+  correct: number;
+  incorrect: number;
+  accuracy: number;
+  lastAttemptAt: string;
+}
+
+export interface SubjectTopicPerformance {
+  subject: Subject;
+  attempts: number;
+  correct: number;
+  incorrect: number;
+  accuracy: number;
+  topics: TopicPerformanceTopic[];
+}
+
+export interface TopicPerformanceSummary {
+  childId: string;
+  overallAccuracy: number;
+  subjects: Record<Subject, SubjectTopicPerformance>;
+  topTopics: TopicPerformanceTopic[];
+  updatedAt: string;
+}
+
+export interface ProgressAlert {
+  subject: Subject;
+  topic: string;
+  attempts: number;
+  correct: number;
+  incorrect: number;
+  accuracy: number;
+  severity: "warning" | "danger";
+  message: string;
+  actionLabel: string;
+  actionUrl: string;
+}
+
+export interface ProgressAlertSummary {
+  childId: string;
+  alerts: ProgressAlert[];
+  updatedAt: string;
+}
+
+export interface WeeklyDigestTopic {
+  subject: Subject;
+  topic: string;
+  attempts: number;
+  correct: number;
+  incorrect: number;
+  accuracy: number;
+}
+
+export interface WeeklyDigestSummary {
+  childId: string;
+  childName: string;
+  weekStart: string;
+  weekEnd: string;
+  totalSessions: number;
+  totalQuestions: number;
+  correct: number;
+  accuracy: number;
+  rewardPointsEarned: number;
+  streakDays: number;
+  subjectAccuracy: Record<Subject, number>;
+  topTopics: WeeklyDigestTopic[];
+  recentSessions: ProgressSessionSummary[];
 }
 
 export interface DiagnosticQuestion {

@@ -92,6 +92,12 @@ export async function POST(req: NextRequest) {
       stats: {
         totalQuestionsAttempted: 0,
         totalCorrect: 0,
+        mathsAttempted: 0,
+        englishAttempted: 0,
+        scienceAttempted: 0,
+        mathsCorrect: 0,
+        englishCorrect: 0,
+        scienceCorrect: 0,
         mathsAccuracy: 0,
         englishAccuracy: 0,
         scienceAccuracy: 0,

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { scanItems, queryItems, TABLES } from "@/lib/dynamodb";
+import { getItem, queryItems, scanItems, TABLES } from "@/lib/dynamodb";
 import { sendWeeklyReport } from "@/lib/email";
 import type { ChildWeeklyReport, WeeklyReportData } from "@/lib/email";
+import { getActorSession, actorCanAccessChild } from "@/lib/actor-session";
+import { getWeeklyDigestForChild } from "@/lib/services/performance-insights";
 import type { Achievement } from "@/types";
 
 export const runtime = "nodejs";
@@ -172,4 +174,47 @@ export async function POST(req: NextRequest) {
     weekStart: formatDate(weekStart),
     weekEnd: formatDate(weekEnd),
   });
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const actor = await getActorSession();
+    if (!actor) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const childId = searchParams.get("childId");
+
+    if (childId) {
+      if (!actorCanAccessChild(actor, childId)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+
+      const child = await getItem(TABLES.CHILDREN, { userId: actor.userId, childId });
+      if (!child) {
+        return NextResponse.json({ error: "Child not found" }, { status: 404 });
+      }
+
+      const digest = await getWeeklyDigestForChild(actor.userId, childId);
+      return NextResponse.json({ digest });
+    }
+
+    const children = await queryItems(
+      TABLES.CHILDREN,
+      "userId = :uid",
+      { ":uid": actor.userId }
+    );
+
+    const digests = await Promise.all(
+      children.map(async (child) => getWeeklyDigestForChild(actor.userId, String((child as Record<string, unknown>).childId || "")))
+    );
+
+    return NextResponse.json({
+      digests: digests.filter((digest): digest is NonNullable<typeof digest> => Boolean(digest)),
+    });
+  } catch (error) {
+    console.error("Weekly digest fetch failed:", error);
+    return NextResponse.json({ error: "Failed to fetch weekly digest" }, { status: 500 });
+  }
 }

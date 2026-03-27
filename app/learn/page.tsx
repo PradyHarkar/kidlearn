@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mascot } from "@/components/mascot/Mascot";
-import { Question, Subject } from "@/types";
+import { AgeGroup, Country, Question, Subject, YearLevel } from "@/types";
+import { getThemeJourneyTokens } from "@/lib/services/tile-themes";
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
 
@@ -36,6 +37,10 @@ interface SavedLearnSessionState {
   results: QuestionResult[];
   currentDifficulty: number;
   ageGroup?: string;
+  journeyTheme?: {
+    tileThemeId: string;
+    tileFavoriteTags: string[];
+  };
   timer: number;
   coins: number;
   streak: number;
@@ -68,6 +73,9 @@ function LearnContent() {
   const [consecutiveWrong, setConsecutiveWrong] = useState(0);
   const [currentDifficulty, setCurrentDifficulty] = useState(1);
   const [ageGroup, setAgeGroup] = useState<string | undefined>();
+  const [journeyThemeId, setJourneyThemeId] = useState("");
+  const [journeyThemeTags, setJourneyThemeTags] = useState<string[]>([]);
+  const [journeyCountry, setJourneyCountry] = useState<"AU" | "US" | "IN" | "UK">("AU");
   const [timer, setTimer] = useState(0);
   const [coins, setCoins] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -90,6 +98,15 @@ function LearnContent() {
 
   // Reward points = number of questions answered
   const pointsEarned = results.length;
+  const journeyTheme = useMemo(() => {
+    const resolvedAgeGroup = (ageGroup || "year3") as AgeGroup;
+    const resolvedYearLevel: YearLevel = resolvedAgeGroup === "foundation" ? "prep" : resolvedAgeGroup;
+    return getThemeJourneyTokens(journeyThemeId || undefined, {
+      ageGroup: resolvedAgeGroup,
+      yearLevel: resolvedYearLevel,
+      country: journeyCountry as Country,
+    });
+  }, [ageGroup, journeyCountry, journeyThemeId]);
 
   // Resolve media pointer to renderable content
   const resolveMedia = (imageUrl: string | undefined, emoji: string | undefined): string | null => {
@@ -159,6 +176,8 @@ function LearnContent() {
         setShowExplanation(saved.showExplanation || false);
         setMascotMood(saved.mascotMood || "happy");
         setMascotMessage(saved.mascotMessage);
+        setJourneyThemeId(saved.journeyTheme?.tileThemeId || "");
+        setJourneyThemeTags(saved.journeyTheme?.tileFavoriteTags || []);
         restoredTimerRef.current = saved.timer || 0;
         return;
         }
@@ -169,6 +188,9 @@ function LearnContent() {
 
       setCurrentDifficulty(questionsData.difficulty || 1);
       setAgeGroup(questionsData.ageGroup);
+      setJourneyCountry((questionsData.country || "AU") as Country);
+      setJourneyThemeId(questionsData.appearance?.tileThemeId || "");
+      setJourneyThemeTags(questionsData.appearance?.tileFavoriteTags || []);
       setQuestions(fetchedQuestions);
       restoredTimerRef.current = 0;
 
@@ -194,6 +216,10 @@ function LearnContent() {
             showHint: false,
             showExplanation: false,
             mascotMood: "happy",
+            journeyTheme: {
+              tileThemeId: questionsData.appearance?.tileThemeId || "",
+              tileFavoriteTags: questionsData.appearance?.tileFavoriteTags || [],
+            },
           }),
         });
         const saveData = await saveRes.json();
@@ -221,6 +247,10 @@ function LearnContent() {
           sessionId: activeSessionId,
           childId,
           subject,
+          journeyTheme: {
+            tileThemeId: journeyThemeId,
+            tileFavoriteTags: journeyThemeTags,
+          },
         }),
       });
       const data = await res.json();
@@ -230,7 +260,7 @@ function LearnContent() {
     } catch {
       // Non-fatal: progress submission still persists the final state.
     }
-  }, [activeSessionId, childId, subject]);
+  }, [activeSessionId, childId, journeyThemeId, journeyThemeTags, subject]);
 
   const handleAnswerSelect = useCallback((answerId: string, isCorrect: boolean) => {
     if (isAnswered) return;
@@ -520,32 +550,26 @@ function LearnContent() {
   };
 
   if (status === "loading" || loading) {
-    const loadingGradient = subject === "maths"
-      ? "bg-gradient-to-br from-pink-500 to-rose-600"
-      : subject === "science"
-      ? "bg-gradient-to-br from-emerald-500 to-teal-600"
-      : "bg-gradient-to-br from-blue-500 to-cyan-600";
     return (
-      <div className={`min-h-screen flex items-center justify-center ${loadingGradient}`}>
+      <div className={`min-h-screen flex items-center justify-center ${journeyTheme.pageGradient}`}>
         <div className="text-center">
           <Mascot mood="thinking" size="md" className="mb-4" />
-          <div className="text-white font-black text-2xl animate-pulse">Loading questions... ✨</div>
+          <div className="text-slate-900 font-black text-2xl animate-pulse">Loading questions... ✨</div>
         </div>
       </div>
     );
   }
 
   if (!questions.length) {
-    const emptyGrad = subject === "maths" ? "from-pink-500 to-rose-600" : subject === "science" ? "from-emerald-500 to-teal-600" : "from-blue-500 to-cyan-600";
     return (
-      <div className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${emptyGrad}`}>
-        <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-kid mx-4">
+      <div className={`min-h-screen flex items-center justify-center ${journeyTheme.pageGradient}`}>
+        <div className={`${journeyTheme.surfaceCard} rounded-3xl p-8 max-w-sm w-full text-center shadow-kid mx-4 border ${journeyTheme.surfaceBorder}`}>
           <div className="text-6xl mb-4">📚</div>
           <h2 className="text-2xl font-black text-gray-800 mb-2">No questions yet!</h2>
           <p className="text-gray-500 font-semibold mb-6">Questions for this subject are being added soon. Try Maths or English!</p>
           <button
             onClick={() => router.push("/dashboard")}
-            className="btn-primary w-full"
+            className={`${journeyTheme.primaryButton} w-full`}
           >
             🏠 Back to Dashboard
           </button>
@@ -568,18 +592,12 @@ function LearnContent() {
   const correct = results.filter(r => r.correct).length;
   const progressPct = ((currentIndex + (isAnswered ? 1 : 0)) / questions.length) * 100;
 
-  const bgGradient = subject === "maths"
-    ? "from-pink-500 via-rose-500 to-orange-400"
-    : subject === "science"
-    ? "from-emerald-500 via-teal-500 to-cyan-400"
-    : "from-blue-600 via-cyan-500 to-teal-400";
-
   const difficultyStars = Array.from({ length: 10 }, (_, i) => i < currentDifficulty ? "⭐" : "☆");
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${bgGradient} flex flex-col`}>
+    <div className={`min-h-screen ${journeyTheme.pageGradient} flex flex-col`}>
       {/* ===== TOP BAR ===== */}
-      <div className="sticky top-0 z-20 bg-black/20 backdrop-blur-md px-4 py-3">
+      <div className="sticky top-0 z-20 bg-white/35 backdrop-blur-md px-4 py-3 border-b border-white/30">
         <div className="max-w-2xl mx-auto">
           {/* Row 1: back + subject + stats */}
           <div className="flex items-center justify-between mb-2">
@@ -587,20 +605,23 @@ function LearnContent() {
               onClick={() => router.push("/dashboard")}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="glass rounded-xl px-3 py-1.5 text-white font-bold text-sm flex items-center gap-1"
+              className={`${journeyTheme.secondaryButton} rounded-xl px-3 py-1.5 font-bold text-sm flex items-center gap-1 border`}
             >
               ← Exit
             </motion.button>
 
-            <div className="flex items-center gap-2">
-              <span className="text-white font-black text-lg drop-shadow">
+            <div className="flex items-center gap-2 flex-wrap justify-center">
+              <span className="text-slate-900 font-black text-lg drop-shadow-sm">
                 {subject === "maths" ? "🔢 Maths" : subject === "science" ? "🔬 Science" : "📖 English"}
+              </span>
+              <span className={`${journeyTheme.badge} rounded-full px-3 py-1 text-xs font-black`}>
+                {journeyTheme.preset.emoji} {journeyTheme.preset.label}
               </span>
             </div>
 
             <div className="flex items-center gap-2">
               {/* Reward points */}
-              <div className="glass rounded-xl px-2.5 py-1 text-white font-bold text-sm flex items-center gap-1">
+              <div className="rounded-xl px-2.5 py-1 text-slate-900 font-bold text-sm flex items-center gap-1 bg-white/70">
                 🏅 {pointsEarned}pts
               </div>
               {streak > 1 && (
@@ -608,7 +629,7 @@ function LearnContent() {
                   🔥 {streak}
                 </div>
               )}
-              <div className="reward-counter">
+              <div className={`${journeyTheme.badge} reward-counter`}>
                 🪙 {coins}
               </div>
             </div>
@@ -616,13 +637,13 @@ function LearnContent() {
 
           {/* Row 2: progress bar */}
           <div className="flex items-center gap-2">
-            <span className="text-white/80 text-xs font-bold w-16 shrink-0">
+            <span className="text-slate-700 text-xs font-bold w-16 shrink-0">
               {currentIndex + 1}/{questions.length}
             </span>
-            <div className="flex-1 bg-white/20 rounded-full h-5 overflow-hidden border-2 border-white/30">
-              <div className="progress-fill" style={{ width: `${progressPct}%` }} />
+            <div className={`flex-1 ${journeyTheme.progressTrack} rounded-full h-5 overflow-hidden border-2 border-white/60`}>
+              <div className={journeyTheme.progressFill} style={{ width: `${progressPct}%`, height: "100%" }} />
             </div>
-            <span className="text-white/80 text-xs font-bold w-12 text-right shrink-0">
+            <span className="text-slate-700 text-xs font-bold w-12 text-right shrink-0">
               ✅ {correct}
             </span>
           </div>
@@ -632,11 +653,11 @@ function LearnContent() {
             {difficultyStars.slice(0, 5).map((s, i) => (
               <span key={i} className="text-xs leading-none">{s}</span>
             ))}
-            <span className="text-white/50 text-xs mx-1">|</span>
+            <span className="text-slate-400 text-xs mx-1">|</span>
             {difficultyStars.slice(5).map((s, i) => (
               <span key={i} className="text-xs leading-none">{s}</span>
             ))}
-            <span className="text-white/70 text-xs font-bold ml-1">Lv {currentDifficulty}</span>
+            <span className="text-slate-700 text-xs font-bold ml-1">Lv {currentDifficulty}</span>
           </div>
         </div>
       </div>
@@ -645,7 +666,7 @@ function LearnContent() {
       <div className="flex-1 max-w-2xl w-full mx-auto px-4 py-4 flex flex-col gap-4">
         {/* Timer pill */}
         <div className="flex justify-center">
-          <div className={`glass rounded-full px-4 py-1 text-white font-black text-sm ${timer > 30 ? "bg-red-500/30" : ""}`}>
+          <div className={`rounded-full px-4 py-1 text-slate-900 font-black text-sm bg-white/75 ${timer > 30 ? "bg-red-200/80" : ""}`}>
             ⏱️ {timer}s
           </div>
         </div>
@@ -660,13 +681,13 @@ function LearnContent() {
             className="flex flex-col gap-4"
           >
             {/* Question Card */}
-            <div className="bg-white rounded-4xl shadow-kid overflow-hidden">
+            <div className={`${journeyTheme.surfaceCard} rounded-4xl shadow-kid overflow-hidden border ${journeyTheme.surfaceBorder}`}>
               {/* Question header with topic pills */}
-              <div className="bg-gradient-to-r from-indigo-50 to-blue-50 px-6 pt-5 pb-3">
+              <div className={`${journeyTheme.heroPanelSoft} px-6 pt-5 pb-3`}>
                 <div className="flex flex-wrap gap-1.5 mb-3 items-center justify-between">
                   <div className="flex flex-wrap gap-1.5">
                     {(q.topics || []).map(topic => (
-                      <span key={topic} className="topic-pill capitalize">{topic.replace(/-/g, " ")}</span>
+                      <span key={topic} className={`topic-pill capitalize ${journeyTheme.chip}`}>{topic.replace(/-/g, " ")}</span>
                     ))}
                   </div>
                   {/* Report button */}
@@ -684,7 +705,7 @@ function LearnContent() {
 
                 {/* Question text + TTS */}
                 <div className="flex items-start gap-3">
-                  <p className="question-text flex-1">{q.questionText}</p>
+                  <p className="question-text flex-1 text-slate-900">{q.questionText}</p>
                   <motion.button
                     onClick={() => speak(q.ttsText || q.questionText)}
                     whileHover={{ scale: 1.1, rotate: 5 }}
@@ -707,7 +728,7 @@ function LearnContent() {
                     exit={{ opacity: 0, height: 0 }}
                     className="mx-4 mb-0"
                   >
-                    <div className="bg-yellow-50 border-l-4 border-yellow-400 rounded-xl p-3 my-2">
+                    <div className={`${journeyTheme.heroPanelSoft} border-l-4 border-amber-400 rounded-xl p-3 my-2`}>
                       <p className="text-yellow-800 font-bold text-sm">💡 Hint: {q.hint}</p>
                     </div>
                   </motion.div>
@@ -718,16 +739,16 @@ function LearnContent() {
               <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {(q.answerOptions || []).map((option, idx) => {
                   const isSelected = selectedAnswer === option.id;
-                  let cardClass = "answer-card";
+                  let cardClass = `answer-card ${journeyTheme.answerOption}`;
                   let bgClass = "";
 
                   if (isAnswered) {
                     if (option.isCorrect) {
                       cardClass += " answer-reveal-correct";
-                      bgClass = "border-green-400 bg-gradient-to-br from-green-50 to-emerald-50";
+                      bgClass = journeyTheme.answerOptionCorrect;
                     } else if (isSelected && !option.isCorrect) {
                       cardClass += " answer-wrong";
-                      bgClass = "border-red-400 bg-gradient-to-br from-red-50 to-pink-50";
+                      bgClass = "border-red-400 bg-red-50";
                     } else {
                       cardClass += " answer-dimmed";
                     }
@@ -760,7 +781,7 @@ function LearnContent() {
                           </span>
                         )}
 
-                        <p className="font-black text-gray-800 text-lg flex-1 leading-snug">{option.text}</p>
+                        <p className="font-black text-slate-900 text-lg flex-1 leading-snug">{option.text}</p>
 
                         {isAnswered && option.isCorrect && (
                           <motion.span
@@ -855,7 +876,7 @@ function LearnContent() {
                     onClick={() => setShowHint(!showHint)}
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.95 }}
-                    className="flex-1 bg-yellow-400 hover:bg-yellow-300 text-gray-800 font-black py-3.5 px-4 rounded-2xl shadow-md transition-all text-base"
+                    className={`${journeyTheme.primaryButton} flex-1 font-black py-3.5 px-4 rounded-2xl transition-all text-base`}
                     aria-label="Show hint"
                   >
                     💡 {showHint ? "Hide Hint" : "Get Hint"}
@@ -864,7 +885,7 @@ function LearnContent() {
                     onClick={handleSkip}
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.95 }}
-                    className="flex-1 glass text-white font-bold py-3.5 px-4 rounded-2xl transition-all text-base hover:bg-white/30"
+                    className={`${journeyTheme.secondaryButton} flex-1 font-bold py-3.5 px-4 rounded-2xl transition-all text-base border`}
                     aria-label="Skip question"
                   >
                     ⏭️ Skip
@@ -878,7 +899,7 @@ function LearnContent() {
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
-                  className="w-full bg-white text-purple-700 font-black text-xl py-4 rounded-3xl shadow-kid hover:bg-yellow-50 transition-all flex items-center justify-center gap-2"
+                  className={`${journeyTheme.primaryButton} w-full font-black text-xl py-4 rounded-3xl transition-all flex items-center justify-center gap-2`}
                 >
                   {submitting ? (
                     <div className="w-6 h-6 border-3 border-purple-600 border-t-transparent rounded-full animate-spin" />
@@ -982,3 +1003,4 @@ export default function LearnPage() {
     </Suspense>
   );
 }
+

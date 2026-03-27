@@ -26,6 +26,10 @@ const sessionSchema = z.object({
   results: z.array(questionResultSchema),
   currentDifficulty: z.number(),
   ageGroup: z.string().optional(),
+  journeyTheme: z.object({
+    tileThemeId: z.string(),
+    tileFavoriteTags: z.array(z.string()),
+  }).optional(),
   timer: z.number(),
   coins: z.number(),
   streak: z.number(),

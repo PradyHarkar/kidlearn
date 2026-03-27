@@ -2,7 +2,8 @@ import { getInitialDifficultyForAgeGroup, shouldResetDifficulty } from "@/lib/ad
 import { getGradeConfig, getTopicsForGrade } from "@/lib/curriculum";
 import { createDdb, getItem, scanItems, TABLES } from "@/lib/dynamodb";
 import { resolveChildAgeGroup, toLegacyYearLevel } from "@/lib/learner";
-import type { AgeGroup, Child, Country, Question, QuestionIssue, Subject, YearLevel } from "@/types";
+import { getDefaultTileThemeId } from "@/lib/services/tile-themes";
+import type { AgeGroup, Child, ChildJourneyTheme, Country, Question, QuestionIssue, Subject, YearLevel } from "@/types";
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 
 interface CurriculumContext {
@@ -18,8 +19,10 @@ export interface QuestionsForChildResult {
   difficulty: number;
   yearLevel: YearLevel;
   ageGroup: AgeGroup;
+  country: Country;
   totalAvailable: number;
   curriculumContext: CurriculumContext | null;
+  appearance: ChildJourneyTheme;
 }
 
 function getCurrentDifficulty(child: Child, subject: Subject): number {
@@ -222,7 +225,12 @@ export async function getQuestionsForChild(userId: string, childId: string, subj
     difficulty: currentDifficulty,
     yearLevel: toLegacyYearLevel(ageGroup),
     ageGroup,
+    country: childCountry,
     totalAvailable: availableQuestions.length,
     curriculumContext: buildCurriculumContext(typedChild, ageGroup, subject),
+    appearance: {
+      tileThemeId: typedChild.tileThemeId || getDefaultTileThemeId(typedChild),
+      tileFavoriteTags: typedChild.tileFavoriteTags || [],
+    },
   };
 }

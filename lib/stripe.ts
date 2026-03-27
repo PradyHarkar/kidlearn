@@ -22,13 +22,31 @@ export const stripe = new Proxy({} as Stripe, {
 });
 
 /** Returns the Stripe price ID for a given country + plan.
- *  Env var naming convention: STRIPE_PRICE_AU_WEEKLY, STRIPE_PRICE_US_ANNUAL, etc.
+ *  First checks STRIPE_PRICE_AU_WEEKLY-style env vars.
+ *  Falls back to querying Stripe by product metadata if env var is missing.
  */
-export function getStripePriceId(country: Country, plan: SubscriptionPlan): string {
+export async function getStripePriceId(country: Country, plan: SubscriptionPlan): Promise<string> {
   const key = `STRIPE_PRICE_${country}_${plan.toUpperCase()}`;
   const id = process.env[key];
-  if (!id) throw new Error(`Missing env var ${key} — run scripts/setup-stripe.ts to create Stripe prices`);
-  return id;
+  if (id) return id;
+
+  // Fallback: query Stripe for price matching country + plan via metadata
+  const stripeClient = getStripeInstance();
+  const interval = plan === "weekly" ? "week" : "year";
+  const currency = COUNTRY_CONFIGS[country].currency.toLowerCase();
+
+  const allPrices = await stripeClient.prices.list({ active: true, limit: 100, expand: ["data.product"] });
+  const match = allPrices.data.find((p) => {
+    const prod = p.product as Stripe.Product;
+    return (
+      p.currency === currency &&
+      p.recurring?.interval === interval &&
+      (p.metadata?.country === country || prod?.name === "KidLearn Subscription")
+    );
+  });
+
+  if (match) return match.id;
+  throw new Error(`No active Stripe price found for ${country} ${plan}. Run: npx tsx scripts/setup-stripe.ts`);
 }
 
 /** Retrieve an existing Stripe customer by ID, or create one. Returns the customer ID. */
@@ -65,7 +83,7 @@ export async function createCheckoutSession(params: {
     userId, email, parentName, existingStripeCustomerId
   );
 
-  const priceId = getStripePriceId(country, plan);
+  const priceId = await getStripePriceId(country, plan);
 
   return stripe.checkout.sessions.create({
     customer: customerId,

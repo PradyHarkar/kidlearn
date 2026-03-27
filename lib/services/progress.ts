@@ -123,6 +123,18 @@ export async function submitProgressForChild(
   const totalRewardPoints = (child.rewardPoints || 0) + rewardPointsEarned;
   const totalAttempted = (child.stats?.totalQuestionsAttempted || 0) + questions.length;
   const totalCorrectAll = (child.stats?.totalCorrect || 0) + correct;
+
+  // Per-subject cumulative tracking (cumulative accuracy, not last-session)
+  const mathsAttempted = (child.stats?.mathsAttempted || 0) + (subject === "maths" ? questions.length : 0);
+  const englishAttempted = (child.stats?.englishAttempted || 0) + (subject === "english" ? questions.length : 0);
+  const scienceAttempted = (child.stats?.scienceAttempted || 0) + (subject === "science" ? questions.length : 0);
+  const mathsCorrect = (child.stats?.mathsCorrect || 0) + (subject === "maths" ? correct : 0);
+  const englishCorrect = (child.stats?.englishCorrect || 0) + (subject === "english" ? correct : 0);
+  const scienceCorrect = (child.stats?.scienceCorrect || 0) + (subject === "science" ? correct : 0);
+  const mathsAccuracy = mathsAttempted ? Math.round((mathsCorrect / mathsAttempted) * 100) : 0;
+  const englishAccuracy = englishAttempted ? Math.round((englishCorrect / englishAttempted) * 100) : 0;
+  const scienceAccuracy = scienceAttempted ? Math.round((scienceCorrect / scienceAttempted) * 100) : 0;
+
   const { newStreak, coins: streakCoins } = updateStreak({
     streakDays: child.streakDays,
     lastActiveDate: child.lastActiveDate,
@@ -142,9 +154,15 @@ export async function submitProgressForChild(
       ":stats": {
         totalQuestionsAttempted: totalAttempted,
         totalCorrect: totalCorrectAll,
-        mathsAccuracy: subject === "maths" ? accuracy : (child.stats?.mathsAccuracy || 0),
-        englishAccuracy: subject === "english" ? accuracy : (child.stats?.englishAccuracy || 0),
-        scienceAccuracy: subject === "science" ? accuracy : (child.stats?.scienceAccuracy || 0),
+        mathsAttempted,
+        englishAttempted,
+        scienceAttempted,
+        mathsCorrect,
+        englishCorrect,
+        scienceCorrect,
+        mathsAccuracy,
+        englishAccuracy,
+        scienceAccuracy,
         favoriteTopics: child.stats?.favoriteTopics || [],
       },
     }
@@ -154,9 +172,9 @@ export async function submitProgressForChild(
     totalQuestions: totalAttempted,
     totalCorrect: totalCorrectAll,
     currentStreak: newStreak,
-    mathsAccuracy: subject === "maths" ? accuracy : (child.stats?.mathsAccuracy || 0),
-    englishAccuracy: subject === "english" ? accuracy : (child.stats?.englishAccuracy || 0),
-    scienceAccuracy: subject === "science" ? accuracy : (child.stats?.scienceAccuracy || 0),
+    mathsAccuracy,
+    englishAccuracy,
+    scienceAccuracy,
     perfectSessions: accuracy === 100 ? 1 : 0,
   });
 

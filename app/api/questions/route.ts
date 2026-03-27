@@ -28,8 +28,10 @@ export async function GET(req: NextRequest) {
       difficulty: result.difficulty,
       yearLevel: result.yearLevel,
       ageGroup: result.ageGroup,
+      country: result.country,
       totalAvailable: result.totalAvailable,
       curriculumContext: result.curriculumContext,
+      appearance: result.appearance,
     });
   } catch (error) {
     console.error("Get questions error:", error);

@@ -7,7 +7,7 @@
 
 import { test, startSuite, assertTrue, assertEqual } from "../lib/assert";
 import { generateQuestionBank } from "../../../lib/content/question-bank";
-import { orderQuestionsForSession } from "../../../lib/services/questions";
+import { orderQuestionsForSession, prepareQuestionForDelivery } from "../../../lib/services/questions";
 import type { AgeGroup, Country, Question, Subject } from "../../../types";
 
 const SUITE = "question-ramp";
@@ -52,6 +52,30 @@ export async function runQuestionRampSuite(baseUrl: string) {
         `question must start with a capital letter: ${question.questionText.slice(0, 80)}`
       );
     }
+  });
+
+  await test(SUITE, "prepareQuestionForDelivery: capitalizes lowercase stems and shuffles the correct option away from A", async () => {
+    const question = makeQuestion({
+      questionId: "delivery-001",
+      subject: "maths",
+      yearLevel: "year3",
+      ageGroup: "year3",
+      country: "AU",
+      difficulty: 5,
+      topics: ["addition", "number sense"],
+      questionText: "during the morning rotation, which option is closest in meaning to ancient?",
+      answerOptions: [
+        { id: "a", text: "Very old", isCorrect: true },
+        { id: "b", text: "Very small", isCorrect: false },
+        { id: "c", text: "Very noisy", isCorrect: false },
+        { id: "d", text: "Very bright", isCorrect: false },
+      ],
+    });
+
+    const delivered = prepareQuestionForDelivery(question);
+    assertTrue(/^[A-Z]/.test(delivered.questionText), "delivered question should start with a capital letter");
+    assertTrue(!(delivered.answerOptions[0]?.isCorrect ?? false), "correct answer should not always stay in option A");
+    assertEqual(delivered.answerOptions.length, 4, "answer option count should stay the same");
   });
 
   await test(SUITE, "orderQuestionsForSession: difficulties are non-decreasing", async () => {

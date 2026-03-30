@@ -89,6 +89,60 @@ function dedupeQuestionsByContent(questions: Question[]): Question[] {
   return deduped;
 }
 
+function capitalizeLeadingLetter(text: string): string {
+  const leadingWhitespace = text.match(/^\s*/)?.[0] ?? "";
+  const body = text.slice(leadingWhitespace.length);
+  if (!body) return text.trim();
+  return leadingWhitespace + body.charAt(0).toUpperCase() + body.slice(1);
+}
+
+function hashString(input: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < input.length; index += 1) {
+    hash ^= input.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function seededRandom(seed: number): () => number {
+  let state = seed || 1;
+  return () => {
+    state = Math.imul(state ^ (state >>> 15), 2246822519) >>> 0;
+    state ^= state + Math.imul(state ^ (state >>> 7), 3266489917);
+    return (state >>> 0) / 0x100000000;
+  };
+}
+
+function shuffleWithSeed<T>(values: T[], seedSource: string): T[] {
+  const shuffled = [...values];
+  const random = seededRandom(hashString(seedSource));
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+  }
+
+  return shuffled;
+}
+
+export function prepareQuestionForDelivery(question: Question): Question {
+  const answerOptions = shuffleWithSeed(
+    question.answerOptions ?? [],
+    `${question.questionId}:${question.pk}:${question.questionText}`
+  );
+
+  if (answerOptions.length > 1 && answerOptions[0]?.isCorrect) {
+    [answerOptions[0], answerOptions[1]] = [answerOptions[1], answerOptions[0]];
+  }
+
+  return {
+    ...question,
+    questionText: capitalizeLeadingLetter(question.questionText),
+    answerOptions,
+  };
+}
+
 function buildAvailableQuestionPool(questions: Question[], blockedQuestionIds: Set<string>) {
   return dedupeQuestionsByContent(
     questions.filter((question) => !blockedQuestionIds.has(question.questionId))
@@ -319,7 +373,7 @@ export async function getQuestionsForChild(userId: string, childId: string, subj
   );
 
   return {
-    questions: selectQuestionsByDifficulty(topicFilteredQuestions, currentDifficulty, blockedQuestionIds),
+    questions: selectQuestionsByDifficulty(topicFilteredQuestions, currentDifficulty, blockedQuestionIds).map(prepareQuestionForDelivery),
     difficulty: currentDifficulty,
     yearLevel: toLegacyYearLevel(ageGroup),
     ageGroup,

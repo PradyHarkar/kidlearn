@@ -28,6 +28,13 @@ This repository is currently in an architecture-hardening phase. The app works, 
 - `types/`: shared TypeScript types
 - `scripts/`: setup and seed scripts
 - `infrastructure/`: AWS CDK app and stack definitions
+- `docs/`: product and content contracts for LLMs and humans
+
+### Core docs
+
+- `docs/questions.md`: question generation rules and anti-patterns
+- `docs/teacher.md`: question audit / quality gate rules
+- `docs/learn.md`: learning experience and UI behavior contract
 
 ## Local Development
 

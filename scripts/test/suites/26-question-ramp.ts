@@ -78,6 +78,33 @@ export async function runQuestionRampSuite(baseUrl: string) {
     assertEqual(delivered.answerOptions.length, 4, "answer option count should stay the same");
   });
 
+  await test(SUITE, "prepareQuestionForDelivery: repeated delivery is deterministic for saved sessions", async () => {
+    const question = makeQuestion({
+      questionId: "delivery-002",
+      subject: "science",
+      yearLevel: "year5",
+      ageGroup: "year5",
+      country: "AU",
+      difficulty: 7,
+      topics: ["living things", "classification"],
+      questionText: "which one is a carnivore?",
+      answerOptions: [
+        { id: "a", text: "Lion", isCorrect: true },
+        { id: "b", text: "Cow", isCorrect: false },
+        { id: "c", text: "Rabbit", isCorrect: false },
+        { id: "d", text: "Deer", isCorrect: false },
+      ],
+    });
+
+    const once = prepareQuestionForDelivery(question);
+    const twice = prepareQuestionForDelivery(question);
+    assertEqual(
+      twice.answerOptions.map((option) => option.id).join(","),
+      once.answerOptions.map((option) => option.id).join(","),
+      "the same question should keep the same delivered order"
+    );
+  });
+
   await test(SUITE, "orderQuestionsForSession: difficulties are non-decreasing", async () => {
     const questions = Array.from({ length: 24 }, (_, index) =>
       makeQuestion({

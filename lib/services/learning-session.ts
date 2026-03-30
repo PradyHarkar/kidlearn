@@ -1,6 +1,7 @@
 import { DescribeTableCommand, DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { v4 as uuidv4 } from "uuid";
 import { deleteItem, getItem, putItem, TABLES } from "@/lib/dynamodb";
+import { prepareQuestionForDelivery } from "@/lib/services/questions";
 import type { ChildJourneyTheme, Question, Subject } from "@/types";
 
 const ACTIVE_SESSION_TTL_SECONDS = 60 * 60 * 24 * 14;
@@ -108,10 +109,17 @@ async function toRecord(state: LearnSessionState): Promise<Record<string, unknow
   return base;
 }
 
+function normalizeSessionQuestions(session: LearnSessionState): LearnSessionState {
+  return {
+    ...session,
+    questions: (session.questions || []).map((question) => prepareQuestionForDelivery(question)),
+  };
+}
+
 export async function getActiveLearningSession(userId: string, childId: string, subject: Subject): Promise<LearnSessionState | null> {
   const item = await getItem(TABLES.SESSIONS, await sessionKey(userId, childId, subject));
   if (!item) return null;
-  return item as LearnSessionState;
+  return normalizeSessionQuestions(item as LearnSessionState);
 }
 
 export async function saveActiveLearningSession(state: Omit<LearnSessionState, "sessionId" | "createdAt" | "updatedAt"> & Partial<Pick<LearnSessionState, "sessionId" | "createdAt">>) {
@@ -123,12 +131,12 @@ export async function saveActiveLearningSession(state: Omit<LearnSessionState, "
     ? `LEARN#${state.userId}#${state.childId}#${state.subject}`
     : (state.sessionId || (existing as LearnSessionState | null)?.sessionId || uuidv4());
   const createdAt = state.createdAt || (existing as LearnSessionState | null)?.createdAt || now;
-  const record: LearnSessionState = {
+  const record: LearnSessionState = normalizeSessionQuestions({
     ...state,
     sessionId,
     createdAt,
     updatedAt: now,
-  };
+  });
 
   await putItem(TABLES.SESSIONS, await toRecord(record));
   return record;

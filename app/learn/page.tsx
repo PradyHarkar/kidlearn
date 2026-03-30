@@ -6,8 +6,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mascot } from "@/components/mascot/Mascot";
 import { EnglishWritingExperience } from "@/components/writing/EnglishWritingExperience";
-import { AgeGroup, ChildPreferences, Country, Question, Subject, YearLevel } from "@/types";
-import { getThemeJourneyTokens } from "@/lib/services/tile-themes";
+import { QuestionVisualStage } from "@/components/questions/QuestionVisualStage";
+import { AgeGroup, ChildPreferences, ChildThemeKey, Country, Question, Subject, YearLevel } from "@/types";
+import { getThemeJourneyTokens, resolveChildThemeKey } from "@/lib/services/tile-themes";
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
 
@@ -28,6 +29,9 @@ interface QuestionResult {
   timeSpent: number;
   difficulty: number;
   topic: string;
+  questionText?: string;
+  chosenAnswer?: string;
+  correctAnswer?: string;
 }
 
 interface SavedLearnSessionState {
@@ -113,16 +117,29 @@ function LearnContent() {
       country: journeyCountry as Country,
     });
   }, [ageGroup, journeyCountry, journeyThemeId]);
+  const journeyThemeKey = useMemo(() => {
+    const resolvedAgeGroup = (ageGroup || "year3") as AgeGroup;
+    const resolvedYearLevel: YearLevel = resolvedAgeGroup === "foundation" ? "prep" : resolvedAgeGroup;
+    return resolveChildThemeKey(journeyThemeId || undefined, {
+      ageGroup: resolvedAgeGroup,
+      yearLevel: resolvedYearLevel,
+      country: journeyCountry as Country,
+    }) as ChildThemeKey;
+  }, [ageGroup, journeyCountry, journeyThemeId]);
 
   const rewardGlyph = journeyRewardStyle === "stars" ? "⭐" : journeyRewardStyle === "gems" ? "💎" : "🪙";
   const isCartoonStyle = journeyButtonStyle === "cartoon";
   const isBoldCard = journeyCardStyle === "bold";
+  const isLightJourneyTheme = journeyThemeKey !== "space";
   const questionCardClass = isBoldCard
     ? `rounded-[2.35rem] border-4 shadow-2xl ${journeyTheme.surfaceCard} ${journeyTheme.surfaceBorder}`
     : `rounded-4xl border shadow-kid ${journeyTheme.surfaceCard} ${journeyTheme.surfaceBorder}`;
   const actionButtonClass = isCartoonStyle
     ? "rounded-full shadow-lg border-2 border-white/50 uppercase tracking-wide"
     : "rounded-2xl shadow-md";
+  const primaryActionStyle = isLightJourneyTheme
+    ? { color: "#020617", borderColor: "rgba(15, 23, 42, 0.08)", boxShadow: "0 18px 40px rgba(15, 23, 42, 0.16)" }
+    : { color: "#ffffff", borderColor: "rgba(255, 255, 255, 0.18)" };
   const questionCardBackground = {
     backgroundImage: `linear-gradient(rgba(255,255,255,0.74), rgba(255,255,255,0.88)), url(${journeyTheme.cardImageUrl})`,
     backgroundSize: "cover",
@@ -151,7 +168,7 @@ function LearnContent() {
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
-    if (!childId || !subject) router.push("/dashboard");
+    if (!childId || !subject) router.push("/dashboard?tab=students");
   }, [status, childId, subject, router]);
 
   useEffect(() => {
@@ -267,7 +284,7 @@ function LearnContent() {
       }
     } catch {
       toast.error("Failed to load. Please try again!");
-      router.push("/dashboard");
+      router.push("/dashboard?tab=students");
     } finally {
       setLoading(false);
     }
@@ -307,6 +324,26 @@ function LearnContent() {
     }
   }, [activeSessionId, childId, journeyThemeId, journeyThemeTags, subject]);
 
+  /**
+   * Called by interactive stages (TapCount, DotJoin) when the child's action implies an answer.
+   * Finds the matching answer option by text content and auto-selects it.
+   */
+  const handleInteractionAnswer = useCallback((value: string | number) => {
+    if (isAnswered) return;
+    const currentQuestion = questions[currentIndex];
+    if (!currentQuestion) return;
+    const target = String(value).toLowerCase().trim();
+    const match = currentQuestion.answerOptions.find((opt) =>
+      opt.text.toLowerCase().trim() === target ||
+      opt.text.toLowerCase().includes(target) ||
+      target.includes(opt.text.toLowerCase().trim())
+    );
+    if (match) {
+      handleAnswerSelect(match.id, match.isCorrect);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAnswered, questions, currentIndex]);
+
   const handleAnswerSelect = useCallback((answerId: string, isCorrect: boolean) => {
     if (isAnswered) return;
 
@@ -320,12 +357,17 @@ function LearnContent() {
 
     const currentQuestion = questions[currentIndex];
     if (!currentQuestion) return;
+    const chosenAnswer = currentQuestion.answerOptions.find((option) => option.id === answerId)?.text || answerId;
+    const correctAnswer = currentQuestion.answerOptions.find((option) => option.isCorrect)?.text || "";
     const nextResults = [...results, {
       questionId: currentQuestion.questionId,
       correct: isCorrect,
       timeSpent,
       difficulty: currentDifficulty,
       topic: currentQuestion.topics?.[0] || "general",
+      questionText: currentQuestion.questionText,
+      chosenAnswer,
+      correctAnswer,
     }];
     setResults(nextResults);
 
@@ -453,7 +495,16 @@ function LearnContent() {
     const timeSpent = Math.floor((Date.now() - questionStartTime.current) / 1000);
     const q = questions[currentIndex];
     if (!q) return;
-    const nextResults = [...results, { questionId: q.questionId, correct: false, timeSpent, difficulty: currentDifficulty, topic: q.topics?.[0] || "general" }];
+    const nextResults = [...results, {
+      questionId: q.questionId,
+      correct: false,
+      timeSpent,
+      difficulty: currentDifficulty,
+      topic: q.topics?.[0] || "general",
+      questionText: q.questionText,
+      chosenAnswer: "",
+      correctAnswer: q.answerOptions.find((option) => option.isCorrect)?.text || "",
+    }];
     setResults(nextResults);
 
     if (currentIndex >= questions.length - 1) {
@@ -620,10 +671,10 @@ function LearnContent() {
           <h2 className="text-2xl font-black text-gray-800 mb-2">No questions yet!</h2>
           <p className="text-gray-500 font-semibold mb-6">Questions for this subject are being added soon. Try Maths or English!</p>
           <button
-            onClick={() => router.push("/dashboard")}
+            onClick={() => router.push("/dashboard?tab=students")}
             className={`${journeyTheme.primaryButton} w-full`}
           >
-            🏠 Back to Dashboard
+            🏠 Home
           </button>
         </div>
       </div>
@@ -695,12 +746,12 @@ function LearnContent() {
                 </div>
                 <div className="mt-6 flex flex-wrap gap-3 justify-center sm:justify-start">
                   <motion.button
-                    onClick={() => router.push("/dashboard")}
+                    onClick={() => router.push("/dashboard?tab=students")}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     className={`rounded-full px-6 py-3.5 text-sm sm:text-base font-black transition-colors ${journeyTheme.bannerPill}`}
                   >
-                    ← Exit Adventure
+                    🏠 Home
                   </motion.button>
                   <button
                     onClick={() => setShowHint(true)}
@@ -745,12 +796,12 @@ function LearnContent() {
           {/* Row 1: back + subject + stats */}
           <div className="flex items-center justify-between mb-2 gap-2">
             <motion.button
-              onClick={() => router.push("/dashboard")}
+              onClick={() => router.push("/dashboard?tab=students")}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className={`${journeyTheme.secondaryButton} rounded-xl px-3 py-1.5 font-bold text-sm flex items-center gap-1 border`}
             >
-              ← Exit
+              ← Home
             </motion.button>
 
             <div className="flex items-center gap-2 flex-wrap justify-center px-2">
@@ -867,6 +918,16 @@ function LearnContent() {
                     🔊
                   </motion.button>
                 </div>
+              </div>
+
+              <div className="px-4 sm:px-5 pt-2">
+                <QuestionVisualStage
+                  question={q}
+                  theme={journeyTheme}
+                  themeKey={journeyThemeKey}
+                  favoriteTags={journeyThemeTags}
+                  onInteractionAnswer={handleInteractionAnswer}
+                />
               </div>
 
               {/* Hint (expandable) */}
@@ -1023,15 +1084,16 @@ function LearnContent() {
             <div className="flex gap-3">
               {!isAnswered ? (
                 <>
-                  <motion.button
-                    onClick={() => setShowHint(!showHint)}
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.95 }}
-                    className={`${journeyTheme.primaryButton} ${actionButtonClass} flex-1 font-black py-3.5 px-4 transition-all text-base`}
-                    aria-label="Show hint"
-                  >
-                    💡 {showHint ? "Hide Hint" : "Get Hint"}
-                  </motion.button>
+                <motion.button
+                  onClick={() => setShowHint(!showHint)}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={`${journeyTheme.primaryButton} ${actionButtonClass} flex-1 font-black py-3.5 px-4 transition-all text-base`}
+                  style={primaryActionStyle}
+                  aria-label="Show hint"
+                >
+                  💡 {showHint ? "Hide Hint" : "Get Hint"}
+                </motion.button>
                   <motion.button
                     onClick={handleSkip}
                     whileHover={{ scale: 1.03 }}
@@ -1043,14 +1105,15 @@ function LearnContent() {
                   </motion.button>
                 </>
               ) : (
-                <motion.button
+              <motion.button
                   onClick={handleNext}
                   disabled={submitting}
                   initial={{ opacity: 0, scale: 0.8, y: 10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
-                  className={`${journeyTheme.primaryButton} ${actionButtonClass} w-full font-black text-xl py-4 transition-all flex items-center justify-center gap-2`}
+                  className={`${journeyTheme.primaryButton} ${actionButtonClass} w-full font-black text-xl py-4 transition-all flex items-center justify-center gap-2 ${isLightJourneyTheme ? "text-slate-950" : "text-white"}`}
+                  style={primaryActionStyle}
                 >
                   {submitting ? (
                     <div className="w-6 h-6 border-3 border-purple-600 border-t-transparent rounded-full animate-spin" />
@@ -1146,10 +1209,10 @@ function LearnContent() {
                   🔊 Read aloud again
                 </button>
                 <button
-                  onClick={() => router.push("/dashboard")}
+                  onClick={() => router.push("/dashboard?tab=students")}
                   className={`w-full rounded-2xl border px-4 py-3 text-left font-black ${journeyTheme.secondaryButton}`}
                 >
-                  🏠 Back to dashboard
+                  🏠 Home
                 </button>
               </div>
             </motion.section>
@@ -1240,4 +1303,3 @@ export default function LearnPage() {
     </Suspense>
   );
 }
-

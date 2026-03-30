@@ -7,12 +7,25 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Mascot } from "@/components/mascot/Mascot";
 import { EnglishWritingExperience } from "@/components/writing/EnglishWritingExperience";
 import { QuestionVisualStage } from "@/components/questions/QuestionVisualStage";
+import { ConceptTeachBanner } from "@/components/questions/ConceptTeachBanner";
 import { AgeGroup, ChildPreferences, ChildThemeKey, Country, Question, Subject, YearLevel } from "@/types";
 import { getThemeJourneyTokens, resolveChildThemeKey } from "@/lib/services/tile-themes";
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
 
 const SESSION_SIZE = 20;
+
+const OPTION_LETTERS = ["a", "b", "c", "d", "e"];
+
+/** Randomise answer option order so the correct answer isn't always option A */
+function randomiseOptions(question: Question): Question {
+  const opts = [...question.answerOptions];
+  for (let i = opts.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [opts[i], opts[j]] = [opts[j], opts[i]];
+  }
+  return { ...question, answerOptions: opts.map((o, idx) => ({ ...o, id: OPTION_LETTERS[idx] ?? o.id })) };
+}
 
 const REPORT_REASONS = [
   "Wrong answer marked",
@@ -130,7 +143,9 @@ function LearnContent() {
   const rewardGlyph = journeyRewardStyle === "stars" ? "⭐" : journeyRewardStyle === "gems" ? "💎" : "🪙";
   const isCartoonStyle = journeyButtonStyle === "cartoon";
   const isBoldCard = journeyCardStyle === "bold";
-  const isLightJourneyTheme = journeyThemeKey !== "space";
+  // "light" here means the primary button background is bright enough for dark text
+  // Space and jungle use dark/saturated gradients that need white text
+  const isLightJourneyTheme = journeyThemeKey !== "space" && journeyThemeKey !== "jungle";
   const questionCardClass = isBoldCard
     ? `rounded-[2.35rem] border-4 shadow-2xl ${journeyTheme.surfaceCard} ${journeyTheme.surfaceBorder}`
     : `rounded-4xl border shadow-kid ${journeyTheme.surfaceCard} ${journeyTheme.surfaceBorder}`;
@@ -228,7 +243,7 @@ function LearnContent() {
 
       const questionsRes = await fetch(`/api/questions?subject=${subject}&childId=${childId}`);
       const questionsData = await questionsRes.json();
-      const fetchedQuestions = (questionsData.questions || []).slice(0, SESSION_SIZE);
+      const fetchedQuestions = (questionsData.questions || []).slice(0, SESSION_SIZE).map(randomiseOptions);
 
       setCurrentDifficulty(questionsData.difficulty || 1);
       setAgeGroup(questionsData.ageGroup);
@@ -332,6 +347,14 @@ function LearnContent() {
     if (isAnswered) return;
     const currentQuestion = questions[currentIndex];
     if (!currentQuestion) return;
+
+    // match-pairs completion → always mark the correct option
+    if (value === "matched") {
+      const correct = currentQuestion.answerOptions.find((opt) => opt.isCorrect);
+      if (correct) handleAnswerSelect(correct.id, true);
+      return;
+    }
+
     const target = String(value).toLowerCase().trim();
     const match = currentQuestion.answerOptions.find((opt) =>
       opt.text.toLowerCase().trim() === target ||
@@ -921,6 +944,12 @@ function LearnContent() {
               </div>
 
               <div className="px-4 sm:px-5 pt-2">
+                <ConceptTeachBanner
+                  question={q}
+                  theme={journeyTheme}
+                  themeKey={journeyThemeKey}
+                  onDismiss={() => {/* banner self-manages its dismissed state */}}
+                />
                 <QuestionVisualStage
                   question={q}
                   theme={journeyTheme}

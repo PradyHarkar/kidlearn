@@ -6,6 +6,7 @@ import type {
   DifficultyLevel,
   Question,
   QuestionGenerationMetadata,
+  QuestionVisualMode,
   Subject,
   YearLevel,
 } from "../../types";
@@ -227,17 +228,46 @@ function option(id: string, text: string, isCorrect: boolean, extras?: Partial<A
   return { id, text, isCorrect, ...extras };
 }
 
+/** Fisher-Yates shuffle using a seeded LCG so order is deterministic per question but varies across seeds */
+function shuffleOptions(options: AnswerOption[], seed: number): AnswerOption[] {
+  const arr = [...options];
+  let s = (seed * 1664525 + 1013904223) >>> 0;
+  for (let i = arr.length - 1; i > 0; i--) {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    const j = s % (i + 1);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  // Reassign ids (a/b/c/d) to reflect the new display order
+  const letters = ["a", "b", "c", "d", "e"];
+  return arr.map((opt, idx) => ({ ...opt, id: letters[idx] ?? opt.id }));
+}
+
 function metadata(context: GeneratorContext, templateId: string, variant: string, visualStyle?: "playful" | "illustrated" | "standard"): QuestionGenerationMetadata {
+  const inferredVisualMode = inferQuestionVisualMode(templateId, context.subject, context.ageGroup);
   return {
     generator: "template",
     templateId,
     variantKey: variant,
     visualStyle: visualStyle ?? (isEarlyYears(context.ageGroup) ? "illustrated" : "standard"),
+    visualMode: inferredVisualMode,
     targetAgeBand: targetAgeBand(context.ageGroup),
     benchmarkFamily: context.examProfile.benchmarkFamily,
     examStyle: context.examProfile.examStyle,
     qualityVersion: "2026-03-25-q2",
   };
+}
+
+function inferQuestionVisualMode(templateId: string, subject: Subject, ageGroup: AgeGroup): QuestionVisualMode {
+  const id = templateId.toLowerCase();
+
+  if (id.includes("match-pairs")) return "match-pairs";
+  if (id.includes("visual-shape")) return "shape-dots";
+  if (id.includes("counting")) return "counting-scene";
+  if (id.includes("phonics") || id.includes("sight-word") || id.includes("rhyme") || id.includes("sentence-order")) return "word-cards";
+  if (id.includes("reading") || id.includes("summary") || id.includes("style")) return "story-scene";
+  if (id.includes("habitat") || id.includes("weather") || id.includes("materials") || id.includes("reasoning") || id.includes("physics") || id.includes("biology") || id.includes("chemistry")) return "story-scene";
+  if (subject === "maths" && isEarlyYears(ageGroup)) return "counting-scene";
+  return "concept-cards";
 }
 
 function capitalizeLeadingLetter(text: string): string {
@@ -258,7 +288,7 @@ function createQuestion(context: GeneratorContext, draft: DraftQuestion): Questi
     pk: buildPk(context.subject, context.ageGroup, context.country),
     questionId: `generated-${context.country}-${context.subject}-${context.ageGroup}-${String(acceptedIndex).padStart(5, "0")}`,
     questionText,
-    answerOptions: draft.answerOptions,
+    answerOptions: shuffleOptions(draft.answerOptions, context.seed),
     difficulty: draft.difficulty,
     topics: draft.topics,
     explanation: draft.explanation,
@@ -1124,22 +1154,234 @@ function upperYearsScienceQuestion(context: GeneratorContext): DraftQuestion {
   };
 }
 
+// ── Match-pairs templates ─────────────────────────────────────────────────────
+
+function scienceMatchPairsQuestion(context: GeneratorContext): DraftQuestion {
+  const seed = localSeed(context);
+  const variant = mixSeed(seed, 71) % 4;
+
+  const VARIANTS = [
+    {
+      questionText: "Match each diet type to what that animal eats.",
+      pairs: [
+        { left: "Carnivore", right: "Eats only meat", leftEmoji: "🦁", rightEmoji: "🥩" },
+        { left: "Herbivore", right: "Eats only plants", leftEmoji: "🐘", rightEmoji: "🌿" },
+        { left: "Omnivore",  right: "Eats plants and meat", leftEmoji: "🐻", rightEmoji: "🍖" },
+      ],
+      topics: ["animals", "diet", "classification", "biology"],
+      explanation: "Carnivores eat meat, herbivores eat plants, and omnivores eat both.",
+      hint: "Think about what each animal's teeth are built for.",
+    },
+    {
+      questionText: "Match each animal group to one of its features.",
+      pairs: [
+        { left: "Mammal",   right: "Feeds babies milk", leftEmoji: "🐬", rightEmoji: "🍼" },
+        { left: "Reptile",  right: "Has scales, cold-blooded", leftEmoji: "🦎", rightEmoji: "❄️" },
+        { left: "Bird",     right: "Has feathers and wings", leftEmoji: "🦅", rightEmoji: "🪶" },
+      ],
+      topics: ["animals", "classification", "biology"],
+      explanation: "Animals are classified by shared features like fur, scales, or feathers.",
+      hint: "Think about what is unique to each group.",
+    },
+    {
+      questionText: "Match each change of state to what happens to the particles.",
+      pairs: [
+        { left: "Evaporation", right: "Liquid turns to gas", leftEmoji: "🌊", rightEmoji: "💨" },
+        { left: "Condensation", right: "Gas turns to liquid", leftEmoji: "☁️", rightEmoji: "💧" },
+        { left: "Freezing", right: "Liquid turns to solid", leftEmoji: "🥤", rightEmoji: "🧊" },
+      ],
+      topics: ["states of matter", "water cycle", "chemistry"],
+      explanation: "States of matter change when energy is added or removed.",
+      hint: "Think about heating and cooling water.",
+    },
+    {
+      questionText: "Match each part of a plant to its job.",
+      pairs: [
+        { left: "Roots",   right: "Absorb water from soil", leftEmoji: "🌱", rightEmoji: "💧" },
+        { left: "Leaves",  right: "Make food using sunlight", leftEmoji: "🍃", rightEmoji: "☀️" },
+        { left: "Flowers", right: "Attract insects for pollination", leftEmoji: "🌸", rightEmoji: "🐝" },
+      ],
+      topics: ["plants", "biology", "photosynthesis"],
+      explanation: "Each part of a plant has a specific role in helping it survive and reproduce.",
+      hint: "Think about what each part looks like and where it is on the plant.",
+    },
+  ];
+
+  const v = VARIANTS[variant];
+  const correctText = "All matched correctly";
+
+  return {
+    questionText: v.questionText,
+    answerOptions: [
+      option("a", correctText, true),
+      option("b", "Carnivore eats plants", false),
+      option("c", "Herbivore eats meat", false),
+    ],
+    difficulty: difficultyFor(context.ageGroup, context.acceptedCount),
+    topics: uniqueTags(...v.topics, context.examProfile.benchmarkFamily),
+    explanation: v.explanation,
+    hint: v.hint,
+    generationMetadata: {
+      ...metadata(context, "science-match-pairs", `variant-${variant}-${seed}`),
+      visualMode: "match-pairs",
+      interactionType: "tap-card",
+      interactionData: {
+        type: "match-pairs",
+        pairs: v.pairs,
+        instruction: v.questionText,
+      },
+    },
+  };
+}
+
+function mathsMatchPairsQuestion(context: GeneratorContext): DraftQuestion {
+  const seed = localSeed(context);
+  const variant = mixSeed(seed, 83) % 3;
+
+  const VARIANTS = [
+    {
+      questionText: "Match each shape to the number of sides it has.",
+      pairs: [
+        { left: "Triangle", right: "3 sides", leftEmoji: "🔺", rightEmoji: "3️⃣" },
+        { left: "Square",   right: "4 equal sides", leftEmoji: "🟥", rightEmoji: "4️⃣" },
+        { left: "Hexagon",  right: "6 sides", leftEmoji: "⬡", rightEmoji: "6️⃣" },
+      ],
+      topics: ["shapes", "geometry", "sides"],
+      explanation: "The prefix of a shape's name often tells you how many sides it has: tri=3, quad=4, hex=6.",
+      hint: "Count the corners — a shape has as many corners as sides.",
+    },
+    {
+      questionText: "Match each maths word to its meaning.",
+      pairs: [
+        { left: "Perimeter", right: "Distance around a shape", leftEmoji: "📐", rightEmoji: "↔️" },
+        { left: "Area",      right: "Space inside a shape", leftEmoji: "🏠", rightEmoji: "📦" },
+        { left: "Volume",    right: "Space inside a 3D object", leftEmoji: "🧊", rightEmoji: "📐" },
+      ],
+      topics: ["measurement", "geometry", "perimeter", "area"],
+      explanation: "Perimeter goes around the outside, area fills the inside, volume fills 3D space.",
+      hint: "Think about fencing a garden (perimeter) vs tiling the floor (area).",
+    },
+    {
+      questionText: "Match each operation to what it does.",
+      pairs: [
+        { left: "Addition",       right: "Puts groups together", leftEmoji: "➕", rightEmoji: "🤝" },
+        { left: "Subtraction",    right: "Takes away an amount", leftEmoji: "➖", rightEmoji: "👋" },
+        { left: "Multiplication", right: "Repeated addition of equal groups", leftEmoji: "✖️", rightEmoji: "🔁" },
+      ],
+      topics: ["operations", "number", "arithmetic"],
+      explanation: "The four operations — add, subtract, multiply, divide — are the building blocks of maths.",
+      hint: "Think about what happens to the total in each case.",
+    },
+  ];
+
+  const v = VARIANTS[variant];
+
+  return {
+    questionText: v.questionText,
+    answerOptions: [
+      option("a", "All matched correctly", true),
+      option("b", "Triangle has 4 sides", false),
+      option("c", "Square has 3 sides", false),
+    ],
+    difficulty: difficultyFor(context.ageGroup, context.acceptedCount),
+    topics: uniqueTags(...v.topics, context.examProfile.benchmarkFamily),
+    explanation: v.explanation,
+    hint: v.hint,
+    generationMetadata: {
+      ...metadata(context, "maths-match-pairs", `variant-${variant}-${seed}`),
+      visualMode: "match-pairs",
+      interactionType: "tap-card",
+      interactionData: {
+        type: "match-pairs",
+        pairs: v.pairs,
+        instruction: v.questionText,
+      },
+    },
+  };
+}
+
+function englishMatchPairsQuestion(context: GeneratorContext): DraftQuestion {
+  const seed = localSeed(context);
+  const variant = mixSeed(seed, 97) % 3;
+
+  const VARIANTS = [
+    {
+      questionText: "Match each word type to an example.",
+      pairs: [
+        { left: "Noun",      right: "Dog", leftEmoji: "🏷️", rightEmoji: "🐕" },
+        { left: "Verb",      right: "Run", leftEmoji: "🏃", rightEmoji: "👟" },
+        { left: "Adjective", right: "Big", leftEmoji: "🎨", rightEmoji: "🐘" },
+      ],
+      topics: ["grammar", "nouns", "verbs", "adjectives"],
+      explanation: "Nouns name things, verbs show action, adjectives describe nouns.",
+      hint: "Can you do it (verb)? Does it name something (noun)? Does it describe something (adjective)?",
+    },
+    {
+      questionText: "Match each punctuation mark to its job.",
+      pairs: [
+        { left: "Full stop (.)",    right: "Ends a sentence", leftEmoji: "⏺️", rightEmoji: "🔚" },
+        { left: "Question mark (?)", right: "Ends a question", leftEmoji: "❓", rightEmoji: "🤔" },
+        { left: "Comma (,)",        right: "Separates items in a list", leftEmoji: "〽️", rightEmoji: "📋" },
+      ],
+      topics: ["punctuation", "grammar", "writing"],
+      explanation: "Punctuation marks tell readers how to read — where to pause, stop, or ask.",
+      hint: "Think about where you put each mark in a sentence.",
+    },
+    {
+      questionText: "Match each prefix to its meaning.",
+      pairs: [
+        { left: "un–",  right: "Not (unkind)", leftEmoji: "🚫", rightEmoji: "😟" },
+        { left: "re–",  right: "Again (rewrite)", leftEmoji: "🔁", rightEmoji: "✏️" },
+        { left: "mis–", right: "Wrongly (mistake)", leftEmoji: "❌", rightEmoji: "🤦" },
+      ],
+      topics: ["vocabulary", "word structure", "prefixes"],
+      explanation: "Prefixes added to the start of a word change its meaning.",
+      hint: "Try adding the prefix to a word you know.",
+    },
+  ];
+
+  const v = VARIANTS[variant];
+
+  return {
+    questionText: v.questionText,
+    answerOptions: [
+      option("a", "All matched correctly", true),
+      option("b", "Verb is a naming word", false),
+      option("c", "Noun shows an action", false),
+    ],
+    difficulty: difficultyFor(context.ageGroup, context.acceptedCount),
+    topics: uniqueTags(...v.topics, context.examProfile.benchmarkFamily),
+    explanation: v.explanation,
+    hint: v.hint,
+    generationMetadata: {
+      ...metadata(context, "english-match-pairs", `variant-${variant}-${seed}`),
+      visualMode: "match-pairs",
+      interactionType: "tap-card",
+      interactionData: {
+        type: "match-pairs",
+        pairs: v.pairs,
+        instruction: v.questionText,
+      },
+    },
+  };
+}
+
 function getTemplateGenerators(subject: Subject, ageGroup: AgeGroup, country: Country): TemplateGenerator[] {
   if (subject === "maths") {
     if (isEarlyYears(ageGroup)) return [visualShapeQuestion, countingQuestion, numeracyReasoningQuestion];
     if (country === "UK" && ageGroup === "year4") return [timesTableQuestion, numeracyReasoningQuestion, numeracyReasoningQuestion];
-    return [upperYearsMathsQuestion, numeracyReasoningQuestion, timesTableQuestion, upperYearsMathsQuestion];
+    return [upperYearsMathsQuestion, numeracyReasoningQuestion, timesTableQuestion, mathsMatchPairsQuestion, upperYearsMathsQuestion];
   }
 
   if (subject === "english") {
     if (country === "UK" && ageGroup === "year1") return [phonicsQuestion, sightWordQuestion, rhymingQuestion, sentenceOrderQuestion, grammarQuestion];
     if (ageGroup === "foundation") return [phonicsQuestion, sightWordQuestion, rhymingQuestion, sentenceOrderQuestion];
     if (isEarlyYears(ageGroup)) return [phonicsQuestion, sightWordQuestion, rhymingQuestion, sentenceOrderQuestion, grammarQuestion];
-    return [upperYearsEnglishQuestion, readingComprehensionQuestion, grammarQuestion, vocabularyQuestion];
+    return [upperYearsEnglishQuestion, readingComprehensionQuestion, grammarQuestion, englishMatchPairsQuestion, vocabularyQuestion];
   }
 
   if (isEarlyYears(ageGroup)) return [habitatQuestion, materialsQuestion, scienceReasoningQuestion, weatherQuestion];
-  return [upperYearsScienceQuestion, scienceReasoningQuestion, materialsQuestion, upperYearsScienceQuestion];
+  return [upperYearsScienceQuestion, scienceReasoningQuestion, scienceMatchPairsQuestion, materialsQuestion, upperYearsScienceQuestion];
 }
 
 function isQuestionSensible(question: Question, ageGroup: AgeGroup): boolean {

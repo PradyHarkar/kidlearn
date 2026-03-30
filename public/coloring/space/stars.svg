@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 570" width="400" height="570">
+  <rect width="400" height="570" fill="white"/>
+  <!-- Outer border -->
+  <rect x="8" y="8" width="384" height="554" fill="none" stroke="#000" stroke-width="3" rx="16"/>
+  <!-- Inner border -->
+  <rect x="16" y="16" width="368" height="538" fill="none" stroke="#000" stroke-width="1.5" rx="12" stroke-dasharray="6,4"/>
+  <path d="M 200.0,90.0 L 210.6,115.4 L 238.0,117.6 L 217.1,135.6 L 223.5,162.4 L 200.0,148.0 L 176.5,162.4 L 182.9,135.6 L 162.0,117.6 L 189.4,115.4 Z" fill="none" stroke="#000" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M 310.0,130.0 L 317.6,149.5 L 338.5,150.7 L 322.4,164.0 L 327.6,184.3 L 310.0,173.0 L 292.4,184.3 L 297.6,164.0 L 281.5,150.7 L 302.4,149.5 Z" fill="none" stroke="#000" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M 100.0,147.0 L 107.1,165.3 L 126.6,166.3 L 111.4,178.7 L 116.5,197.7 L 100.0,187.0 L 83.5,197.7 L 88.6,178.7 L 73.4,166.3 L 92.9,165.3 Z" fill="none" stroke="#000" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M 155.0,236.0 L 163.8,257.9 L 187.3,259.5 L 169.3,274.6 L 175.0,297.5 L 155.0,285.0 L 135.0,297.5 L 140.7,274.6 L 122.7,259.5 L 146.2,257.9 Z" fill="none" stroke="#000" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M 270.0,254.0 L 276.5,271.1 L 294.7,272.0 L 280.5,283.4 L 285.3,301.0 L 270.0,291.0 L 254.7,301.0 L 259.5,283.4 L 245.3,272.0 L 263.5,271.1 Z" fill="none" stroke="#000" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M 200.0,318.0 L 205.9,331.9 L 220.9,333.2 L 209.5,343.1 L 212.9,357.8 L 200.0,350.0 L 187.1,357.8 L 190.5,343.1 L 179.1,333.2 L 194.1,331.9 Z" fill="none" stroke="#000" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M 80.0,290.0 L 85.3,302.7 L 99.0,303.8 L 88.6,312.8 L 91.8,326.2 L 80.0,319.0 L 68.2,326.2 L 71.4,312.8 L 61.0,303.8 L 74.7,302.7 Z" fill="none" stroke="#000" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M 330.0,296.0 L 336.5,311.1 L 352.8,312.6 L 340.5,323.4 L 344.1,339.4 L 330.0,331.0 L 315.9,339.4 L 319.5,323.4 L 307.2,312.6 L 323.5,311.1 Z" fill="none" stroke="#000" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M 185.0,177.0 L 189.7,188.5 L 202.1,189.4 L 192.6,197.5 L 195.6,209.6 L 185.0,203.0 L 174.4,209.6 L 177.4,197.5 L 167.9,189.4 L 180.3,188.5 Z" fill="none" stroke="#000" stroke-width="5" stroke-linejoin="round"/>
+  <!-- Title -->
+  <text x="200" y="538" font-family="Arial Black, sans-serif" font-size="20"
+        text-anchor="middle" fill="#000" font-weight="900">Star Cluster</text>
+  <text x="200" y="558" font-family="Arial, sans-serif" font-size="13"
+        text-anchor="middle" fill="#555">Blast off! 🚀</text>
+  <!-- KidLearn branding -->
+  <text x="380" y="566" font-family="Arial, sans-serif" font-size="9"
+        text-anchor="end" fill="#ccc">KidLearn</text>
+</svg>

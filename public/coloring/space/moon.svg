@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 570" width="400" height="570">
+  <rect width="400" height="570" fill="white"/>
+  <!-- Outer border -->
+  <rect x="8" y="8" width="384" height="554" fill="none" stroke="#000" stroke-width="3" rx="16"/>
+  <!-- Inner border -->
+  <rect x="16" y="16" width="368" height="538" fill="none" stroke="#000" stroke-width="1.5" rx="12" stroke-dasharray="6,4"/>
+  <circle cx="200" cy="210" r="155" fill="none" stroke="#000" stroke-width="9"/>
+  <circle cx="140" cy="155" r="30" fill="none" stroke="#000" stroke-width="5"/>
+  <circle cx="265" cy="180" r="22" fill="none" stroke="#000" stroke-width="5"/>
+  <circle cx="175" cy="280" r="35" fill="none" stroke="#000" stroke-width="5"/>
+  <circle cx="275" cy="280" r="18" fill="none" stroke="#000" stroke-width="4"/>
+  <circle cx="155" cy="240" r="14" fill="none" stroke="#000" stroke-width="4"/>
+  <!-- Title -->
+  <text x="200" y="538" font-family="Arial Black, sans-serif" font-size="20"
+        text-anchor="middle" fill="#000" font-weight="900">The Moon</text>
+  <text x="200" y="558" font-family="Arial, sans-serif" font-size="13"
+        text-anchor="middle" fill="#555">Blast off! 🚀</text>
+  <!-- KidLearn branding -->
+  <text x="380" y="566" font-family="Arial, sans-serif" font-size="9"
+        text-anchor="end" fill="#ccc">KidLearn</text>
+</svg>

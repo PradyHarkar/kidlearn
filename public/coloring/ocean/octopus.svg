@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 570" width="400" height="570">
+  <rect width="400" height="570" fill="white"/>
+  <!-- Outer border -->
+  <rect x="8" y="8" width="384" height="554" fill="none" stroke="#000" stroke-width="3" rx="16"/>
+  <!-- Inner border -->
+  <rect x="16" y="16" width="368" height="538" fill="none" stroke="#000" stroke-width="1.5" rx="12" stroke-dasharray="6,4"/>
+  <path d="M220.7,307.8 Q200.0,390.0 168.2,407.0" fill="none" stroke="#000" stroke-width="14" stroke-linecap="round"/><path d="M167.3,304.2 Q101.0,351.9 66.6,342.9" fill="none" stroke="#000" stroke-width="14" stroke-linecap="round"/><path d="M133.1,274.8 Q60.0,260.0 43.2,230.2" fill="none" stroke="#000" stroke-width="14" stroke-linecap="round"/><path d="M138.1,236.7 Q101.0,168.1 111.6,135.0" fill="none" stroke="#000" stroke-width="14" stroke-linecap="round"/><path d="M179.3,212.2 Q200.0,130.0 231.8,113.0" fill="none" stroke="#000" stroke-width="14" stroke-linecap="round"/><path d="M232.7,215.8 Q299.0,168.1 333.4,177.1" fill="none" stroke="#000" stroke-width="14" stroke-linecap="round"/><path d="M266.9,245.2 Q340.0,260.0 356.8,289.8" fill="none" stroke="#000" stroke-width="14" stroke-linecap="round"/><path d="M261.9,283.3 Q299.0,351.9 288.4,385.0" fill="none" stroke="#000" stroke-width="14" stroke-linecap="round"/>
+  <ellipse cx="200" cy="210" rx="80" ry="65" fill="none" stroke="#000" stroke-width="8"/>
+  <circle cx="178" cy="198" r="14" fill="none" stroke="#000" stroke-width="4"/>
+  <circle cx="222" cy="198" r="14" fill="none" stroke="#000" stroke-width="4"/>
+  <circle cx="183" cy="193" r="6" fill="#000"/>
+  <circle cx="227" cy="193" r="6" fill="#000"/>
+  <path d="M185,225 Q200,238 215,225" fill="none" stroke="#000" stroke-width="4"/>
+  <!-- Title -->
+  <text x="200" y="538" font-family="Arial Black, sans-serif" font-size="20"
+        text-anchor="middle" fill="#000" font-weight="900">Octopus</text>
+  <text x="200" y="558" font-family="Arial, sans-serif" font-size="13"
+        text-anchor="middle" fill="#555">Deep sea adventure!</text>
+  <!-- KidLearn branding -->
+  <text x="380" y="566" font-family="Arial, sans-serif" font-size="9"
+        text-anchor="end" fill="#ccc">KidLearn</text>
+</svg>

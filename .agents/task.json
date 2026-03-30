@@ -1,7 +1,7 @@
 {
   "protocolVersion": 1,
   "updatedAt": "2026-03-27T02:30:00+11:00",
-  "currentObjective": "Fix pin/biometric kid login (P1 defect), complete U2 topic preferences, and U5 reward shop.",
+  "currentObjective": "Build theme-aware interactive question scenes for early years, using child theme and favorite tags to make questions feel world-specific and joyful.",
   "dispatchAgent": "codex",
   "activeTask": {
     "id": "REQ-001-P1-TRACKING",
@@ -160,6 +160,30 @@
         "Wire cron trigger"
       ],
       "estimatedMinutes": 60
+    },
+    {
+      "id": "INTERACTIVE-QUESTIONS-V1",
+      "owner": "codex",
+      "branch": "codex/interactive-questions-v1",
+      "status": "in_progress",
+      "goal": "Build theme-aware interactive question scenes for early years, so counting and shape questions feel world-specific, joyful, and aligned with the childs favorite topics.",
+      "chunks": [
+        "TapCountStage.tsx - tappable counting scene with world/favorite-tag context",
+        "DotJoinStage.tsx - SVG dot-join with pointer tracking and shape close detection",
+        "AnimatedStoryStage.tsx - 5-phase Framer Motion counting story",
+        "Update QuestionVisualStage.tsx dispatcher (early years -> interactive, others -> static)",
+        "Wire onInteractionAnswer in app/learn/page.tsx",
+        "Add theme-question-context regression suite",
+        "tsc --noEmit passes and theme-context tests are green"
+      ],
+      "claudeTasks": [
+        "Test the theme-aware scene mapping for soccer, space, jungle, ocean, fantasy, and unicorn worlds",
+        "Verify favorite topic tags can steer the world selection and child context",
+        "Run existing visual and interactive regression suites to confirm no breakage",
+        "Check that the question screen still feels like the childs chosen world across dashboard and learn flow"
+      ],
+      "specDoc": ".agents/handoffs/to-codex-interactive-questions.md",
+      "estimatedMinutes": 90
     }
   ],
   "coordinationRules": [

@@ -20,6 +20,19 @@ export type YearLevel = AgeGroup | "prep";
 
 export type Subject = "maths" | "english" | "science";
 export type DifficultyLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+export type QuestionVisualMode =
+  | "counting-scene"
+  | "shape-dots"
+  | "word-cards"
+  | "story-scene"
+  | "concept-cards"
+  | "match-pairs";     // tap-to-match two columns (e.g. carnivore ↔ meat eater)
+
+export type QuestionInteractionType =
+  | "tap-card"           // standard multiple-choice tap (default)
+  | "tap-count"          // tap each object to count them
+  | "dot-join"           // tap numbered dots in sequence to form a shape
+  | "animated-story";    // watch an animated scene, then tap-card answer
 export type ReporterType = "child" | "parent";
 export type QuestionIssueStatus = "reported" | "triaged" | "resolved" | "dismissed";
 export type RewardTransactionType = "earned" | "redeemed" | "merged_in" | "merged_out" | "adjusted";
@@ -36,6 +49,11 @@ export interface ChildPreferences {
   buttonStyle: ChildButtonStyle;
   cardStyle: ChildCardStyle;
   rewardStyle?: ChildRewardStyle;
+}
+
+export interface TopicPreferenceState {
+  include: string[];
+  exclude: string[];
 }
 
 export interface User {
@@ -68,6 +86,7 @@ export interface Child {
   rewardPoints?: number;
   rewardPointsRedeemed?: number;
   topicPreferences?: string[];
+  topicPreferenceRules?: Partial<Record<Subject, TopicPreferenceState>>;
   tileThemeId?: string;
   tileFavoriteTags?: string[];
   hasChildPin?: boolean;
@@ -127,11 +146,36 @@ export interface AnswerOption {
   isCorrect: boolean;
 }
 
+export interface CountingSceneData {
+  type: "counting-scene";
+  objectEmoji: string;    // e.g. "🍎"
+  actorEmoji?: string;    // e.g. "👧"
+  act1Count: number;      // first group size
+  act2Count: number;      // second group size
+  setting?: string;       // display label e.g. "orchard"
+}
+
+export interface MatchPairsData {
+  type: "match-pairs";
+  pairs: Array<{
+    left: string;        // e.g. "Carnivore"
+    right: string;       // e.g. "Eats meat"
+    leftEmoji?: string;  // e.g. "🦁"
+    rightEmoji?: string; // e.g. "🥩"
+  }>;
+  instruction?: string;  // e.g. "Match each animal type to what it eats"
+}
+
+export type QuestionInteractionData = CountingSceneData | MatchPairsData | Record<string, unknown>;
+
 export interface QuestionGenerationMetadata {
   generator: "seed" | "bedrock" | "template" | "manual-import";
   templateId?: string;
   variantKey?: string;
   visualStyle?: "playful" | "illustrated" | "standard";
+  visualMode?: QuestionVisualMode;
+  interactionType?: QuestionInteractionType;
+  interactionData?: QuestionInteractionData;
   targetAgeBand?: "early-years" | "primary" | "middle-school";
   benchmarkFamily?: string;
   examStyle?: string;
@@ -184,6 +228,18 @@ export interface ProgressSessionSummary {
   difficultyStart: number;
   difficultyEnd: number;
   topic: string;
+  questionCount?: number;
+  answers?: Array<{
+    questionId: string;
+    questionText?: string;
+    chosenAnswer?: string;
+    correctAnswer?: string;
+    correct: boolean;
+    topic: string;
+    difficulty: number;
+    timeSpent: number;
+    answeredAt: string;
+  }>;
 }
 
 export interface ProgressSummary {
@@ -227,6 +283,7 @@ export interface WritingModeBlueprint {
   label: string;
   subtitle: string;
   durationMinutes: number;
+  topicOptions: string[];
   steps: WritingStepBlueprint[];
 }
 
@@ -254,6 +311,7 @@ export interface WritingSessionState {
   country?: Country;
   ageGroup?: AgeGroup;
   writingMode: WritingMode;
+  topic?: string;
   steps: WritingStepState[];
   currentStepIndex: number;
   isComplete: boolean;

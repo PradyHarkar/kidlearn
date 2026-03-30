@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 570" width="400" height="570">
+  <rect width="400" height="570" fill="white"/>
+  <!-- Outer border -->
+  <rect x="8" y="8" width="384" height="554" fill="none" stroke="#000" stroke-width="3" rx="16"/>
+  <!-- Inner border -->
+  <rect x="16" y="16" width="368" height="538" fill="none" stroke="#000" stroke-width="1.5" rx="12" stroke-dasharray="6,4"/>
+  <polygon points="200,70 355,230 200,390 45,230" fill="none" stroke="#000" stroke-width="9" stroke-linejoin="round"/>
+      <circle cx="255.0" cy="225.0" r="7" fill="none" stroke="#000" stroke-width="1.5"/>
+      <circle cx="247.6" cy="245.0" r="7" fill="none" stroke="#000" stroke-width="1.5"/>
+      <circle cx="227.5" cy="259.6" r="7" fill="none" stroke="#000" stroke-width="1.5"/>
+      <circle cx="200.0" cy="265.0" r="7" fill="none" stroke="#000" stroke-width="1.5"/>
+      <circle cx="172.5" cy="259.6" r="7" fill="none" stroke="#000" stroke-width="1.5"/>
+      <circle cx="152.4" cy="245.0" r="7" fill="none" stroke="#000" stroke-width="1.5"/>
+      <circle cx="145.0" cy="225.0" r="7" fill="none" stroke="#000" stroke-width="1.5"/>
+      <circle cx="152.4" cy="205.0" r="7" fill="none" stroke="#000" stroke-width="1.5"/>
+      <circle cx="172.5" cy="190.4" r="7" fill="none" stroke="#000" stroke-width="1.5"/>
+      <circle cx="200.0" cy="185.0" r="7" fill="none" stroke="#000" stroke-width="1.5"/>
+      <circle cx="227.5" cy="190.4" r="7" fill="none" stroke="#000" stroke-width="1.5"/>
+      <circle cx="247.6" cy="205.0" r="7" fill="none" stroke="#000" stroke-width="1.5"/>
+  <!-- Title -->
+  <text x="200" y="538" font-family="Arial Black, sans-serif" font-size="20"
+        text-anchor="middle" fill="#000" font-weight="900">Diamond</text>
+  <text x="200" y="558" font-family="Arial, sans-serif" font-size="13"
+        text-anchor="middle" fill="#555">4 sides like a square on its tip</text>
+  <!-- KidLearn branding -->
+  <text x="380" y="566" font-family="Arial, sans-serif" font-size="9"
+        text-anchor="end" fill="#ccc">KidLearn</text>
+</svg>

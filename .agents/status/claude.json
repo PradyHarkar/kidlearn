@@ -2,9 +2,9 @@
   "agent": "claude",
   "branch": "master",
   "role": "tester",
-  "finished": "REQ-001 P1 tested + merged. Fixed: cumulative accuracy tracking, per-subject attempt counts, 'Not started' display, Stripe price dynamic fallback, weekly cron achievements query bug.",
-  "doingNow": "Dispatching Codex for pin/biometric login (P1 defect) + U2 topic preferences + U5 reward shop",
-  "etaMinutes": 0,
+  "finished": "Suite 27 extended to 15 tests (visual mode inference, counting accuracy, shape extraction, profile completeness). Suite 28 built with 32 tests covering TapCount state machine, DotJoin sequence validation, AnimatedStory phases, interaction type inference, touch target sizing. Fixed regex bug in question-visuals.ts (star matching inside starts). Both suites green. INTERACTIVE-QUESTIONS-V1 handed to Codex for implementation.",
+  "doingNow": "running suite 12 test",
+  "etaMinutes": 1,
   "blocker": "none",
-  "lastUpdated": "2026-03-27T02:30:00+11:00"
+  "lastUpdated": "2026-03-30T00:04:04.371Z"
 }

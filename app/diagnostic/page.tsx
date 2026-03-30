@@ -42,6 +42,7 @@ function DiagnosticContent() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
   const [finishedResult, setFinishedResult] = useState<DiagnosticResult | null>(null);
+  const [showHint, setShowHint] = useState(false);
 
   const currentQuestion = questions[currentIndex];
   const selectedAnswer = selectedAnswers[currentIndex];
@@ -125,6 +126,7 @@ function DiagnosticContent() {
 
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((index) => index + 1);
+      setShowHint(false);
       return;
     }
 
@@ -291,8 +293,18 @@ function DiagnosticContent() {
                 </div>
                 <p className="question-text">{currentQuestion.questionText}</p>
                 {currentQuestion.hint && (
-                  <div className="mt-3 bg-yellow-50 border-l-4 border-yellow-400 rounded-xl p-3">
-                    <p className="text-yellow-800 font-bold text-sm">💡 Hint: {currentQuestion.hint}</p>
+                  <div className="mt-3">
+                    <button
+                      onClick={() => setShowHint((v) => !v)}
+                      className="text-xs font-bold text-yellow-700 hover:text-yellow-900 transition-colors"
+                    >
+                      💡 {showHint ? "Hide hint" : "Show hint"}
+                    </button>
+                    {showHint && (
+                      <div className="mt-2 bg-yellow-50 border-l-4 border-yellow-400 rounded-xl p-3">
+                        <p className="text-yellow-800 font-bold text-sm">{currentQuestion.hint}</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

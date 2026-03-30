@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 570" width="400" height="570">
+  <rect width="400" height="570" fill="white"/>
+  <!-- Outer border -->
+  <rect x="8" y="8" width="384" height="554" fill="none" stroke="#000" stroke-width="3" rx="16"/>
+  <!-- Inner border -->
+  <rect x="16" y="16" width="368" height="538" fill="none" stroke="#000" stroke-width="1.5" rx="12" stroke-dasharray="6,4"/>
+  <polygon points="100,420 200,100 300,420" fill="none" stroke="#000" stroke-width="8" stroke-linejoin="round"/>
+  <polygon points="30,420 130,200 230,420" fill="none" stroke="#000" stroke-width="6" stroke-linejoin="round"/>
+  <polygon points="170,420 270,220 370,420" fill="none" stroke="#000" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M175,150 Q200,105 225,150" fill="none" stroke="#000" stroke-width="5"/>
+  <line x1="30" y1="420" x2="370" y2="420" stroke="#000" stroke-width="5"/>
+  <circle cx="320" cy="115" r="28" fill="none" stroke="#000" stroke-width="5"/>
+  <!-- Sun rays -->
+  <line x1="320" y1="80" x2="320" y2="70" stroke="#000" stroke-width="3" stroke-linecap="round"/>
+  <line x1="344" y1="91" x2="351" y2="84" stroke="#000" stroke-width="3" stroke-linecap="round"/>
+  <line x1="355" y1="115" x2="365" y2="115" stroke="#000" stroke-width="3" stroke-linecap="round"/>
+  <!-- Title -->
+  <text x="200" y="538" font-family="Arial Black, sans-serif" font-size="20"
+        text-anchor="middle" fill="#000" font-weight="900">Mountains</text>
+  <text x="200" y="558" font-family="Arial, sans-serif" font-size="13"
+        text-anchor="middle" fill="#555">Colour me in!</text>
+  <!-- KidLearn branding -->
+  <text x="380" y="566" font-family="Arial, sans-serif" font-size="9"
+        text-anchor="end" fill="#ccc">KidLearn</text>
+</svg>

@@ -68,7 +68,29 @@ interface HistorySession {
   sessionId: string;
   subject: Subject;
   date: string;
+  totalTimeSpent?: number;
   questions: HistoryQuestionAnswer[];
+}
+
+function formatQuestionTime(seconds: number) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return "0s";
+  const minutes = Math.floor(seconds / 60);
+  const remaining = seconds % 60;
+  if (!minutes) return `${seconds}s`;
+  if (!remaining) return `${minutes}m`;
+  return `${minutes}m ${remaining}s`;
+}
+
+function formatAnsweredAt(value: string) {
+  if (!value) return "Unknown time";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("en-AU", {
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 function renderRingGradient<T extends { attempts: number }>(segments: T[]) {
@@ -1479,7 +1501,7 @@ function DashboardContent() {
 
               {historySessions.length ? (
                 <div className="grid gap-3 md:grid-cols-2">
-                  {historySessions.slice(0, 4).map((session) => (
+                  {historySessions.slice(0, 6).map((session) => (
                     <details key={session.sessionId} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                       <summary className="cursor-pointer list-none">
                         <div className="flex items-center justify-between gap-3">
@@ -1488,6 +1510,9 @@ function DashboardContent() {
                               {session.subject} · {session.date}
                             </p>
                             <p className="text-lg font-black text-slate-800">{session.questions.length} questions</p>
+                            <p className="text-xs font-semibold text-slate-500">
+                              Total time: {formatQuestionTime(session.totalTimeSpent || session.questions.reduce((sum, question) => sum + question.timeSpent, 0))}
+                            </p>
                           </div>
                           <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-700 shadow-sm">
                             {Math.round((session.questions.filter((q) => q.correct).length / Math.max(1, session.questions.length)) * 100)}%
@@ -1495,13 +1520,16 @@ function DashboardContent() {
                         </div>
                       </summary>
                       <div className="mt-3 space-y-3">
-                        {session.questions.slice(0, 5).map((question, index) => (
+                        {session.questions.slice(0, 8).map((question, index) => (
                           <div key={`${session.sessionId}-${question.questionId}-${index}`} className="rounded-2xl bg-white p-3 border border-slate-100">
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
                                 <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">{question.topic}</p>
                                 <p className="font-semibold text-slate-800 leading-relaxed mt-1">
                                   {question.questionText || `Question ${index + 1}`}
+                                </p>
+                                <p className="mt-2 text-[11px] font-semibold text-slate-500">
+                                  {formatAnsweredAt(question.answeredAt)} · Time taken {formatQuestionTime(question.timeSpent)}
                                 </p>
                               </div>
                               <span className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-black ${question.correct ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
@@ -1572,9 +1600,14 @@ function DashboardContent() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-2xl font-black text-gray-800">🎁 Rewards</h2>
-        <Link href="/rewards" className="btn-primary text-sm">
-          Open Rewards Center
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/coloring" className="rounded-2xl border-2 border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-black text-indigo-700 hover:bg-indigo-100 transition-colors">
+            🎨 Coloring Sheets
+          </Link>
+          <Link href="/rewards" className="btn-primary text-sm">
+            Open Rewards Center
+          </Link>
+        </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {children.map((child) => {

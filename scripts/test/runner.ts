@@ -13,7 +13,7 @@
  * Options:
  *   --url <url>     Base URL of the app (default: http://localhost:3000)
  *   --suite <name>  Run only one suite: auth|children|questions|progress|subscription|adaptive|report|session-shape|tutor|diagnostic|kid-flow|agents|dashboard-tabs|u1u2u4u5|tile-customization|subscription-robustness|langgraph-runner|question-engine|codex-ui|req001-progress-tracking|theme-engine|subscription-progress-regressions|question-quality-audit
- *                    |writing-studio|writing-topics-history|question-ramp
+ *                    |writing-studio|writing-topics-history|question-ramp|question-visual-scenes|interactive-question-logic|theme-question-context
  *   --no-setup      Skip DynamoDB seed step (if already seeded)
  *   --no-teardown   Keep test data after run (for debugging)
  *   --json          Write results to test-results.json
@@ -54,6 +54,10 @@ import { runQuestionQualityAuditSuite }           from "./suites/23-question-qua
 import { runWritingStudioSuite }                  from "./suites/24-writing-studio";
 import { runWritingTopicsHistorySuite }           from "./suites/25-writing-topics-history";
 import { runQuestionRampSuite }                   from "./suites/26-question-ramp";
+import { runQuestionVisualScenesSuite }           from "./suites/27-question-visual-scenes";
+import { runInteractiveQuestionLogicSuite }       from "./suites/28-interactive-question-logic";
+import { runHistoryPortalNavSuite }               from "./suites/29-history-portal-nav";
+import { runThemeQuestionContextSuite }           from "./suites/30-theme-question-context";
 
 // ── Parse CLI args ────────────────────────────────────────────────────────────
 
@@ -139,6 +143,10 @@ async function main() {
     "writing-studio":                     runWritingStudioSuite,
     "writing-topics-history":             runWritingTopicsHistorySuite,
     "question-ramp":                      runQuestionRampSuite,
+    "question-visual-scenes":             runQuestionVisualScenesSuite,
+    "interactive-question-logic":         runInteractiveQuestionLogicSuite,
+    "history-portal-nav":                 runHistoryPortalNavSuite,
+    "theme-question-context":             runThemeQuestionContextSuite,
   };
 
   const toRun = opts.suite

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 570" width="400" height="570">
+  <rect width="400" height="570" fill="white"/>
+  <!-- Outer border -->
+  <rect x="8" y="8" width="384" height="554" fill="none" stroke="#000" stroke-width="3" rx="16"/>
+  <!-- Inner border -->
+  <rect x="16" y="16" width="368" height="538" fill="none" stroke="#000" stroke-width="1.5" rx="12" stroke-dasharray="6,4"/>
+  <rect x="100" y="195" width="220" height="75" rx="37" fill="none" stroke="#000" stroke-width="8" transform="rotate(-25 200 232)"/>
+  <ellipse cx="95" cy="254" rx="20" ry="35" fill="none" stroke="#000" stroke-width="7" transform="rotate(-25 95 254)"/>
+  <ellipse cx="315" cy="196" rx="14" ry="26" fill="none" stroke="#000" stroke-width="7" transform="rotate(-25 315 196)"/>
+  <!-- Tripod -->
+  <line x1="200" y1="280" x2="200" y2="380" stroke="#000" stroke-width="8" stroke-linecap="round"/>
+  <line x1="200" y1="380" x2="130" y2="480" stroke="#000" stroke-width="7" stroke-linecap="round"/>
+  <line x1="200" y1="380" x2="270" y2="480" stroke="#000" stroke-width="7" stroke-linecap="round"/>
+  <!-- Stars being viewed -->
+  <path d="M320,130 L325,115 L330,130 L345,130 L333,140 L338,155 L325,145 L312,155 L317,140 L305,130 Z" fill="none" stroke="#000" stroke-width="3"/>
+  <!-- Title -->
+  <text x="200" y="538" font-family="Arial Black, sans-serif" font-size="20"
+        text-anchor="middle" fill="#000" font-weight="900">Telescope</text>
+  <text x="200" y="558" font-family="Arial, sans-serif" font-size="13"
+        text-anchor="middle" fill="#555">Blast off! 🚀</text>
+  <!-- KidLearn branding -->
+  <text x="380" y="566" font-family="Arial, sans-serif" font-size="9"
+        text-anchor="end" fill="#ccc">KidLearn</text>
+</svg>

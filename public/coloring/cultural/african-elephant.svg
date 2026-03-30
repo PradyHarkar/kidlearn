@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 570" width="400" height="570">
+  <rect width="400" height="570" fill="white"/>
+  <!-- Outer border -->
+  <rect x="8" y="8" width="384" height="554" fill="none" stroke="#000" stroke-width="3" rx="16"/>
+  <!-- Inner border -->
+  <rect x="16" y="16" width="368" height="538" fill="none" stroke="#000" stroke-width="1.5" rx="12" stroke-dasharray="6,4"/>
+  <circle cx="30" cy="48" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="30" cy="522" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="52" cy="48" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="52" cy="522" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="74" cy="48" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="74" cy="522" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="96" cy="48" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="96" cy="522" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="118" cy="48" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="118" cy="522" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="140" cy="48" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="140" cy="522" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="162" cy="48" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="162" cy="522" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="184" cy="48" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="184" cy="522" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="206" cy="48" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="206" cy="522" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="228" cy="48" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="228" cy="522" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="250" cy="48" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="250" cy="522" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="272" cy="48" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="272" cy="522" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="294" cy="48" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="294" cy="522" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="316" cy="48" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="316" cy="522" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="338" cy="48" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="338" cy="522" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="360" cy="48" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="360" cy="522" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="38" cy="70" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="362" cy="70" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="38" cy="113" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="362" cy="113" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="38" cy="156" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="362" cy="156" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="38" cy="199" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="362" cy="199" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="38" cy="242" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="362" cy="242" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="38" cy="285" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="362" cy="285" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="38" cy="328" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="362" cy="328" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="38" cy="371" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="362" cy="371" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="38" cy="414" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="362" cy="414" r="7" fill="none" stroke="#000" stroke-width="2"/><circle cx="38" cy="457" r="7" fill="none" stroke="#000" stroke-width="2"/>
+    <circle cx="362" cy="457" r="7" fill="none" stroke="#000" stroke-width="2"/>
+  <!-- Placeholder for curated artwork -->
+  <rect x="60" y="80" width="280" height="360" fill="none" stroke="#000" stroke-width="2" stroke-dasharray="8,4" rx="8"/>
+  <text x="200" y="250" font-family="Arial, sans-serif" font-size="15" text-anchor="middle" fill="#999">🎨</text>
+  <text x="200" y="272" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#bbb">Africa</text>
+  <text x="200" y="292" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#ccc">Add free SVG from</text>
+  <text x="200" y="308" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#ccc">commons.wikimedia.org</text>
+  <!-- Title -->
+  <text x="200" y="538" font-family="Arial Black, sans-serif" font-size="20"
+        text-anchor="middle" fill="#000" font-weight="900">African Elephant</text>
+  <text x="200" y="558" font-family="Arial, sans-serif" font-size="13"
+        text-anchor="middle" fill="#555">The world's largest land animal</text>
+  <!-- KidLearn branding -->
+  <text x="380" y="566" font-family="Arial, sans-serif" font-size="9"
+        text-anchor="end" fill="#ccc">KidLearn</text>
+</svg>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 570" width="400" height="570">
+  <rect width="400" height="570" fill="white"/>
+  <!-- Outer border -->
+  <rect x="8" y="8" width="384" height="554" fill="none" stroke="#000" stroke-width="3" rx="16"/>
+  <!-- Inner border -->
+  <rect x="16" y="16" width="368" height="538" fill="none" stroke="#000" stroke-width="1.5" rx="12" stroke-dasharray="6,4"/>
+  <ellipse cx="200" cy="220" rx="120" ry="120" fill="none" stroke="#000" stroke-width="8"/>
+  <ellipse cx="200" cy="220" rx="190" ry="55" fill="none" stroke="#000" stroke-width="6"/>
+  <line x1="100" y1="175" x2="130" y2="175" stroke="#fff" stroke-width="12"/>
+  <line x1="270" y1="175" x2="300" y2="175" stroke="#fff" stroke-width="12"/>
+  <!-- Bands on planet -->
+  <path d="M100,210 Q200,205 300,210" fill="none" stroke="#000" stroke-width="3"/>
+  <path d="M95,235 Q200,228 305,235" fill="none" stroke="#000" stroke-width="3"/>
+  <path d="M100,260 Q200,252 300,260" fill="none" stroke="#000" stroke-width="3"/>
+  <!-- Title -->
+  <text x="200" y="538" font-family="Arial Black, sans-serif" font-size="20"
+        text-anchor="middle" fill="#000" font-weight="900">Planet Saturn</text>
+  <text x="200" y="558" font-family="Arial, sans-serif" font-size="13"
+        text-anchor="middle" fill="#555">Blast off! 🚀</text>
+  <!-- KidLearn branding -->
+  <text x="380" y="566" font-family="Arial, sans-serif" font-size="9"
+        text-anchor="end" fill="#ccc">KidLearn</text>
+</svg>

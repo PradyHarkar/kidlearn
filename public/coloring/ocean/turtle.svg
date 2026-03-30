@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 570" width="400" height="570">
+  <rect width="400" height="570" fill="white"/>
+  <!-- Outer border -->
+  <rect x="8" y="8" width="384" height="554" fill="none" stroke="#000" stroke-width="3" rx="16"/>
+  <!-- Inner border -->
+  <rect x="16" y="16" width="368" height="538" fill="none" stroke="#000" stroke-width="1.5" rx="12" stroke-dasharray="6,4"/>
+  <ellipse cx="200" cy="230" rx="115" ry="90" fill="none" stroke="#000" stroke-width="8"/>
+  <!-- Shell pattern -->
+  <ellipse cx="200" cy="230" rx="75" ry="58" fill="none" stroke="#000" stroke-width="4"/>
+  <line x1="200" y1="172" x2="200" y2="288" stroke="#000" stroke-width="3"/>
+  <line x1="127" y1="230" x2="275" y2="230" stroke="#000" stroke-width="3"/>
+  <line x1="150" y1="185" x2="250" y2="275" stroke="#000" stroke-width="3"/>
+  <line x1="250" y1="185" x2="150" y2="275" stroke="#000" stroke-width="3"/>
+  <!-- Head -->
+  <ellipse cx="200" cy="135" rx="32" ry="26" fill="none" stroke="#000" stroke-width="7"/>
+  <circle cx="191" cy="128" r="7" fill="none" stroke="#000" stroke-width="3"/>
+  <circle cx="209" cy="128" r="7" fill="none" stroke="#000" stroke-width="3"/>
+  <!-- Flippers -->
+  <ellipse cx="90" cy="190" rx="28" ry="15" fill="none" stroke="#000" stroke-width="6" transform="rotate(-30 90 190)"/>
+  <ellipse cx="310" cy="190" rx="28" ry="15" fill="none" stroke="#000" stroke-width="6" transform="rotate(30 310 190)"/>
+  <ellipse cx="90" cy="270" rx="25" ry="13" fill="none" stroke="#000" stroke-width="6" transform="rotate(30 90 270)"/>
+  <ellipse cx="310" cy="270" rx="25" ry="13" fill="none" stroke="#000" stroke-width="6" transform="rotate(-30 310 270)"/>
+  <!-- Title -->
+  <text x="200" y="538" font-family="Arial Black, sans-serif" font-size="20"
+        text-anchor="middle" fill="#000" font-weight="900">Sea Turtle</text>
+  <text x="200" y="558" font-family="Arial, sans-serif" font-size="13"
+        text-anchor="middle" fill="#555">Deep sea adventure!</text>
+  <!-- KidLearn branding -->
+  <text x="380" y="566" font-family="Arial, sans-serif" font-size="9"
+        text-anchor="end" fill="#ccc">KidLearn</text>
+</svg>

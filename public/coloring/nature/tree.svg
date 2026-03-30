@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 570" width="400" height="570">
+  <rect width="400" height="570" fill="white"/>
+  <!-- Outer border -->
+  <rect x="8" y="8" width="384" height="554" fill="none" stroke="#000" stroke-width="3" rx="16"/>
+  <!-- Inner border -->
+  <rect x="16" y="16" width="368" height="538" fill="none" stroke="#000" stroke-width="1.5" rx="12" stroke-dasharray="6,4"/>
+  <polygon points="200,80 330,340 70,340" fill="none" stroke="#000" stroke-width="8" stroke-linejoin="round"/>
+  <polygon points="200,120 315,340 85,340" fill="none" stroke="#000" stroke-width="8" stroke-linejoin="round"/>
+  <polygon points="200,160 300,340 100,340" fill="none" stroke="#000" stroke-width="8" stroke-linejoin="round"/>
+  <rect x="175" y="340" width="50" height="80" rx="6" fill="none" stroke="#000" stroke-width="8"/>
+  <circle cx="200" cy="95" r="18" fill="none" stroke="#000" stroke-width="3"/>
+  <!-- Title -->
+  <text x="200" y="538" font-family="Arial Black, sans-serif" font-size="20"
+        text-anchor="middle" fill="#000" font-weight="900">Big Tree</text>
+  <text x="200" y="558" font-family="Arial, sans-serif" font-size="13"
+        text-anchor="middle" fill="#555">Colour me in!</text>
+  <!-- KidLearn branding -->
+  <text x="380" y="566" font-family="Arial, sans-serif" font-size="9"
+        text-anchor="end" fill="#ccc">KidLearn</text>
+</svg>

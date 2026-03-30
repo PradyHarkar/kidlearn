@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 570" width="400" height="570">
+  <rect width="400" height="570" fill="white"/>
+  <!-- Outer border -->
+  <rect x="8" y="8" width="384" height="554" fill="none" stroke="#000" stroke-width="3" rx="16"/>
+  <!-- Inner border -->
+  <rect x="16" y="16" width="368" height="538" fill="none" stroke="#000" stroke-width="1.5" rx="12" stroke-dasharray="6,4"/>
+  <path d="M200,100 Q310,100 340,200 Q360,280 310,360 Q270,420 200,430 Q130,420 90,360 Q40,280 60,200 Q90,100 200,100 Z" fill="none" stroke="#000" stroke-width="8"/>
+  <path d="M200,430 Q200,100 200,100" fill="none" stroke="#000" stroke-width="4"/>
+  <path d="M200,150 Q270,160 300,230 Q315,280 290,340" fill="none" stroke="#000" stroke-width="3.5"/>
+  <path d="M200,180 Q255,195 275,255 Q285,295 265,345" fill="none" stroke="#000" stroke-width="3"/>
+  <path d="M200,150 Q130,160 100,230 Q85,280 110,340" fill="none" stroke="#000" stroke-width="3.5"/>
+  <!-- Title -->
+  <text x="200" y="538" font-family="Arial Black, sans-serif" font-size="20"
+        text-anchor="middle" fill="#000" font-weight="900">Seashell</text>
+  <text x="200" y="558" font-family="Arial, sans-serif" font-size="13"
+        text-anchor="middle" fill="#555">Deep sea adventure!</text>
+  <!-- KidLearn branding -->
+  <text x="380" y="566" font-family="Arial, sans-serif" font-size="9"
+        text-anchor="end" fill="#ccc">KidLearn</text>
+</svg>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 570" width="400" height="570">
+  <rect width="400" height="570" fill="white"/>
+  <!-- Outer border -->
+  <rect x="8" y="8" width="384" height="554" fill="none" stroke="#000" stroke-width="3" rx="16"/>
+  <!-- Inner border -->
+  <rect x="16" y="16" width="368" height="538" fill="none" stroke="#000" stroke-width="1.5" rx="12" stroke-dasharray="6,4"/>
+  <path d="M90,240 Q80,175 140,170 Q155,120 210,130 Q245,95 285,130 Q330,120 335,170 Q380,175 370,240 Z" fill="none" stroke="#000" stroke-width="8"/>
+  <line x1="95" y1="290" x2="87" y2="330" stroke="#000" stroke-width="4" stroke-linecap="round"/><line x1="127" y1="290" x2="119" y2="330" stroke="#000" stroke-width="4" stroke-linecap="round"/><line x1="159" y1="290" x2="151" y2="330" stroke="#000" stroke-width="4" stroke-linecap="round"/><line x1="191" y1="290" x2="183" y2="330" stroke="#000" stroke-width="4" stroke-linecap="round"/><line x1="223" y1="290" x2="215" y2="330" stroke="#000" stroke-width="4" stroke-linecap="round"/><line x1="255" y1="290" x2="247" y2="330" stroke="#000" stroke-width="4" stroke-linecap="round"/><line x1="287" y1="290" x2="279" y2="330" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+  <!-- Title -->
+  <text x="200" y="538" font-family="Arial Black, sans-serif" font-size="20"
+        text-anchor="middle" fill="#000" font-weight="900">Cloud & Rain</text>
+  <text x="200" y="558" font-family="Arial, sans-serif" font-size="13"
+        text-anchor="middle" fill="#555">Colour me in!</text>
+  <!-- KidLearn branding -->
+  <text x="380" y="566" font-family="Arial, sans-serif" font-size="9"
+        text-anchor="end" fill="#ccc">KidLearn</text>
+</svg>

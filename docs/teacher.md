@@ -21,13 +21,14 @@ If a question is confusing, silly, misleading, or poorly written, it should not 
 3. Is the question appropriate for the child's year?
 4. Is the topic correct for the subject and country?
 5. Is there exactly one correct answer?
-6. Are the distractors plausible but not misleading?
-7. Is the hint useful?
-8. Is the explanation accurate?
-9. Is the difficulty level sensible?
-10. Does the question avoid repeated patterns?
-11. Does the theme fit naturally?
-12. Would a parent trust this question?
+6. Does the question have exactly four options for standard MCQ delivery?
+7. Are the distractors plausible but not misleading?
+8. Is the hint useful?
+9. Is the explanation accurate?
+10. Is the difficulty level sensible?
+11. Does the question avoid repeated patterns?
+12. Does the theme fit naturally?
+13. Would a parent trust this question?
 
 ## Severity Rules
 ### Reject immediately
@@ -38,6 +39,7 @@ Use `reject` if:
 - the question is far outside the year level
 - the question has multiple correct answers
 - the question is clearly a duplicate
+- the standard MCQ does not have exactly four answer options
 
 ### Needs review
 Use `needs_review` if:

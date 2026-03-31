@@ -106,6 +106,8 @@ export async function runQuestionsSuite(baseUrl: string) {
       answerOptions: [
         { text: "4", isCorrect: true  },
         { text: "3", isCorrect: false },
+        { text: "5", isCorrect: false },
+        { text: "6", isCorrect: false },
       ],
       difficulty: 4,
       topics:     ["test-upload"],
@@ -136,6 +138,8 @@ export async function runQuestionsSuite(baseUrl: string) {
         answerOptions: [
           { text: "A", isCorrect: true },
           { text: "B", isCorrect: false },
+          { text: "C", isCorrect: false },
+          { text: "D", isCorrect: false },
         ],
         difficulty: 1,
         topics: ["test"],

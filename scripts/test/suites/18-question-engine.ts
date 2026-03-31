@@ -457,6 +457,27 @@ export async function runQuestionEngineSuite(baseUrl: string) {
     assertTrue([400, 401].includes(res.status), `expected 400/401 for empty options, got ${res.status}`);
   });
 
+  await test(SUITE, "POST /api/questions/upload: three answer options → 400", async () => {
+    const client = new TestClient(baseUrl);
+    const res = await client.post("/api/questions/upload", {
+      questions: [{
+        questionText: "Three-option question",
+        answerOptions: [
+          { text: "A", isCorrect: true  },
+          { text: "B", isCorrect: false },
+          { text: "C", isCorrect: false },
+        ],
+        difficulty: 4,
+        topics: ["test"],
+        explanation: "test",
+        subject: "maths",
+        ageGroup: "year3",
+      }],
+      secret: "wrong-secret",
+    });
+    assertTrue([400, 401].includes(res.status), `expected 400/401 for 3 options, got ${res.status}`);
+  });
+
   await test(SUITE, "POST /api/questions/upload: more than 4 answer options → 400", async () => {
     const client = new TestClient(baseUrl);
     const res = await client.post("/api/questions/upload", {

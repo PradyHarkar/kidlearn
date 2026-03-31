@@ -307,12 +307,29 @@ Examples:
 The theme should support the learning, not hide it.
 
 ## Answer Option Rules
-- 2 to 4 options for most questions
+- 4 options for standard multiple-choice questions
+- label the options A, B, C, and D in the UI
 - exactly one correct answer
 - unique option text
 - no obvious pattern in answer position
 - keep the correct answer randomized across the session
 - use clear and readable distractors
+
+## PDF Benchmark Style
+The Australian curriculum maths PDF is the benchmark style for this bank.
+
+Use it as the model for:
+- concrete, curriculum-led prompts
+- clear year-by-year progression
+- familiar child-friendly contexts
+- increasing complexity across the ladder
+- questions that feel like learning, not trivia
+
+If a skill is naturally written as a fill-in question in a worksheet, the bank should convert it into:
+- a four-option A/B/C/D question, or
+- a guided interactive mode if the skill is better taught visually
+
+Do not ship a live quiz-style question with only a single answer value when it can be turned into a stronger four-option question.
 
 ## Difficulty Rules
 - Early questions should be easier and clearer

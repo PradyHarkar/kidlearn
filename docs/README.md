@@ -9,6 +9,9 @@ Read these docs in order:
 3. `teacher.md` - how every question should be audited
 4. `learn.md` - how the learning experience should feel and behave
 
+The Australian curriculum maths PDF is the style reference for the bank:
+concrete, curriculum-led, age-appropriate, and progressively harder.
+
 These docs are written for both humans and LLMs.
 They should be treated as product rules, not suggestions.
 

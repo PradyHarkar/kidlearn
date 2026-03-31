@@ -50,7 +50,7 @@ const answerOptionSchema = z.object({
 
 const questionSchema = z.object({
   questionText: z.string().min(1),
-  answerOptions: z.array(answerOptionSchema).min(2).max(4),
+  answerOptions: z.array(answerOptionSchema).length(4),
   difficulty: z.number().min(1).max(10),
   topics: z.array(z.string()),
   explanation: z.string(),

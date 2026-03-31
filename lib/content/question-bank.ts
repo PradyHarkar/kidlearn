@@ -61,6 +61,19 @@ const SOUND_SETS = [
   { prompt: "oa", correct: "boat", wrong: ["grass", "drip", "tent"] },
   { prompt: "igh", correct: "light", wrong: ["crate", "stamp", "drum"] },
   { prompt: "oo", correct: "moon", wrong: ["crab", "nest", "plant"] },
+  { prompt: "wh", correct: "wheel", wrong: ["cream", "frog", "black"] },
+  { prompt: "bl", correct: "blue", wrong: ["snake", "thumb", "grant"] },
+  { prompt: "cl", correct: "clap", wrong: ["skip", "frown", "stone"] },
+  { prompt: "gr", correct: "green", wrong: ["chest", "plum", "drift"] },
+  { prompt: "st", correct: "star", wrong: ["flock", "bench", "grain"] },
+  { prompt: "tr", correct: "train", wrong: ["bench", "snail", "clock"] },
+  { prompt: "fl", correct: "flower", wrong: ["storm", "beach", "grind"] },
+  { prompt: "pr", correct: "proud", wrong: ["clam", "stone", "bright"] },
+  { prompt: "br", correct: "bread", wrong: ["sleep", "clock", "frost"] },
+  { prompt: "cr", correct: "crab", wrong: ["sleep", "plank", "brown"] },
+  { prompt: "dr", correct: "drum", wrong: ["plant", "shelf", "queen"] },
+  { prompt: "fr", correct: "frog", wrong: ["brush", "stone", "clock"] },
+  { prompt: "sk", correct: "skip", wrong: ["proud", "blend", "drift"] },
 ] as const;
 const RHYME_SETS = [
   { word: "cat", correct: "hat", wrong: ["sun", "log", "pen"] },
@@ -71,12 +84,27 @@ const RHYME_SETS = [
   { word: "star", correct: "car", wrong: ["fish", "desk", "rain"] },
   { word: "moon", correct: "spoon", wrong: ["grass", "block", "ring"] },
   { word: "bell", correct: "shell", wrong: ["cloud", "drip", "train"] },
+  { word: "fox", correct: "box", wrong: ["kite", "sand", "lamp"] },
+  { word: "fish", correct: "dish", wrong: ["rock", "tree", "coat"] },
+  { word: "ring", correct: "king", wrong: ["plum", "road", "shelf"] },
+  { word: "hop", correct: "top", wrong: ["sail", "bench", "cloud"] },
+  { word: "bat", correct: "mat", wrong: ["frog", "stem", "drip"] },
+  { word: "pen", correct: "hen", wrong: ["star", "clock", "drum"] },
+  { word: "bug", correct: "mug", wrong: ["cake", "snow", "brick"] },
+  { word: "cake", correct: "snake", wrong: ["drum", "flag", "crow"] },
+  { word: "map", correct: "cap", wrong: ["frog", "stem", "drip"] },
+  { word: "sit", correct: "bit", wrong: ["cake", "snow", "brick"] },
+  { word: "worm", correct: "storm", wrong: ["plum", "rock", "chair"] },
+  { word: "night", correct: "light", wrong: ["sand", "coat", "frog"] },
+  { word: "play", correct: "clay", wrong: ["stone", "drum", "fish"] },
+  { word: "found", correct: "round", wrong: ["brick", "shelf", "tree"] },
 ] as const;
 const WEATHER_SETS = [
   { clue: "dark clouds and heavy rain", correct: "rainy", wrong: ["sunny", "snowy", "foggy"] },
   { clue: "bright sun and no clouds", correct: "sunny", wrong: ["stormy", "foggy", "icy"] },
   { clue: "strong wind bending trees", correct: "windy", wrong: ["dry", "snowy", "humid"] },
   { clue: "thick white mist near the ground", correct: "foggy", wrong: ["sunny", "stormy", "dusty"] },
+  { clue: "white flakes drifting from grey clouds", correct: "snowy", wrong: ["stormy", "foggy", "windy"] },
 ] as const;
 const SUBJECT_WORDS = ["puppy", "teacher", "student", "artist", "robot", "team", "friend", "class"];
 const ACTION_WORDS = ["plays", "runs", "writes", "reads", "builds", "jumps", "packs", "draws"];
@@ -228,12 +256,18 @@ function option(id: string, text: string, isCorrect: boolean, extras?: Partial<A
   return { id, text, isCorrect, ...extras };
 }
 
-/** Fisher-Yates shuffle using a seeded LCG so order is deterministic per question but varies across seeds */
+/** Fisher-Yates shuffle using a seeded xorshift32 so order is deterministic per question but varies across seeds */
 function shuffleOptions(options: AnswerOption[], seed: number): AnswerOption[] {
   const arr = [...options];
-  let s = (seed * 1664525 + 1013904223) >>> 0;
+  // Use xorshift32 — much better bit distribution than naive LCG (avoids mod-4 bias)
+  let s = (seed + 1) >>> 0;
+  s ^= s << 13; s = s >>> 0;
+  s ^= s >>> 17; s = s >>> 0;
+  s ^= s << 5;  s = s >>> 0;
   for (let i = arr.length - 1; i > 0; i--) {
-    s = (s * 1664525 + 1013904223) >>> 0;
+    s ^= s << 13; s = s >>> 0;
+    s ^= s >>> 17; s = s >>> 0;
+    s ^= s << 5;  s = s >>> 0;
     const j = s % (i + 1);
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
@@ -427,7 +461,6 @@ function numeracyReasoningQuestion(context: GeneratorContext): DraftQuestion {
   const item = pick(COUNTABLE_OBJECTS, mixSeed(seed, 3));
   const operationType = mixSeed(seed, 5) % 4;
   const place = pick(PLACES, mixSeed(seed, 7));
-  const frame = classroomContext(seed, 7);
   const base = 5 + (mixSeed(seed, 11) % 31) + AGE_GROUPS.indexOf(context.ageGroup);
   const second = 2 + (mixSeed(seed, 13) % 18);
   const third = 2 + (mixSeed(seed, 17) % 8);
@@ -440,20 +473,20 @@ function numeracyReasoningQuestion(context: GeneratorContext): DraftQuestion {
 
   if (operationType === 0) {
     correctAnswer = base + second;
-    questionText = `${name} collected ${base} ${item.name}s at the ${place} ${frame} and found ${second} more. How many ${item.name}s does ${name} have now?`;
+    questionText = `${name} collected ${base} ${item.name}s at the ${place} and found ${second} more. How many ${item.name}s does ${name} have now?`;
     explanation = `${base} + ${second} = ${correctAnswer}.`;
     hint = "Add the two groups together.";
     topic = "addition and subtraction";
   } else if (operationType === 1) {
     const start = base + second;
     correctAnswer = start - second;
-    questionText = `${name} had ${start} ${item.name}s at the ${place} ${frame} and gave away ${second}. How many are left?`;
+    questionText = `${name} had ${start} ${item.name}s at the ${place} and gave away ${second}. How many are left?`;
     explanation = `${start} - ${second} = ${correctAnswer}.`;
     hint = "Take away the amount that was given away.";
     topic = "subtraction";
   } else if (operationType === 2) {
     correctAnswer = second * third;
-    questionText = `${name} packed ${third} boxes with ${second} ${item.name}s in each box for the ${place} ${frame}. How many ${item.name}s are there altogether?`;
+    questionText = `${name} packed ${third} boxes with ${second} ${item.name}s each at the ${place}. How many ${item.name}s are there altogether?`;
     explanation = `${third} groups of ${second} makes ${correctAnswer}.`;
     hint = "Think of equal groups or repeated addition.";
     topic = "multiplication";
@@ -461,7 +494,7 @@ function numeracyReasoningQuestion(context: GeneratorContext): DraftQuestion {
     const denominator = 2 + (context.seed % 4);
     const numerator = 1 + (context.seed % (denominator - 1));
     correctAnswer = numerator;
-    questionText = `On a worksheet from the ${place} ${frame}, a shape is split into ${denominator} equal parts and ${numerator} parts are shaded. How many parts are shaded?`;
+    questionText = `On a worksheet from the ${place}, a shape is split into ${denominator} equal parts and ${numerator} parts are shaded. How many parts are shaded?`;
     explanation = `${numerator} of the ${denominator} equal parts are shaded.`;
     hint = "Count only the shaded parts.";
     topic = "fractions";
@@ -719,7 +752,7 @@ function sentenceOrderQuestion(context: GeneratorContext): DraftQuestion {
   const wordTiles = `${subjectWord} / ${action} / ${ending}`;
 
   return {
-    questionText: `${name} is checking sentence cards in the ${place} ${classroomContext(seed, 4)}. Which sentence puts these words in the correct order: ${wordTiles}`,
+    questionText: `${name} is checking sentence cards in the ${place} ${classroomContext(seed, 4)}. Which sentence puts these words in the correct order: ${wordTiles}?`,
     answerOptions: [
       option("a", sentence, true),
       option("b", `${action} ${subjectWord} ${ending}.`, false),
@@ -747,7 +780,7 @@ function grammarQuestion(context: GeneratorContext): DraftQuestion {
   if (variant === 0) {
     const baseAction = actionWord.endsWith("s") ? actionWord.slice(0, -1) : actionWord;
     return {
-      questionText: `Choose the best word ${frame}: "The ${subjectWord} ___ every morning."`,
+      questionText: `Choose the best word ${frame}: "The ${subjectWord} ___ every morning."?`,
       answerOptions: [
         option("a", actionWord, true),
         option("b", baseAction, false),
@@ -766,7 +799,7 @@ function grammarQuestion(context: GeneratorContext): DraftQuestion {
 
   if (variant === 1) {
     return {
-      questionText: `Which punctuation mark should finish this question ${frame}: "${punctuationLead} did the class go after lunch"`,
+      questionText: `Which punctuation mark should finish this question ${frame}: "${punctuationLead} did the class go after lunch"?`,
       answerOptions: [
         option("a", "?", true),
         option("b", ".", false),
@@ -784,7 +817,7 @@ function grammarQuestion(context: GeneratorContext): DraftQuestion {
   }
 
   return {
-    questionText: `Choose the correct word ${frame} to begin the sentence: "__ are going to the park after school."`,
+    questionText: `Choose the correct word ${frame} to begin the sentence: "__ are going to the park after school."?`,
     answerOptions: [
       option("a", "They", true),
       option("b", "Their", false),
@@ -838,7 +871,7 @@ function upperYearsEnglishQuestion(context: GeneratorContext): DraftQuestion {
   if (hasAnyKeyword(topic, ["passive", "subjunctive", "modal", "relative", "grammar"])) {
     const baseSentence = `${name} suggested that every student be on time for the debate rehearsal.`;
     return {
-      questionText: `Which explanation best matches the grammar choice in this sentence from the ${place} ${frame}: "${baseSentence}"`,
+      questionText: `Which explanation best matches the grammar choice in this sentence from the ${place} ${frame}: "${baseSentence}"?`,
       answerOptions: [
         option("a", "It uses the subjunctive mood to express a recommendation.", true),
         option("b", "It uses a question form to ask for permission.", false),
@@ -894,13 +927,37 @@ function upperYearsEnglishQuestion(context: GeneratorContext): DraftQuestion {
     };
   }
 
+  const STYLE_SCENARIOS = [
+    {
+      scenario: "preparing an argument",
+      correct: "The evidence strongly suggests that the later start time would improve student focus.",
+      wrong: ["I reckon starting later would be pretty awesome for everyone.", "Starting later is cool because nobody likes mornings.", "We should do it, and that's that."],
+    },
+    {
+      scenario: "presenting health research",
+      correct: "Regular physical activity has been demonstrated to enhance cognitive performance.",
+      wrong: ["Exercise is heaps of fun and makes you feel really good.", "Sport is great, everyone should do way more of it.", "Just move around more, it helps."],
+    },
+    {
+      scenario: "writing a literacy report",
+      correct: "Research indicates that daily reading significantly broadens students' vocabulary.",
+      wrong: ["Reading is super awesome and you get way smarter from it.", "Books are pretty cool and everyone should read heaps.", "Read more, it's good."],
+    },
+    {
+      scenario: "presenting a science project",
+      correct: "Data reveals a strong correlation between adequate sleep and academic achievement.",
+      wrong: ["Getting enough sleep is like, seriously so important for your brain.", "Sleep more and you'll do better, it's really simple.", "Sleep is mega important, don't ignore it."],
+    },
+  ] as const;
+  const ss = STYLE_SCENARIOS[seed % STYLE_SCENARIOS.length];
+
   return {
-    questionText: `${name} is preparing an argument in the ${place} ${frame}. Which sentence uses the most formal tone?`,
+    questionText: `${name} is ${ss.scenario} in the ${place} ${frame}. Which sentence uses the most formal tone?`,
     answerOptions: [
-      option("a", "The evidence strongly suggests that the later start time would improve student focus.", true),
-      option("b", "I reckon starting later would be pretty awesome for everyone.", false),
-      option("c", "Starting later is cool because nobody likes mornings.", false),
-      option("d", "We should do it, and that's that.", false),
+      option("a", ss.correct, true),
+      option("b", ss.wrong[0], false),
+      option("c", ss.wrong[1], false),
+      option("d", ss.wrong[2], false),
     ],
     difficulty: difficultyFor(context.ageGroup, context.acceptedCount),
     topics: uniqueTags(topic, "writing style", "formal writing", "argument", context.examProfile.benchmarkFamily),
@@ -940,13 +997,19 @@ function readingComprehensionQuestion(context: GeneratorContext): DraftQuestion 
     };
   }
 
+  const REASON_DISTRACTORS = [
+    ["because there was nothing left to do", "because the teacher sent everyone home", "because the bell had already rung"],
+    ["because the task was too easy", "because a friend offered to help instead", "because the place was too noisy to continue"],
+  ] as const;
+  const rd = REASON_DISTRACTORS[Math.floor(seed / 2) % REASON_DISTRACTORS.length];
+
   return {
     questionText: `Read the short text and answer.\n\n${passage}\n\nWhy did ${name} change the plan?`,
     answerOptions: [
       option("a", "because the first approach was not working", true),
-      option("b", "because there was nothing left to do", false),
-      option("c", "because the teacher sent everyone home", false),
-      option("d", "because the bell had already rung", false),
+      option("b", rd[0], false),
+      option("c", rd[1], false),
+      option("d", rd[2], false),
     ],
     difficulty: difficultyFor(context.ageGroup, context.acceptedCount),
     topics: ["reading comprehension", context.examProfile.benchmarkFamily, pick(context.topics, seed, 1)],
@@ -967,6 +1030,7 @@ function habitatQuestion(context: GeneratorContext): DraftQuestion {
     { name: "camel", habitat: "desert" },
     { name: "lion", habitat: "savannah" },
     { name: "rabbit", habitat: "burrow" },
+    { name: "bear", habitat: "forest" },
   ] as const;
   const animal = pick(animals, seed);
   const wrongHabitats = distinctPicks(animals.map((entry) => entry.habitat), seed + 2, 3, [animal.habitat]);
@@ -1028,6 +1092,7 @@ function scienceReasoningQuestion(context: GeneratorContext): DraftQuestion {
     { cause: "ice is left in the sun", correct: "it melts into liquid water", wrong: ["it grows bigger", "it becomes gas immediately", "it turns white"] },
     { cause: "a seed gets water and sunlight", correct: "it can begin to grow", wrong: ["it changes into soil", "it loses all mass", "it becomes colder"] },
     { cause: "a force pushes a toy car harder", correct: "it can move faster", wrong: ["it always stops", "it turns invisible", "it becomes magnetic"] },
+    { cause: "a plant is not given water", correct: "it begins to wilt", wrong: ["it grows taller", "it produces more fruit", "it changes colour"] },
   ] as const;
   const process = pick(processes, seed);
 
@@ -1136,13 +1201,42 @@ function upperYearsScienceQuestion(context: GeneratorContext): DraftQuestion {
     };
   }
 
+  const PHYSICS_SCENARIOS = [
+    {
+      question: `${name} is studying forces in the ${place} ${frame}. Why does a heavier object usually need a bigger push to speed up?`,
+      correct: "Greater mass usually requires more force to change motion.",
+      wrong: ["Heavier objects stop obeying gravity.", "Heavier objects have no inertia.", "A bigger push makes the object lighter."],
+    },
+    {
+      question: `${name} is investigating magnets in the ${place} ${frame}. Which statement about magnetic poles is correct?`,
+      correct: "Opposite poles attract each other.",
+      wrong: ["Like poles always attract.", "Magnets work only near electricity.", "All metals are magnetic."],
+    },
+    {
+      question: `${name} is exploring light in the ${place} ${frame}. Which statement about shadows is correct?`,
+      correct: "A shadow forms when an opaque object blocks the path of light.",
+      wrong: ["Shadows are caused by reflections in mirrors.", "Shadows only form at night.", "Transparent objects create the darkest shadows."],
+    },
+    {
+      question: `${name} is testing surfaces in the ${place} ${frame}. Which surface would create the most friction on a sliding block?`,
+      correct: "A rough surface like sandpaper.",
+      wrong: ["A smooth, polished surface.", "A wet, slippery surface.", "An oily metal surface."],
+    },
+    {
+      question: `${name} is studying gravity in the ${place} ${frame}. What happens to an object when there is no supporting force acting on it?`,
+      correct: "It falls towards the ground because gravity pulls it down.",
+      wrong: ["It floats upward away from Earth.", "It moves sideways at constant speed.", "It stays perfectly still in the air."],
+    },
+  ] as const;
+  const ps = PHYSICS_SCENARIOS[seed % PHYSICS_SCENARIOS.length];
+
   return {
-    questionText: `${name} is studying forces in the ${place} ${frame}. Why does a heavier object usually need a bigger push to speed up?`,
+    questionText: ps.question,
     answerOptions: [
-      option("a", "Greater mass usually requires more force to change motion.", true),
-      option("b", "Heavier objects stop obeying gravity.", false),
-      option("c", "Heavier objects have no inertia.", false),
-      option("d", "A bigger push makes the object lighter.", false),
+      option("a", ps.correct, true),
+      option("b", ps.wrong[0], false),
+      option("c", ps.wrong[1], false),
+      option("d", ps.wrong[2], false),
     ],
     difficulty: difficultyFor(context.ageGroup, context.acceptedCount),
     topics: uniqueTags(topic, "physics", "forces", "motion", context.examProfile.benchmarkFamily),
@@ -1171,6 +1265,7 @@ function scienceMatchPairsQuestion(context: GeneratorContext): DraftQuestion {
       topics: ["animals", "diet", "classification", "biology"],
       explanation: "Carnivores eat meat, herbivores eat plants, and omnivores eat both.",
       hint: "Think about what each animal's teeth are built for.",
+      wrongOptions: ["Carnivore eats plants", "Herbivore eats meat"],
     },
     {
       questionText: "Match each animal group to one of its features.",
@@ -1182,6 +1277,7 @@ function scienceMatchPairsQuestion(context: GeneratorContext): DraftQuestion {
       topics: ["animals", "classification", "biology"],
       explanation: "Animals are classified by shared features like fur, scales, or feathers.",
       hint: "Think about what is unique to each group.",
+      wrongOptions: ["Mammal has scales", "Reptile feeds babies milk"],
     },
     {
       questionText: "Match each change of state to what happens to the particles.",
@@ -1193,6 +1289,7 @@ function scienceMatchPairsQuestion(context: GeneratorContext): DraftQuestion {
       topics: ["states of matter", "water cycle", "chemistry"],
       explanation: "States of matter change when energy is added or removed.",
       hint: "Think about heating and cooling water.",
+      wrongOptions: ["Evaporation turns gas to liquid", "Condensation turns liquid to gas"],
     },
     {
       questionText: "Match each part of a plant to its job.",
@@ -1204,18 +1301,18 @@ function scienceMatchPairsQuestion(context: GeneratorContext): DraftQuestion {
       topics: ["plants", "biology", "photosynthesis"],
       explanation: "Each part of a plant has a specific role in helping it survive and reproduce.",
       hint: "Think about what each part looks like and where it is on the plant.",
+      wrongOptions: ["Roots make food using sunlight", "Leaves absorb water from soil"],
     },
   ];
 
   const v = VARIANTS[variant];
-  const correctText = "All matched correctly";
 
   return {
     questionText: v.questionText,
     answerOptions: [
-      option("a", correctText, true),
-      option("b", "Carnivore eats plants", false),
-      option("c", "Herbivore eats meat", false),
+      option("a", "All matched correctly", true),
+      option("b", v.wrongOptions[0], false),
+      option("c", v.wrongOptions[1], false),
     ],
     difficulty: difficultyFor(context.ageGroup, context.acceptedCount),
     topics: uniqueTags(...v.topics, context.examProfile.benchmarkFamily),
@@ -1249,6 +1346,7 @@ function mathsMatchPairsQuestion(context: GeneratorContext): DraftQuestion {
       topics: ["shapes", "geometry", "sides"],
       explanation: "The prefix of a shape's name often tells you how many sides it has: tri=3, quad=4, hex=6.",
       hint: "Count the corners — a shape has as many corners as sides.",
+      wrongOptions: ["Triangle has 4 sides", "Square has 3 sides"],
     },
     {
       questionText: "Match each maths word to its meaning.",
@@ -1260,6 +1358,7 @@ function mathsMatchPairsQuestion(context: GeneratorContext): DraftQuestion {
       topics: ["measurement", "geometry", "perimeter", "area"],
       explanation: "Perimeter goes around the outside, area fills the inside, volume fills 3D space.",
       hint: "Think about fencing a garden (perimeter) vs tiling the floor (area).",
+      wrongOptions: ["Perimeter means inside space", "Area means around a shape"],
     },
     {
       questionText: "Match each operation to what it does.",
@@ -1271,6 +1370,7 @@ function mathsMatchPairsQuestion(context: GeneratorContext): DraftQuestion {
       topics: ["operations", "number", "arithmetic"],
       explanation: "The four operations — add, subtract, multiply, divide — are the building blocks of maths.",
       hint: "Think about what happens to the total in each case.",
+      wrongOptions: ["Addition takes away an amount", "Subtraction puts groups together"],
     },
   ];
 
@@ -1280,8 +1380,8 @@ function mathsMatchPairsQuestion(context: GeneratorContext): DraftQuestion {
     questionText: v.questionText,
     answerOptions: [
       option("a", "All matched correctly", true),
-      option("b", "Triangle has 4 sides", false),
-      option("c", "Square has 3 sides", false),
+      option("b", v.wrongOptions[0], false),
+      option("c", v.wrongOptions[1], false),
     ],
     difficulty: difficultyFor(context.ageGroup, context.acceptedCount),
     topics: uniqueTags(...v.topics, context.examProfile.benchmarkFamily),
@@ -1315,6 +1415,7 @@ function englishMatchPairsQuestion(context: GeneratorContext): DraftQuestion {
       topics: ["grammar", "nouns", "verbs", "adjectives"],
       explanation: "Nouns name things, verbs show action, adjectives describe nouns.",
       hint: "Can you do it (verb)? Does it name something (noun)? Does it describe something (adjective)?",
+      wrongOptions: ["Verb is a naming word", "Noun shows an action"],
     },
     {
       questionText: "Match each punctuation mark to its job.",
@@ -1326,6 +1427,7 @@ function englishMatchPairsQuestion(context: GeneratorContext): DraftQuestion {
       topics: ["punctuation", "grammar", "writing"],
       explanation: "Punctuation marks tell readers how to read — where to pause, stop, or ask.",
       hint: "Think about where you put each mark in a sentence.",
+      wrongOptions: ["Full stop ends a question", "Question mark separates list items"],
     },
     {
       questionText: "Match each prefix to its meaning.",
@@ -1337,6 +1439,7 @@ function englishMatchPairsQuestion(context: GeneratorContext): DraftQuestion {
       topics: ["vocabulary", "word structure", "prefixes"],
       explanation: "Prefixes added to the start of a word change its meaning.",
       hint: "Try adding the prefix to a word you know.",
+      wrongOptions: ["re– means not", "un– means again"],
     },
   ];
 
@@ -1346,8 +1449,8 @@ function englishMatchPairsQuestion(context: GeneratorContext): DraftQuestion {
     questionText: v.questionText,
     answerOptions: [
       option("a", "All matched correctly", true),
-      option("b", "Verb is a naming word", false),
-      option("c", "Noun shows an action", false),
+      option("b", v.wrongOptions[0], false),
+      option("c", v.wrongOptions[1], false),
     ],
     difficulty: difficultyFor(context.ageGroup, context.acceptedCount),
     topics: uniqueTags(...v.topics, context.examProfile.benchmarkFamily),
@@ -1369,8 +1472,8 @@ function englishMatchPairsQuestion(context: GeneratorContext): DraftQuestion {
 function getTemplateGenerators(subject: Subject, ageGroup: AgeGroup, country: Country): TemplateGenerator[] {
   if (subject === "maths") {
     if (isEarlyYears(ageGroup)) return [visualShapeQuestion, countingQuestion, numeracyReasoningQuestion];
-    if (country === "UK" && ageGroup === "year4") return [timesTableQuestion, numeracyReasoningQuestion, numeracyReasoningQuestion];
-    return [upperYearsMathsQuestion, numeracyReasoningQuestion, timesTableQuestion, mathsMatchPairsQuestion, upperYearsMathsQuestion];
+    if (country === "UK" && ageGroup === "year4") return [timesTableQuestion, numeracyReasoningQuestion, mathsMatchPairsQuestion];
+    return [upperYearsMathsQuestion, numeracyReasoningQuestion, timesTableQuestion, mathsMatchPairsQuestion];
   }
 
   if (subject === "english") {
@@ -1381,7 +1484,7 @@ function getTemplateGenerators(subject: Subject, ageGroup: AgeGroup, country: Co
   }
 
   if (isEarlyYears(ageGroup)) return [habitatQuestion, materialsQuestion, scienceReasoningQuestion, weatherQuestion];
-  return [upperYearsScienceQuestion, scienceReasoningQuestion, scienceMatchPairsQuestion, materialsQuestion, upperYearsScienceQuestion];
+  return [upperYearsScienceQuestion, scienceReasoningQuestion, scienceMatchPairsQuestion, materialsQuestion];
 }
 
 function isQuestionSensible(question: Question, ageGroup: AgeGroup): boolean {
@@ -1402,6 +1505,7 @@ function normaliseQuestionText(text: string): string {
 function fingerprintQuestion(question: Question): string {
   const answers = question.answerOptions
     .map((answer) => `${answer.text.toLowerCase().trim()}::${answer.isCorrect ? "1" : "0"}`)
+    .sort()
     .join("|");
 
   return `${normaliseQuestionText(question.questionText)}::${answers}`;

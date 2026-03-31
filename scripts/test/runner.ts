@@ -13,7 +13,7 @@
  * Options:
  *   --url <url>     Base URL of the app (default: http://localhost:3000)
  *   --suite <name>  Run only one suite: auth|children|questions|progress|subscription|adaptive|report|session-shape|tutor|diagnostic|kid-flow|agents|dashboard-tabs|u1u2u4u5|tile-customization|subscription-robustness|langgraph-runner|question-engine|codex-ui|req001-progress-tracking|theme-engine|subscription-progress-regressions|question-quality-audit
- *                    |writing-studio|writing-topics-history|question-ramp|question-visual-scenes|interactive-question-logic|theme-question-context
+ *                    |writing-studio|writing-topics-history|question-ramp|question-visual-scenes|interactive-question-logic|theme-question-context|question-deep-quality
  *   --no-setup      Skip DynamoDB seed step (if already seeded)
  *   --no-teardown   Keep test data after run (for debugging)
  *   --json          Write results to test-results.json
@@ -58,6 +58,7 @@ import { runQuestionVisualScenesSuite }           from "./suites/27-question-vis
 import { runInteractiveQuestionLogicSuite }       from "./suites/28-interactive-question-logic";
 import { runHistoryPortalNavSuite }               from "./suites/29-history-portal-nav";
 import { runThemeQuestionContextSuite }           from "./suites/30-theme-question-context";
+import { runQuestionDeepQualitySuite }            from "./suites/31-question-deep-quality";
 
 // ── Parse CLI args ────────────────────────────────────────────────────────────
 
@@ -147,6 +148,7 @@ async function main() {
     "interactive-question-logic":         runInteractiveQuestionLogicSuite,
     "history-portal-nav":                 runHistoryPortalNavSuite,
     "theme-question-context":             runThemeQuestionContextSuite,
+    "question-deep-quality":              runQuestionDeepQualitySuite,
   };
 
   const toRun = opts.suite

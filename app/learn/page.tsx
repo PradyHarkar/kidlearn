@@ -216,9 +216,18 @@ function LearnContent() {
       if (sessionRes.ok && sessionData.session?.questions?.length) {
         const saved = sessionData.session as SavedLearnSessionState & { sessionId?: string };
         setActiveSessionId(saved.sessionId);
-        setQuestions(saved.questions);
+        // Always re-shuffle on restore so old cached questions (correct answer at position 0) get fixed
+        const restoredQuestions = saved.questions.map(randomiseOptions);
+        setQuestions(restoredQuestions);
         setCurrentIndex(saved.currentIndex);
-        setSelectedAnswer(saved.selectedAnswer);
+        // Remap selectedAnswer by option text so it survives the reshuffle
+        const prevOpt = saved.selectedAnswer
+          ? saved.questions[saved.currentIndex]?.answerOptions.find((o) => o.id === saved.selectedAnswer)
+          : null;
+        const remappedAnswer = prevOpt
+          ? (restoredQuestions[saved.currentIndex]?.answerOptions.find((o) => o.text === prevOpt.text)?.id ?? null)
+          : null;
+        setSelectedAnswer(remappedAnswer);
         setIsAnswered(saved.isAnswered);
         setResults(saved.results || []);
         setCurrentDifficulty(saved.currentDifficulty || 1);

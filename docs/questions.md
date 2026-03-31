@@ -42,6 +42,7 @@ Every question must map to:
 - question mode
 
 The generator should prefer curriculum-aligned content first and only fall back to generic content when necessary.
+Use `curriculum.md` as the year-by-year topic ladder.
 
 ## Interactive Question Modes
 Use the best mode for the skill, not just multiple choice.

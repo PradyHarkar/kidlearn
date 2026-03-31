@@ -4,9 +4,10 @@ This folder is the source of truth for the content and learning experience contr
 
 Read these docs in order:
 
-1. `questions.md` - how questions should be generated
-2. `teacher.md` - how every question should be audited
-3. `learn.md` - how the learning experience should feel and behave
+1. `curriculum.md` - year-by-year topic ladder by subject
+2. `questions.md` - how questions should be generated
+3. `teacher.md` - how every question should be audited
+4. `learn.md` - how the learning experience should feel and behave
 
 These docs are written for both humans and LLMs.
 They should be treated as product rules, not suggestions.

@@ -44,6 +44,247 @@ Every question must map to:
 The generator should prefer curriculum-aligned content first and only fall back to generic content when necessary.
 Use `curriculum.md` as the year-by-year topic ladder.
 
+## Year-by-Year Difficulty Shape
+When generating a bank or a session, the questions should generally move like this:
+
+- first few questions: easier, clearer, confidence-building
+- middle questions: standard difficulty for the year
+- later questions: harder, but still fair and age-appropriate
+- final questions: stretch the child a little, not break them
+
+Do not keep all questions at the same level.
+Do not jump from easy to impossible.
+Do not repeat the same operation style too often in a row.
+
+## Maths Question Ladder
+### Prep / Foundation
+- counting objects
+- simple addition with objects
+- simple subtraction with objects
+- compare more/less
+- identify shapes
+- simple patterns
+- simple measurement language
+
+### Year 1
+- addition and subtraction within basic number ranges
+- simple multiplication as repeated addition
+- simple sharing / division
+- place value to tens and ones
+- half and quarter ideas
+- basic length, mass, time, money
+
+### Year 2
+- two-digit and three-digit addition/subtraction
+- multiplication and division facts
+- place value with hundreds
+- fractions of shapes and groups
+- simple decimals introduction
+- measurement conversions
+- time and money problem solving
+- data and probability basics
+
+### Year 3
+- multi-digit addition and subtraction
+- times tables fluency
+- multiplication and division reasoning
+- fractions and equivalence
+- decimals
+- percentages introduction
+- perimeter, area, and geometry
+- statistics and averages
+
+### Year 4
+- larger number operations
+- fraction and decimal operations
+- perimeter and area
+- angles
+- coordinates basics
+- word problems with multiple steps
+
+### Year 5
+- more complex fractions/decimals
+- percentages
+- ratio introduction
+- multi-step word problems
+- volume and measurement
+- data interpretation
+
+### Year 6
+- ratio and proportion
+- algebra readiness
+- formal calculations
+- geometry and coordinates
+- statistics and problem solving
+
+### Year 7
+- algebraic expressions
+- equations
+- ratio and percentage reasoning
+- geometry
+- probability and statistics
+
+### Year 8
+- algebra and equations
+- linear thinking
+- geometry and transformations
+- statistics and probability
+- multi-step reasoning
+
+## English Question Ladder
+### Prep / Foundation
+- letter and sound recognition
+- vocabulary matching
+- picture-word association
+- listening and simple comprehension
+- sentence awareness
+
+### Year 1
+- capital letters
+- punctuation
+- sight words
+- rhyme and sound patterns
+- short comprehension
+- guided writing
+
+### Year 2
+- comprehension
+- grammar basics
+- word choice
+- sentence building
+- short narrative and persuasive prompts
+
+### Year 3
+- reading for meaning
+- inference
+- grammar and punctuation
+- narrative and persuasive writing
+- editing and improving
+
+### Year 4
+- deeper comprehension
+- paragraph control
+- vocabulary in context
+- compare and explain
+- writing structure
+
+### Year 5
+- evidence-based answers
+- author intent
+- grammar precision
+- structure and planning
+- revision quality
+
+### Year 6
+- analysis
+- summarising
+- tone and audience
+- formal writing control
+- stronger drafting and revision
+
+### Year 7
+- language analysis
+- textual evidence
+- argument and persuasion
+- nuanced writing
+- editing for effect
+
+### Year 8
+- advanced comprehension
+- evaluation
+- coherent writing
+- style and voice
+- purposeful revision
+
+## Science Question Ladder
+### Prep / Foundation
+- living things
+- animals
+- plants
+- weather
+- body parts
+- habitats
+
+### Year 1
+- materials
+- seasons
+- simple forces
+- plant and animal basics
+- observation
+
+### Year 2
+- life cycles
+- habitats
+- materials and properties
+- simple experiments
+- cause and effect
+
+### Year 3
+- food chains
+- light and sound
+- forces
+- plant life
+- scientific observations
+
+### Year 4
+- electricity basics
+- states of matter
+- rock and soil
+- sound and light
+- living systems
+
+### Year 5
+- ecosystems
+- life processes
+- Earth and space basics
+- mixtures and materials
+- fair tests
+
+### Year 6
+- classification
+- energy
+- light and sound deeper
+- chemical and physical change
+- Earth systems
+
+### Year 7
+- cells and systems
+- energy transfer
+- mixtures
+- forces
+- scientific method
+
+### Year 8
+- systems
+- reactions
+- energy
+- earth science
+- data and evidence
+
+## Use These Rules When Generating Examples
+- Prep: use apples, blocks, dots, stars, balls, animals, shapes.
+- Year 1: use small numbers, hands, coins, clocks, shape cards.
+- Year 2: use groups, simple word problems, measuring tools, charts.
+- Year 3+: use stronger reasoning, more steps, clearer math language.
+- English should always prefer clarity over cleverness.
+- Science should prefer real-world observations over fake nonsense.
+
+## Topic Variety Rules
+- Avoid overloading one operation type.
+- Mix question types within a session.
+- Do not give too many subtraction questions in a row.
+- Do not give too many identical sentence patterns in English.
+- Do not ask the same science concept the same way repeatedly.
+
+## Theme and Favourite Topic Rules
+- If the child loves soccer, use footballs, goals, teams, or stadium context.
+- If the child loves jungle, use animals, trees, vines, and nature scenes.
+- If the child has favorite topics, use them where they naturally fit.
+- The theme must not weaken the actual concept being taught.
+
+## Example Quality Rule
+If the question sounds strange when read out loud by a teacher, it should be rewritten.
+
 ## Interactive Question Modes
 Use the best mode for the skill, not just multiple choice.
 
